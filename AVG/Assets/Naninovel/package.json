@@ -1,0 +1,11 @@
+{
+    "name": "com.elringus.naninovel",
+    "version": "1.9.8",
+    "displayName": "Naninovel",
+    "description": "Writer-friendly visual novel engine powered by Unity",
+    "unity": "2019.3",
+    "author": {
+        "name": "Elringus",
+        "url": "https://naninovel.com"
+    }
+}
