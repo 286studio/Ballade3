@@ -158,6 +158,6 @@ MonoBehaviour:
       guid: dd85ce99288c2f8488447fa511b1c0d6
   - Id: Scripts
     Resources:
-    - name: NewScript
+    - name: helloworld
       pathPrefix: Scripts
       guid: c58fa2970dcd54eb0b9fb9e23f03e69c
