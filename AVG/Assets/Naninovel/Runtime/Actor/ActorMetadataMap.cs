@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -18,9 +18,9 @@ namespace Naninovel
         [SerializeField] private string[] ids = new string[0];
         [SerializeField] private TMeta[] metas = new TMeta[0];
 
-        public ActorMetadataMap () { }
+        protected ActorMetadataMap () { }
 
-        public ActorMetadataMap (IDictionary<string, TMeta> dictionary)
+        protected ActorMetadataMap (IDictionary<string, TMeta> dictionary)
         {
             ids = new string[dictionary.Count];
             metas = new TMeta[dictionary.Count];

@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using System.IO;
@@ -9,8 +9,29 @@ using UnityEngine;
 
 namespace Naninovel
 {
+    /// <summary>
+    /// Provides various helper and extension methods for <see cref="string"/> objects.
+    /// </summary>
     public static class StringUtils
     {
+        /// <summary>
+        /// Characters used to represent new lines, cross-platform (Windows-Mac-Unix).
+        /// </summary>
+        public static readonly char[] NewLineChars = { '\n', '\r' };
+        /// <summary>
+        /// Character combinations used to represent new lines, cross-platform (Windows-Mac-Unix).
+        /// </summary>
+        public static readonly string[] NewLineSymbols = { "\r\n", "\n", "\r" };
+        
+        /// <summary>
+        /// Checks whether provided string contains any line break characters (platform-agnostic).
+        /// </summary>
+        public static bool ContainsLineBreak (this string content)
+        {
+            if (content is null) throw new ArgumentNullException(nameof(content));
+            return content.IndexOfAny(NewLineChars) >= 0;
+        }
+        
         /// <summary>
         /// Performs <see cref="string.Equals(string, string, StringComparison)"/> with <see cref="StringComparison.Ordinal"/>.
         /// </summary>
@@ -148,29 +169,38 @@ namespace Naninovel
 
         /// <summary>
         /// Splits the string using new line symbol as a separator.
-        /// Will split by all type of new lines, independant of environment.
+        /// Will split by all type of new lines, independent of environment.
         /// </summary>
         public static string[] SplitByNewLine (this string content, StringSplitOptions splitOptions = StringSplitOptions.None)
         {
             if (string.IsNullOrEmpty(content)) return null;
-
-            // "\r\n"   (\u000D\u000A)  Windows
-            // "\n"     (\u000A)        Unix
-            // "\r"     (\u000D)        Mac
-            // Not using Environment.NewLine here, as content could've been produced 
-            // in not the same environment we running the program in.
-            return content.Split(new string[] { "\r\n", "\n", "\r" }, splitOptions);
+            
+            return content.Split(NewLineSymbols, splitOptions);
         }
 
         /// <summary>
-        /// Removes mathing trailing string.
+        /// Removes matching trailing string.
         /// </summary>
         public static string TrimEnd (this string source, string value)
         {
             if (!source.EndsWithFast(value))
                 return source;
 
-            return source.Remove(source.LastIndexOf(value));
+            return source.Remove(source.LastIndexOf(value, StringComparison.InvariantCulture));
+        }
+        
+        /// <summary>
+        /// Invokes <see cref="string.Replace(string,string)"/> with an empty string.
+        /// </summary>
+        public static string Remove (this string source, char value)
+        {
+            return source?.Replace(value.ToString(), string.Empty);
+        }
+        
+        /// <inheritdoc cref="Remove(string,char)"/>
+        public static string Remove (this string source, string value)
+        {
+            return source?.Replace(value, string.Empty);
         }
 
         /// <summary>
@@ -178,10 +208,10 @@ namespace Naninovel
         /// </summary>
         public static bool IsNullEmptyOrWhiteSpace (string content)
         {
-            if (String.IsNullOrEmpty(content))
+            if (string.IsNullOrEmpty(content))
                 return true;
 
-            return String.IsNullOrEmpty(content.TrimFull());
+            return string.IsNullOrEmpty(content.TrimFull());
         }
 
         /// <summary>
@@ -219,7 +249,7 @@ namespace Naninovel
 
             return source;
             #else
-            return source.Trim().Trim(new char[] { '\uFEFF', '\u200B' });
+            return source.Trim().Trim('\uFEFF', '\u200B');
             #endif
         }
 
@@ -238,7 +268,7 @@ namespace Naninovel
                 ++unit;
             }
 
-            return string.Format("{0:G4} {1}", size, units[unit]);
+            return $"{size:G4} {units[unit]}";
         }
 
         /// <summary>
@@ -261,13 +291,41 @@ namespace Naninovel
             {
                 if (IsUpperOrNumber(source[i]))
                 {
-                    if ((source[i - 1] != insert && !IsUpperOrNumber(source[i - 1])) || (preserveAcronyms && IsUpperOrNumber(source[i - 1]) && i < source.Length - 1 && !IsUpperOrNumber(source[i + 1])))
+                    if (source[i - 1] != insert && !IsUpperOrNumber(source[i - 1]) || (preserveAcronyms && IsUpperOrNumber(source[i - 1]) && i < source.Length - 1 && !IsUpperOrNumber(source[i + 1])))
                         builder.Append(insert);
                 }
                 builder.Append(source[i]);
             }
 
             return builder.ToString();
+        }
+
+        /// <summary>
+        /// Changes first character in the provided string to lower invariant.
+        /// </summary>
+        public static string FirstToLower (this string source)
+        {
+            if (string.IsNullOrEmpty(source) || char.IsLower(source, 0))
+                return source;
+
+            if (source.Length <= 1) 
+                return source.ToLowerInvariant();
+            
+            return char.ToLowerInvariant(source[0]) + source.Substring(1);
+        }
+        
+        /// <summary>
+        /// Changes first character in the provided string to upper invariant.
+        /// </summary>
+        public static string FirstToUpper (this string source)
+        {
+            if (string.IsNullOrEmpty(source) || char.IsUpper(source, 0))
+                return source;
+
+            if (source.Length <= 1) 
+                return source.ToUpperInvariant();
+            
+            return char.ToUpperInvariant(source[0]) + source.Substring(1);
         }
 
         public static byte[] ZipString (string content)

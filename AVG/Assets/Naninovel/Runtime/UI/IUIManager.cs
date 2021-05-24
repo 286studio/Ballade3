@@ -1,7 +1,7 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
+using System.Collections.Generic;
 using Naninovel.UI;
-using System;
 using UniRx.Async;
 using UnityEngine;
 
@@ -13,40 +13,42 @@ namespace Naninovel
     public interface IUIManager : IEngineService<UIConfiguration>
     {
         /// <summary>
-        /// Can be overriden to apply a system font of the set name to all the text elements contained in the managed UI.
+        /// Name of the font option (<see cref="UIConfiguration.FontOptions"/>) to apply for the affected text elements contained in the managed UIs.
         /// Null identifies that a default font is used.
         /// </summary>
-        string Font { get; set; }
+        string FontName { get; set; }
         /// <summary>
-        /// Can be overriden to apply font size to all the text elements contained in the managed UI.
-        /// Null identifies that a default font size is used.
+        /// Font size index to apply for the affected text elements contained in the managed UIs.
+        /// -1 identifies that a default font size is used.
         /// </summary>
-        int? FontSize { get; set; }
+        int FontSize { get; set; }
 
         /// <summary>
-        /// Instatiates provided prefab, initializes and adds <see cref="IManagedUI"/> component (should be on the root object of the prefab)
-        /// to the managed objects; applies UI-related engine configuration and game settings.
+        /// Instantiates provided prefab, initializes and adds <see cref="IManagedUI"/> component (should be on the root object of the prefab)
+        /// to the managed objects; applies UI-related engine configuration and game settings. Don't forget to <see cref="RemoveUI(IManagedUI)"/> when destroying the game object.
         /// </summary>
         /// <param name="prefab">The prefab to spawn. Should have a <see cref="IManagedUI"/> component attached to the root object.</param>
-        UniTask<IManagedUI> InstantiatePrefabAsync (GameObject prefab);
+        /// <param name="name">Unique name of the UI. When not provided will use the prefab name.</param>
+        UniTask<IManagedUI> AddUIAsync (GameObject prefab, string name = default);
+        /// <summary>
+        /// Returns all the UIs managed by the service.
+        /// </summary>
+        IReadOnlyCollection<IManagedUI> GetManagedUIs ();
         /// <summary>
         /// Returns a managed UI of the provided type <typeparamref name="T"/>.
         /// Results per requested types are cached, so it's fine to use this method frequently.
         /// </summary>
         T GetUI<T> () where T : class, IManagedUI;
         /// <summary>
-        /// Returns a managed UI of the provided type.
-        /// Results per requested types are cached, so it's fine to use this method frequently.
+        /// Returns a managed UI of the provided UI resource name.
         /// </summary>
-        IManagedUI GetUI (Type type);
+        IManagedUI GetUI (string name);
         /// <summary>
-        /// Returns a managed UI based on the provided prefab name.
+        /// Removes provided UI from the managed objects.
         /// </summary>
-        IManagedUI GetUI (string prefabName);
-        /// <summary>
-        /// Applies provided render mode and camera for all the managed UI objects.
-        /// </summary>
-        void SetRenderMode (RenderMode renderMode, Camera renderCamera);
+        /// <param name="managedUI">Managed UI instance to remove.</param>
+        /// <returns>Whether the UI was successfully removed.</returns>
+        bool RemoveUI (IManagedUI managedUI);
         /// <summary>
         /// Controls whether the UI (as a whole) is rendered (visible); won't affect visibility state of any particular UI.
         /// Will also spawn <see cref="ClickThroughPanel"/>, which will block input to prevent user from re-showing the UI,

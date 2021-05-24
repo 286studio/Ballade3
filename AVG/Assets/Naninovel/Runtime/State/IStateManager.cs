@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using UniRx.Async;
@@ -45,21 +45,21 @@ namespace Naninovel
         event Action OnRollbackFinished;
 
         /// <summary>
-        /// Serialized global state of the engine.
+        /// Current global state of the engine.
         /// </summary>
         GlobalStateMap GlobalState { get; }
         /// <summary>
-        /// Serialized state of the engine settings.
+        /// Current settings state of the engine.
         /// </summary>
         SettingsStateMap SettingsState { get; }
         /// <summary>
         /// Save slots manager for global engine state.
         /// </summary>
-        ISaveSlotManager<GlobalStateMap> GlobalStateSlotManager { get; }
+        ISaveSlotManager<GlobalStateMap> GlobalSlotManager { get; }
         /// <summary>
         /// Save slots manager for local engine state.
         /// </summary>
-        ISaveSlotManager<GameStateMap> GameStateSlotManager { get; }
+        ISaveSlotManager<GameStateMap> GameSlotManager { get; }
         /// <summary>
         /// Save slots manager for game settings.
         /// </summary>
@@ -106,7 +106,6 @@ namespace Naninovel
         UniTask<GameStateMap> QuickSaveAsync ();
         /// <summary>
         /// Loads game state from the specified save slot.
-        /// Will reset the engine services and unload unused assets before load.
         /// </summary>
         UniTask<GameStateMap> LoadGameAsync (string slotId);
         /// <summary>
@@ -114,23 +113,35 @@ namespace Naninovel
         /// </summary>
         UniTask<GameStateMap> QuickLoadAsync ();
         /// <summary>
-        /// Serializes (saves) global state of the engine services.
+        /// Persists current global state of the engine.
         /// </summary>
-        UniTask<GlobalStateMap> SaveGlobalStateAsync ();
+        UniTask SaveGlobalAsync ();
         /// <summary>
-        /// Serializes (saves) settings state of the engine services.
+        /// Persists current settings state of the engine.
         /// </summary>
-        UniTask<SettingsStateMap> SaveSettingsAsync ();
+        UniTask SaveSettingsAsync ();
+        /// <summary>
+        /// Resets engine services and unloads unused assets; will basically revert to an empty initial engine state.
+        /// The operation will invoke default on-load events, allowing to mask the process with a loading screen.
+        /// </summary>
+        /// <param name="tasks">Additional tasks to perform during the reset (will be performed in order after the engine reset, but before removing the loading UI).</param>
+        UniTask ResetStateAsync (params Func<UniTask>[] tasks);
         /// <summary>
         /// Resets engine services and unloads unused assets; will basically revert to an empty initial engine state.
         /// The operation will invoke default on-load events, allowing to mask the process with a loading screen.
         /// </summary>
         /// <param name="exclude">Type names of the engine services (interfaces) to exclude from reset.</param>
         /// <param name="tasks">Additional tasks to perform during the reset (will be performed in order after the engine reset, but before removing the loading UI).</param>
-        UniTask ResetStateAsync (string[] exclude = null, params Func<UniTask>[] tasks);
+        UniTask ResetStateAsync (string[] exclude, params Func<UniTask>[] tasks);
+        /// <summary>
+        /// Resets engine services and unloads unused assets; will basically revert to an empty initial engine state.
+        /// The operation will invoke default on-load events, allowing to mask the process with a loading screen.
+        /// </summary>
+        /// <param name="exclude">Types of the engine services (interfaces) to exclude from reset.</param>
+        /// <param name="tasks">Additional tasks to perform during the reset (will be performed in order after the engine reset, but before removing the loading UI).</param>
+        UniTask ResetStateAsync (Type[] exclude, params Func<UniTask>[] tasks);
         /// <summary>
         /// Takes a snapshot of the current game state and adds it to the rollback stack.
-        /// The state can then be rolled back to the stored snapshots with <see cref="RollbackAsync"/>.
         /// </summary>
         /// <param name="allowPlayerRollback">Whether player is allowed rolling back to the snapshot; see <see cref="GameStateMap.PlayerRollbackAllowed"/> for more info.</param>
         void PushRollbackSnapshot (bool allowPlayerRollback = true);
@@ -158,5 +169,5 @@ namespace Naninovel
         /// Modifies existing state snapshots to prevent player from rolling back to them.
         /// </summary>
         void PurgeRollbackData ();
-    } 
+    }
 }

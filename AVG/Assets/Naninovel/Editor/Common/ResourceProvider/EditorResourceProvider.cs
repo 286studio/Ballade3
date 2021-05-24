@@ -1,5 +1,6 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -15,11 +16,13 @@ namespace Naninovel
         public void AddResourceGuid (string path, string guid)
         {
             pathToGuidMap[path] = guid;
+            LocationsCache.Add(new CachedResourceLocation(path, typeof(UnityEngine.Object)));
         }
 
         public void RemoveResourceGuid (string path)
         {
             pathToGuidMap.Remove(path);
+            LocationsCache.RemoveAll(r => r.Path.EqualsFast(path));
         }
 
         public override bool SupportsType<T> () => true;
@@ -41,17 +44,18 @@ namespace Naninovel
 
         protected override void DisposeResource (Resource resource)
         {
-            if (!resource.IsValid) return;
+            if (!resource.Valid) return;
             #if UNITY_EDITOR
             if (UnityEditor.AssetDatabase.Contains(resource.Object))
             {
                 // Can't unload prefabs: https://forum.unity.com/threads/393385.
-                // TODO: Replace the project provider with addressable system in Unity 2019?
                 if (resource.Object is GameObject || resource.Object is Component) return;
                 Resources.UnloadAsset(resource.Object);
             }
             else ObjectUtils.DestroyOrImmediate(resource.Object);
             #endif
         }
+
+        protected override bool AreTypesCompatible (Type sourceType, Type targetType) => true;
     }
 }

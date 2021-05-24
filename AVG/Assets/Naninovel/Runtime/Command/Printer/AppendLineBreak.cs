@@ -1,6 +1,5 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
-using System.Threading;
 using UniRx.Async;
 
 namespace Naninovel.Commands
@@ -8,30 +7,26 @@ namespace Naninovel.Commands
     /// <summary>
     /// Adds a line break to a text printer.
     /// </summary>
-    /// <example>
-    /// ; Second sentence will be printed on a new line
-    /// Lorem ipsum dolor sit amet.[br]Consectetur adipiscing elit.
-    /// 
-    /// ; Second sentence will be printer two lines under the first one
-    /// Lorem ipsum dolor sit amet.[br 2]Consectetur adipiscing elit.
-    /// </example>
+    /// <remarks>
+    /// Consider using `&lt;br&gt;` tag instead with [TMPro printers](/guide/text-printers.md#textmesh-pro).
+    /// </remarks>
     [CommandAlias("br")]
     public class AppendLineBreak : PrinterCommand
     {
         /// <summary>
         /// Number of line breaks to add.
         /// </summary>
-        [ParameterAlias(NamelessParameterAlias)]
+        [ParameterAlias(NamelessParameterAlias), ParameterDefaultValue("1")]
         public IntegerParameter Count = 1;
         /// <summary>
         /// ID of the printer actor to use. Will use a default one when not provided.
         /// </summary>
-        [ParameterAlias("printer")]
+        [ParameterAlias("printer"), IDEActor(TextPrintersConfiguration.DefaultPathPrefix)]
         public StringParameter PrinterId;
         /// <summary>
         /// ID of the actor, which should be associated with the appended line break.
         /// </summary>
-        [ParameterAlias("author")]
+        [ParameterAlias("author"), IDEActor(CharactersConfiguration.DefaultPathPrefix)]
         public StringParameter AuthorId;
 
         protected override string AssignedPrinterId => PrinterId;
@@ -41,14 +36,14 @@ namespace Naninovel.Commands
         public override async UniTask ExecuteAsync (CancellationToken cancellationToken = default)
         {
             var printer = await GetOrAddPrinterAsync();
-            if (cancellationToken.IsCancellationRequested) return;
+            if (cancellationToken.CancelASAP) return;
             var backlogUI = UIManager.GetUI<UI.IBacklogUI>();
 
+            var breaks = string.Empty;
             for (int i = 0; i < Count; i++)
-            {
-                printer.Text += "\n";
-                backlogUI?.AppendMessage("\n");
-            }
+                breaks += "\n";
+            printer.Text += breaks;
+            backlogUI?.AppendMessage(breaks);
         }
     }
 }

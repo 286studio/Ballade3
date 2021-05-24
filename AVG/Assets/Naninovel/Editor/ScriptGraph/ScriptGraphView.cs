@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -17,13 +17,12 @@ namespace Naninovel
     {
         public const string ProgressBarTitle = "Generating Script Graph";
 
-        public static StyleSheet StyleSheet { get; private set; }
+        public static StyleSheet StyleSheet { get; }
         public static StyleSheet CustomStyleSheet { get; private set; }
 
         private readonly ScriptsConfiguration config;
         private readonly ScriptGraphState state;
-        private readonly MiniMap minimap;
-        private readonly List<Script> scripts = new List<Script>();
+        private readonly List<Script> scripts;
         private readonly List<ScriptGraphNode> scriptNodes = new List<ScriptGraphNode>();
 
         static ScriptGraphView ()
@@ -51,7 +50,7 @@ namespace Naninovel
             Insert(0, grid);
             grid.StretchToParentSize();
 
-            minimap = new MiniMap();
+            var minimap = new MiniMap();
             minimap.anchored = true;
             minimap.SetPosition(new Rect(10, 30, 200, 140));
             minimap.visible = false;
@@ -59,12 +58,12 @@ namespace Naninovel
 
             var toolbar = new Toolbar();
             Add(toolbar);
-            var rebuildButton = new Button(RebuildGraph);
+            var rebuildButton = new Button(HandleRebuildButtonClicked);
             rebuildButton.text = "Rebuild Graph";
             toolbar.Add(rebuildButton);
-            var allignButton = new Button(AutoAlign);
-            allignButton.text = "Auto Align";
-            toolbar.Add(allignButton);
+            var alignButton = new Button(AutoAlign);
+            alignButton.text = "Auto Align";
+            toolbar.Add(alignButton);
             var minimapToggle = new Toggle();
             minimapToggle.label = "Show Minimap";
             minimapToggle.RegisterValueChangedCallback(evt => minimap.visible = evt.newValue);
@@ -84,9 +83,16 @@ namespace Naninovel
         {
             state.NodesState.Clear();
             foreach (var node in scriptNodes)
-                state.NodesState.Add(new ScriptGraphState.NodeState { ScriptName = node.Script.Name, Position = node.GetPosition() });
+                if (ObjectUtils.IsValid(node.Script))
+                    state.NodesState.Add(new ScriptGraphNodeState(node.Script.Name, node.GetPosition()));
             EditorUtility.SetDirty(state);
             AssetDatabase.SaveAssets();
+        }
+
+        private void HandleRebuildButtonClicked ()
+        {
+            SerializeState();
+            RebuildGraph();
         }
 
         private void RebuildGraph ()
@@ -100,7 +106,7 @@ namespace Naninovel
             {
                 var script = scripts[i];
 
-                // Discard deleted scirpt assets.
+                // Discard deleted script assets.
                 if (!ObjectUtils.IsValid(script)) continue;
 
                 var progress = i / (float)scripts.Count;

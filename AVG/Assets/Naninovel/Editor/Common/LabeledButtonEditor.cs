@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using UnityEditor;
 using UnityEditor.UI;
@@ -8,8 +8,8 @@ namespace Naninovel
     [CustomEditor(typeof(LabeledButton), true), CanEditMultipleObjects]
     public class LabeledButtonEditor : ButtonEditor
     {
-        SerializedProperty labelTextProperty;
-        SerializedProperty labelColorsProperty;
+        private SerializedProperty labelTextProperty;
+        private SerializedProperty labelColorsProperty;
 
         protected override void OnEnable ()
         {

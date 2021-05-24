@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -16,14 +16,13 @@ namespace Naninovel
         /// Default path relative to a `Resources` folder under which the generated configuration assets are stored.
         /// </summary>
         public const string DefaultResourcesPath = "Naninovel/Configuration";
-
+        
         private readonly Dictionary<Type, Configuration> configObjects = new Dictionary<Type, Configuration>();
 
         public ProjectConfigurationProvider (string resourcesPath = DefaultResourcesPath)
         {
-            var baseConfigType = typeof(Configuration);
-            var configTypes = ReflectionUtils.ExportedDomainTypes
-                .Where(type => baseConfigType.IsAssignableFrom(type) && type.IsClass && !type.IsAbstract);
+            var configTypes = Engine.Types
+                .Where(type => typeof(Configuration).IsAssignableFrom(type) && type.IsClass && !type.IsAbstract);
 
             foreach (var configType in configTypes)
             {
@@ -42,8 +41,7 @@ namespace Naninovel
             if (configObjects.TryGetValue(type, out var result))
                 return result;
 
-            Debug.LogError($"Failed to provide `{type.Name}` configuration object: Requested configuration type not found in project resources.");
-            return null;
+            throw new Exception($"Failed to provide `{type.Name}` configuration object: Requested configuration type not found in project resources.");
         }
 
         /// <summary>
@@ -66,7 +64,7 @@ namespace Naninovel
             var resourcePath = $"{resourcesPath}/{type.Name}";
             var configAsset = Resources.Load(resourcePath, type) as Configuration;
 
-            if (!ObjectUtils.IsValid(configAsset))
+            if (!configAsset)
                 configAsset = ScriptableObject.CreateInstance(type) as Configuration;
 
             return configAsset;

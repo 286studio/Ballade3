@@ -1,6 +1,7 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
+using TMPro;
 using UniRx.Async;
 using UnityEngine;
 
@@ -24,14 +25,6 @@ namespace Naninovel.UI
         /// </remarks>
         bool Visible { get; set; }
         /// <summary>
-        /// The order in which the element is sorted among other elements.
-        /// </summary>
-        int SortingOrder { get; set; }
-        /// <summary>
-        /// Rendering mode of the UI element.
-        /// </summary>
-        RenderMode RenderMode { get; set; }
-        /// <summary>
         /// Camera the UI element uses for reference when scaling and handling user input.
         /// </summary>
         Camera RenderCamera { get; set; }
@@ -42,7 +35,7 @@ namespace Naninovel.UI
 
         /// <summary>
         /// Allows to execute an async initialization logic.
-        /// Invoked once by <see cref="IUIManager"/> when managed UI is instatiated.
+        /// Invoked once by <see cref="IUIManager"/> when managed UI is instantiated.
         /// </summary>
         UniTask InitializeAsync ();
         /// <summary>
@@ -52,13 +45,15 @@ namespace Naninovel.UI
         /// <see cref="Visible"/> should be set to <paramref name="visible"/> at the time this method is invoked.
         /// Should not return until visibility (as perceived by user) has been completely changed (including any associated animations).
         /// </remarks>
-        UniTask ChangeVisibilityAsync (bool visible, float? duration = null);
+        UniTask ChangeVisibilityAsync (bool visible, float? duration = null, CancellationToken cancellationToken = default);
         /// <summary>
-        /// Applies provided font to all the text elements contained in the UI.
+        /// Applies provided fonts to the uGUI and TMPro text components contained in the UI.
+        /// Null identifies default font initially set in text components of the UI prefab.
         /// </summary>
-        void SetFont (Font font);
+        void SetFont (Font font, TMP_FontAsset tmpFont);
         /// <summary>
-        /// Applies provided font size to all the text elements contained in the UI.
+        /// Applies provided font size to the text elements contained in the UI.
+        /// -1 identifies default size initially set in text components of the UI prefab.
         /// </summary>
         void SetFontSize (int size);
     }

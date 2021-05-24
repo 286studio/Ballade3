@@ -1,8 +1,7 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using UnityEngine;
 
@@ -49,23 +48,18 @@ namespace Naninovel
         /// Applies provided record values to the static 
         /// <see cref="ManagedTextAttribute"/> <see cref="string"/> fields in the application domain.
         /// </summary>
-        public static void ApplyRecords (HashSet<ManagedTextRecord> records)
+        public static void ApplyRecords (IEnumerable<ManagedTextRecord> records)
         {
-            foreach (var record in records)
+            var map = new Dictionary<string, ManagedTextRecord>(StringComparer.Ordinal);
+            foreach (var r in records)
+                map[r.Key.GetBeforeLast(".") ?? r.Key] = r;
+            foreach (var type in Engine.Types)
             {
-                var key = record.Key;
-                var value = record.Value;
-
-                var typeFullName = key.GetBeforeLast(".") ?? key;
-                var fieldName = key.GetAfter(".") ?? key;
-
-                var type = ReflectionUtils.ExportedDomainTypes.FirstOrDefault(t => t.FullName.EqualsFast(typeFullName));
-                if (type is null) continue;
-
+                if (!map.TryGetValue(type.FullName, out var record)) continue;
+                var fieldName = record.Key.GetAfter(".") ?? record.Key;
                 var fieldInfo = type.GetField(fieldName, ManagedFieldBindings);
-                if (fieldInfo is null) { Debug.LogWarning($"Failed to apply managed text record value to '{typeFullName}.{fieldName}' field."); continue; }
-
-                fieldInfo.SetValue(null, value);
+                if (fieldInfo is null) Debug.LogWarning($"Failed to apply managed text record value to '{type.FullName}.{fieldName}' field.");
+                else fieldInfo.SetValue(null, record.Value);
             }
         }
     }

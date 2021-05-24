@@ -1,15 +1,31 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
+using UniRx.Async;
+using UnityEngine;
 
 namespace Naninovel
 {
     /// <summary>
-    /// A <see cref="IBackgroundActor"/> implementation using <see cref="SpriteActor"/> to represent the actor.
+    /// A <see cref="IBackgroundActor"/> implementation using <see cref="SpriteActor{TMeta}"/> to represent the actor.
     /// </summary>
-    public class SpriteBackground : SpriteActor, IBackgroundActor
+    [ActorResources(typeof(Texture2D), true)]
+    public class SpriteBackground : SpriteActor<BackgroundMetadata>, IBackgroundActor
     {
+        private BackgroundMatcher matcher;
+        
         public SpriteBackground (string id, BackgroundMetadata metadata) 
             : base(id, metadata) { }
 
+        public override async UniTask InitializeAsync ()
+        {
+            await base.InitializeAsync();
+            matcher = BackgroundMatcher.CreateFor(ActorMetadata, TransitionalRenderer);
+        }
+
+        public override void Dispose ()
+        {
+            base.Dispose();
+            matcher?.Stop();
+        }
     } 
 }

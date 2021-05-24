@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -21,6 +21,16 @@ namespace Naninovel
                 list.RemoveAt(elementIndex);
         }
 
+        /// <summary>
+        /// Returns last <paramref name="count"/> elements in the collection.
+        /// In case collection length is less then <paramref name="count"/>, will return less elements.
+        /// </summary>
+        public static IEnumerable<T> TakeLast<T> (this IReadOnlyCollection<T> source, int count)
+        {
+            var skipCount = Mathf.Max(0, source.Count - count);
+            return source.Skip(skipCount);
+        }
+
         public static int GetArrayHashCode<T> (this T[] array)
         {
             return ArrayEqualityComparer<T>.GetHashCode(array);
@@ -31,9 +41,47 @@ namespace Naninovel
             return array.Length > 0 && index >= 0 && index < array.Length;
         }
 
-        public static bool IsIndexValid<T> (this IList<T> list, int index)
+        public static bool IsIndexValid<T> (this List<T> list, int index)
         {
             return list.Count > 0 && index >= 0 && index < list.Count;
+        }
+
+        public static bool IsIndexValid<T> (this IReadOnlyCollection<T> list, int index)
+        {
+            return list.Count > 0 && index >= 0 && index < list.Count;
+        }
+
+        public static int IndexOf<T> (this IReadOnlyList<T> list, T itemToFind)
+        {
+            var i = 0;
+            foreach (T item in list)
+            {
+                if (Equals(item, itemToFind)) return i;
+                i++;
+            }
+            return -1;
+        }
+
+        public static int IndexOf<T> (this IList<T> list, Predicate<T> predicate)
+        {
+            var i = 0;
+            foreach (T item in list)
+            {
+                if (predicate(item)) return i;
+                i++;
+            }
+            return -1;
+        }
+
+        public static int IndexOf<T> (this IReadOnlyList<T> list, Predicate<T> predicate)
+        {
+            var i = 0;
+            foreach (T item in list)
+            {
+                if (predicate(item)) return i;
+                i++;
+            }
+            return -1;
         }
 
         public static T Random<T> (this IList<T> list)
@@ -69,6 +117,26 @@ namespace Naninovel
             return list;
         }
 
+        public static int RemoveAll<T> (this LinkedList<T> list, Predicate<T> match)
+        {
+            if (list == null) throw new ArgumentNullException(nameof(list));
+            if (match == null) throw new ArgumentNullException(nameof(match));
+
+            var count = 0;
+            var node = list.First;
+            while (node != null)
+            {
+                var next = node.Next;
+                if (match(node.Value))
+                {
+                    list.Remove(node);
+                    count++;
+                }
+                node = next;
+            }
+            return count;
+        }
+
         /// <summary>
         /// Orders the elements of <paramref name="source"/> collection in a way that no element depends on any previous element.
         /// </summary>
@@ -88,12 +156,11 @@ namespace Naninovel
 
             void Visit (T item)
             {
-                var inProcess = default(bool);
-                var alreadyVisited = visited.TryGetValue(item, out inProcess);
+                var alreadyVisited = visited.TryGetValue(item, out var inProcess);
 
                 if (alreadyVisited)
                 {
-                    if (inProcess && warnCyclic) 
+                    if (inProcess && warnCyclic)
                         Debug.LogWarning($"Cyclic dependency found while performing topological ordering of {typeof(T).Name}.");
                 }
                 else
@@ -159,7 +226,8 @@ namespace Naninovel
             if (first == null || second == null) return false;
             if (first.Length != second.Length) return false;
             for (int i = 0; i < first.Length; i++)
-                if (!ITEMS_COMPARER.Equals(first[i], second[i])) return false;
+                if (!ITEMS_COMPARER.Equals(first[i], second[i]))
+                    return false;
             return true;
         }
 

@@ -1,7 +1,9 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System.Linq;
+using UniRx.Async;
 using UnityEditor;
+using UnityEngine;
 
 namespace Naninovel
 {
@@ -11,50 +13,32 @@ namespace Naninovel
     public static class HotReloadService
     {
         private static ScriptsConfiguration configuration;
-        private static EditorResources editorResources;
         private static IScriptPlayer player;
         private static IScriptManager scriptManager;
         private static IStateManager stateManager;
         private static string[] playedLineHashes;
 
-        [InitializeOnLoadMethod]
-        private static void Initialize ()
+        /// <summary>
+        /// Performs hot-reload of the currently played script.
+        /// </summary>
+        public static async UniTask ReloadPlayedScriptAsync ()
         {
-            ScriptAssetPostprocessor.OnModified += HandleScriptModifiedAsync;
-            Engine.OnInitializationFinished += HandleEngineInitialized;
-        }
+            if (player?.Playlist is null || player.Playlist.Count == 0 || !player.PlayedScript)
+            {
+                Debug.LogError("Failed to perform hot reload: script player is not available or no script is currently played.");
+                return;
+            }
 
-        private static void HandleEngineInitialized ()
-        {
-            if (!(Engine.Behaviour is RuntimeBehaviour)) return;
-
-            if (configuration is null)
-                configuration = ProjectConfigurationProvider.LoadOrDefault<ScriptsConfiguration>();
-            if (editorResources is null)
-                editorResources = EditorResources.LoadOrDefault();
-
-            if (!configuration.HotReloadScripts) return;
-
-            scriptManager = Engine.GetService<IScriptManager>();
-            player = Engine.GetService<IScriptPlayer>();
-            stateManager = Engine.GetService<IStateManager>();
-            player.OnPlay += HandleStartPlaying;
-        }
-
-        private static void HandleStartPlaying (Script script)
-        {
-            playedLineHashes = script.Lines.Select(l => l.LineHash).ToArray();
-        }
-
-        private static async void HandleScriptModifiedAsync (string assetPath)
-        {
-            if (!Engine.Initialized || !(Engine.Behaviour is RuntimeBehaviour) || !configuration.HotReloadScripts || 
-                !ObjectUtils.IsValid(player.PlayedScript) || player.Playlist?.Count == 0) return;
-
-            var scriptGuid = AssetDatabase.AssetPathToGUID(assetPath);
-            var scriptName = editorResources.GetRecordByGuid(scriptGuid)?.Name;
-
-            if (player.PlayedScript.Name != scriptName) return;
+            var requireReload = string.IsNullOrEmpty(AssetDatabase.GetAssetPath(player.PlayedScript));
+            if (requireReload) // In case the played script is stored outside of Unity project, force reload it.
+            {
+                var prevLineHashes = playedLineHashes; // Otherwise they're overridden when playing the loaded script below.
+                var scriptName = player.PlayedScript.Name;
+                scriptManager.UnloadScript(scriptName);
+                var script = await scriptManager.LoadScriptAsync(scriptName);
+                player.Play(script, player.PlaybackSpot.LineIndex, player.PlaybackSpot.InlineIndex);
+                playedLineHashes = prevLineHashes;
+            }
 
             var lastPlayedLineIndex = (player.PlayedCommand ?? player.Playlist.Last()).PlaybackSpot.LineIndex;
 
@@ -68,9 +52,12 @@ namespace Naninovel
                     break;
                 }
 
-                var oldLineHash = playedLineHashes[i];
-                var newLine = player.PlayedScript.Lines[i];
-                if (oldLineHash.EqualsFast(newLine.LineHash)) continue;
+                if (playedLineHashes?.IsIndexValid(i) ?? false)
+                {
+                    var oldLineHash = playedLineHashes[i];
+                    var newLine = player.PlayedScript.Lines[i];
+                    if (oldLineHash.EqualsFast(newLine.LineHash)) continue;
+                }
 
                 rollbackIndex = player.Playlist.GetCommandBeforeLine(i, 0)?.PlaybackSpot.LineIndex ?? 0;
                 break;
@@ -84,10 +71,51 @@ namespace Naninovel
             var resumeLineIndex = rollbackIndex > -1 ? rollbackIndex : lastPlayedLineIndex;
             var playlist = new ScriptPlaylist(player.PlayedScript, scriptManager);
             var playlistIndex = player.Playlist.FindIndex(c => c.PlaybackSpot.LineIndex == resumeLineIndex);
+            if (playlistIndex < 0)
+                playlistIndex = 0;
+            await playlist.PreloadResourcesAsync(playlistIndex, playlist.Count - 1);
             player.Play(playlist, playlistIndex);
 
             if (player.WaitingForInput)
                 player.SetWaitingForInputEnabled(false);
+        }
+
+        [InitializeOnLoadMethod]
+        private static void Initialize ()
+        {
+            ScriptFileWatcher.OnModified += HandleScriptModifiedAsync;
+            Engine.OnInitializationFinished += HandleEngineInitialized;
+
+            void HandleEngineInitialized ()
+            {
+                if (!(Engine.Behaviour is RuntimeBehaviour)) return;
+
+                if (configuration is null)
+                    configuration = ProjectConfigurationProvider.LoadOrDefault<ScriptsConfiguration>();
+
+                scriptManager = Engine.GetService<IScriptManager>();
+                player = Engine.GetService<IScriptPlayer>();
+                stateManager = Engine.GetService<IStateManager>();
+                player.OnPlay += HandleStartPlaying;
+            }
+        }
+
+        private static void HandleStartPlaying (Script script)
+        {
+            playedLineHashes = script.Lines.Select(l => l.LineHash).ToArray();
+        }
+
+        private static async void HandleScriptModifiedAsync (string assetPath)
+        {
+            if (!Engine.Initialized || !(Engine.Behaviour is RuntimeBehaviour) || !configuration.HotReloadScripts ||
+                !ObjectUtils.IsValid(player.PlayedScript) || player.Playlist?.Count == 0) return;
+
+            var scriptAsset = AssetDatabase.LoadAssetAtPath<Script>(assetPath);
+            if (!ObjectUtils.IsValid(scriptAsset)) return;
+
+            if (player.PlayedScript.Name != scriptAsset.Name) return;
+
+            await ReloadPlayedScriptAsync();
         }
     }
 }

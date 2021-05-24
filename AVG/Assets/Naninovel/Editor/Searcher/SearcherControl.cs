@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -64,8 +64,13 @@ namespace Naninovel.Searcher
             {
                 m_ListView.bindItem = Bind;
                 m_ListView.RegisterCallback<KeyDownEvent>(OnResultsScrollViewKeyDown);
+                #if UNITY_2020_1_OR_NEWER
+                m_ListView.onItemsChosen += obj => m_SelectionCallback(obj?.FirstOrDefault() as SearcherItem);
+                m_ListView.onSelectionChange += selectedItems => m_Searcher.Adapter.OnSelectionChanged(selectedItems.OfType<SearcherItem>());
+                #else
                 m_ListView.onItemChosen += obj => m_SelectionCallback((SearcherItem)obj);
                 m_ListView.onSelectionChanged += selectedItems => m_Searcher.Adapter.OnSelectionChanged(selectedItems.OfType<SearcherItem>());
+                #endif
                 m_ListView.focusable = true;
                 m_ListView.tabIndex = 1;
             }
@@ -580,9 +585,6 @@ namespace Naninovel.Searcher
 
         void SetSelectedElementInResultsList(KeyDownEvent evt)
         {
-            if (m_ListView.childCount == 0)
-                return;
-
             if (evt.keyCode == config.InsertLineKey && (evt.modifiers & config.InsertLineModifier) != 0)
             {
                 m_SelectionCallback(new SearcherItem("Generic Text"));

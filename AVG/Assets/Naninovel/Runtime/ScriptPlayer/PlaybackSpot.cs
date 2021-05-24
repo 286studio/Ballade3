@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -12,6 +12,15 @@ namespace Naninovel
     [Serializable]
     public struct PlaybackSpot : IEquatable<PlaybackSpot>
     {
+        /// <summary>
+        /// An uninitialized playback spot, that doesn't belong to any script asset.
+        /// </summary>
+        public static readonly PlaybackSpot Invalid = new PlaybackSpot(null, -1, -1);
+
+        /// <summary>
+        /// Whether the spot is initialized and belong to an actual script asset.
+        /// </summary>
+        public bool Valid => !string.IsNullOrEmpty(scriptName) && lineIndex >= 0 && inlineIndex >= 0;
         public string ScriptName => scriptName;
         public int LineIndex => lineIndex;
         public int LineNumber => lineIndex + 1;
@@ -43,9 +52,9 @@ namespace Naninovel
         public override int GetHashCode ()
         {
             var hashCode = 646664838;
-            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(scriptName);
-            hashCode = hashCode * -1521134295 + lineIndex.GetHashCode();
-            hashCode = hashCode * -1521134295 + inlineIndex.GetHashCode();
+            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(ScriptName);
+            hashCode = hashCode * -1521134295 + LineIndex.GetHashCode();
+            hashCode = hashCode * -1521134295 + InlineIndex.GetHashCode();
             return hashCode;
         }
 

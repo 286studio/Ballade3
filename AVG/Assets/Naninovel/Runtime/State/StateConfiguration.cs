@@ -1,10 +1,10 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using UnityEngine;
 
 namespace Naninovel
 {
-    [System.Serializable]
+    [EditInProjectSettings]
     public class StateConfiguration : Configuration
     {
         [Tooltip("The folder will be created in the game data folder.")]
@@ -25,8 +25,8 @@ namespace Naninovel
         public bool BinarySaveFiles = true;
         [Tooltip("Seconds to wait before starting load operations; used to allow pre-load animations to complete before any load-related stutters could happen.")]
         public float LoadStartDelay = 0.3f;
-        [Tooltip("Whether to reset state of the engine services and unload (dispose) resources when loading another script via [@goto] command. It's recommended to leave this enabled to prevent memory leak issues. If you choose to disable this option, you can still reset the state and dispose resources manually at any time using [@resetState] command.")]
-        public bool ResetOnGoto = true;
+        [Tooltip("Whether to reset state of the engine services when loading another script via [@goto] command. This option is for backward compatibility only. It's recommended to leave it disabled for new projects.")]
+        public bool ResetOnGoto = false;
 
         [Header("State Rollback")]
         [Tooltip("Whether to enable state rollback feature allowing player to rewind the script backwards.")]
@@ -38,11 +38,11 @@ namespace Naninovel
 
         [Header("Serialization Handlers")]
         [Tooltip("Implementation responsible for de-/serializing local (session-specific) game state; see `State Management` guide on how to add custom serialization handlers.")]
-        public string GameStateHandler = typeof(GameStateSlotManager).AssemblyQualifiedName;
+        public string GameStateHandler = typeof(IOGameStateSlotManager).AssemblyQualifiedName;
         [Tooltip("Implementation responsible for de-/serializing global game state; see `State Management` guide on how to add custom serialization handlers.")]
-        public string GlobalStateHandler = typeof(GlobalStateSlotManager).AssemblyQualifiedName;
+        public string GlobalStateHandler = typeof(IOGlobalStateSlotManager).AssemblyQualifiedName;
         [Tooltip("Implementation responsible for de-/serializing game settings; see `State Management` guide on how to add custom serialization handlers.")]
-        public string SettingsStateHandler = typeof(SettingsSlotManager).AssemblyQualifiedName;
+        public string SettingsStateHandler = typeof(IOSettingsSlotManager).AssemblyQualifiedName;
 
         /// <summary>
         /// Generates save slot ID using provided index and <see cref="SaveSlotMask"/>.

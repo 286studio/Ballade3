@@ -1,5 +1,6 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
+using Naninovel.Commands;
 using UnityEngine;
 
 namespace Naninovel.UI
@@ -15,7 +16,7 @@ namespace Naninovel.UI
         private IScriptPlayer player;
         private IAudioManager audioManager;
         private IStateManager stateManager;
-        private string lastActionInfo, lastAutoVoiceName;
+        private string lastCommandInfo, lastAutoVoiceName;
 
         public static void Toggle ()
         {
@@ -52,8 +53,8 @@ namespace Naninovel.UI
         {
             if (!show) return;
 
-            windowRect = GUI.Window(windowId, windowRect, DrawWindow, 
-                string.IsNullOrEmpty(lastActionInfo) ? $"Naninovel ver. {version.Version}" : lastActionInfo);
+            windowRect = GUI.Window(windowId, windowRect, DrawWindow,
+                string.IsNullOrEmpty(lastCommandInfo) ? $"Naninovel ver. {version.Version}" : lastCommandInfo);
         }
 
         private void DrawWindow (int windowID)
@@ -80,13 +81,13 @@ namespace Naninovel.UI
             GUI.DragWindow();
         }
 
-        private void HandleActionExecuted (Commands.Command command)
+        private void HandleActionExecuted (Command command)
         {
-            if (command is null) return;
+            if (player is null || command is null) return;
 
-            lastActionInfo = player?.PlayedCommand?.PlaybackSpot.ToString();
+            lastCommandInfo = player.PlayedCommand.PlaybackSpot.ToString();
 
-            if (audioManager != null && audioManager.Configuration.EnableAutoVoicing && command is Commands.PrintText printAction)
+            if (audioManager != null && audioManager.Configuration.EnableAutoVoicing && command is PrintText printAction)
                 lastAutoVoiceName = $"{player.PlayedScript.Name}/{printAction.PlaybackSpot.LineNumber}.{printAction.PlaybackSpot.InlineIndex}";
         }
 

@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 #if ADDRESSABLES_AVAILABLE
 
@@ -20,7 +20,7 @@ namespace Naninovel
         /// <summary>
         /// When specified, the provider will only work with assets that have the set of labels.
         /// </summary>
-        public readonly string[] ExtraLabels;
+        public readonly IReadOnlyCollection<string> ExtraLabels;
 
         private List<IResourceLocation> locations;
 
@@ -43,13 +43,13 @@ namespace Naninovel
             return await base.LoadResourceAsync<T>(path);
         }
 
-        public override async UniTask<IEnumerable<string>> LocateResourcesAsync<T> (string path)
+        public override async UniTask<IReadOnlyCollection<string>> LocateResourcesAsync<T> (string path)
         {
             if (locations is null) locations = await LoadAllLocations();
             return await base.LocateResourcesAsync<T>(path);
         }
 
-        public override async UniTask<IEnumerable<Folder>> LocateFoldersAsync (string path)
+        public override async UniTask<IReadOnlyCollection<Folder>> LocateFoldersAsync (string path)
         {
             if (locations is null) locations = await LoadAllLocations();
             return await base.LocateFoldersAsync(path);
@@ -72,18 +72,31 @@ namespace Naninovel
 
         protected override void DisposeResource (Resource resource)
         {
-            if (!resource.IsValid) return;
+            if (!resource.Valid) return;
 
             Addressables.Release(resource.Object);
         }
 
         private async UniTask<List<IResourceLocation>> LoadAllLocations ()
         {
-            var task = ExtraLabels != null ? Addressables.LoadResourceLocationsAsync(ExtraLabels, Addressables.MergeMode.Intersection) : Addressables.LoadResourceLocationsAsync(MainLabel);
-            while (!task.IsDone) // When awaiting the method directly it fails on WebGL (they're using mutlithreaded Task fot GetAwaiter)
+            // ReSharper disable once CoVariantArrayConversion
+            var task = ExtraLabels != null
+                ? Addressables.LoadResourceLocationsAsync(ExtraLabels, Addressables.MergeMode.Intersection)
+                : Addressables.LoadResourceLocationsAsync(MainLabel);
+            while (!task.IsDone) // When awaiting the method directly it fails on WebGL (they're using multithreaded Task fot GetAwaiter)
                 await AsyncUtils.WaitEndOfFrame;
-            var locations = task.Result;
-            return locations?.ToList() ?? new List<IResourceLocation>();
+            var locations = task.Result?.ToList() ?? new List<IResourceLocation>();
+            CacheLocations(locations);
+            return locations;
+        }
+
+        private void CacheLocations (IEnumerable<IResourceLocation> locations)
+        {
+            foreach (var location in locations)
+            {
+                var path = location.PrimaryKey.GetAfterFirst("/"); // Remove the addressables prefix.
+                LocationsCache.Add(new CachedResourceLocation(path, location.ResourceType));
+            }
         }
     }
 }

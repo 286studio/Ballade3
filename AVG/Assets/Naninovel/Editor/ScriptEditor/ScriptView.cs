@@ -1,10 +1,12 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
-using Naninovel.Searcher;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Naninovel.Lexing;
+using Naninovel.Parsing;
+using Naninovel.Searcher;
 using UniRx.Async;
 using UnityEditor;
 using UnityEngine;
@@ -14,7 +16,8 @@ namespace Naninovel
 {
     public class ScriptView : VisualElement
     {
-        public static StyleSheet StyleSheet { get; private set; }
+        public static StyleSheet StyleSheet { get; }
+        public static StyleSheet DarkStyleSheet { get; }
         public static StyleSheet CustomStyleSheet { get; private set; }
         public static bool ScriptModified { get; set; }
 
@@ -32,15 +35,21 @@ namespace Naninovel
         private readonly VisualElement linesContainer;
         private readonly Label infoLabel;
         private readonly PaginationView paginationView;
+        private readonly Lexer lexer = new Lexer();
+        private readonly List<Token> tokens = new List<Token>();
 
+        private ScrollView scrollView;
         private Script scriptAsset;
         private int page = 1;
         private int lastGeneratedTextHash = default;
+        private string copiedLineText;
 
         static ScriptView ()
         {
             var styleSheetPath = PathUtils.AbsoluteToAssetPath(PathUtils.Combine(PackagePath.EditorResourcesPath, "ScriptEditor.uss"));
             StyleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(styleSheetPath);
+            var darkStyleSheetPath = PathUtils.AbsoluteToAssetPath(PathUtils.Combine(PackagePath.EditorResourcesPath, "ScriptEditorDark.uss"));
+            DarkStyleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(darkStyleSheetPath);
         }
 
         public ScriptView (ScriptsConfiguration config, Action drawHackGuiAction, Action saveAssetAction)
@@ -52,22 +61,25 @@ namespace Naninovel
             editorResources = EditorResources.LoadOrDefault();
             ViewRange = new IntRange(0, config.EditorPageLength - 1);
 
-            CustomStyleSheet = config.EditorCustomStyleSheet;
             styleSheets.Add(StyleSheet);
-            if (CustomStyleSheet != null)
+            if (EditorGUIUtility.isProSkin)
+                styleSheets.Add(DarkStyleSheet);
+            CustomStyleSheet = config.EditorCustomStyleSheet;
+            if (CustomStyleSheet)
                 styleSheets.Add(CustomStyleSheet);
 
             var commentItem = new SearcherItem("Comment");
             var labelItem = new SearcherItem("Label");
-            var genericTextItem = new SearcherItem("Generic Text", config.InsertLineKey != KeyCode.None ? $"{(config.InsertLineModifier != EventModifiers.None ? $"{config.InsertLineModifier}+" : string.Empty)}{config.InsertLineKey}" : null);
-            var defineItem = new SearcherItem("Define");
+            var genericTextItem = new SearcherItem("Generic Text", config.InsertLineKey != KeyCode.None
+                ? $"{(config.InsertLineModifier != EventModifiers.None ? $"{config.InsertLineModifier}+" : string.Empty)}{config.InsertLineKey}"
+                : null);
             var commandsItem = new SearcherItem("Commands");
-            foreach (var commandId in Commands.Command.CommandTypes.Keys.OrderBy(k => k))
+            foreach (var commandId in Command.CommandTypes.Keys.OrderBy(k => k))
                 commandsItem.AddChild(new SearcherItem(char.ToLowerInvariant(commandId[0]) + commandId.Substring(1)));
-            searchItems = new List<SearcherItem> { commandsItem, genericTextItem, labelItem, commentItem, defineItem };
+            searchItems = new List<SearcherItem> { commandsItem, genericTextItem, labelItem, commentItem };
 
             Add(new IMGUIContainer(drawHackGuiAction));
-            Add(new IMGUIContainer(() => MonitorKeys(null)));
+            Add(new IMGUIContainer(() => HandleKeyDownEvent(null)));
 
             linesContainer = new VisualElement();
             Add(linesContainer);
@@ -82,7 +94,8 @@ namespace Naninovel
             infoLabel.style.color = color;
             Add(infoLabel);
 
-            RegisterCallback<KeyDownEvent>(MonitorKeys, TrickleDown.TrickleDown);
+            RegisterCallback<KeyDownEvent>(HandleKeyDownEvent, TrickleDown.TrickleDown);
+            RegisterCallback<MouseDownEvent>(HandleMouseDownEvent, TrickleDown.TrickleDown);
 
             new ContextualMenuManipulator(ContextMenu).target = this;
         }
@@ -95,7 +108,7 @@ namespace Naninovel
             // Prevent re-generating the editor after saving the script (applying the changes done in the editor).
             if (!forceRebuild && lastGeneratedTextHash == scriptText.GetHashCode())
             {
-                // Hightlight played line if we're here after a hot-reload.
+                // Highlight played line if we're here after a hot-reload.
                 if (Engine.Initialized && Engine.Behaviour is RuntimeBehaviour)
                     HighlightPlayedCommand(Engine.GetService<IScriptPlayer>()?.PlayedCommand);
                 return;
@@ -116,7 +129,7 @@ namespace Naninovel
                 LineTextField.ResetPerScriptStaticData();
                 Lines.Clear();
                 linesContainer.Clear();
-                var textLines = Script.SplitScriptText(scriptText);
+                var textLines = Helpers.SplitScriptText(scriptText);
                 for (int i = 0; i < textLines.Length; i++)
                 {
                     if (textLines.Length > showLoadAt && (i % showLoadAt) == 0) // Update bar for each n processed items.
@@ -172,7 +185,11 @@ namespace Naninovel
             var builder = new StringBuilder();
             foreach (var line in Lines)
             {
-                if (line is null) { builder.AppendLine(); continue; }
+                if (line is null)
+                {
+                    builder.AppendLine();
+                    continue;
+                }
                 var lineText = line.GenerateLineText().Replace("\n", string.Empty).Replace("\r", string.Empty);
                 builder.AppendLine(lineText);
             }
@@ -184,19 +201,21 @@ namespace Naninovel
 
         public ScriptLineView CreateLineView (int lineIndex, string lineText)
         {
+            tokens.Clear();
+            var lineType = lexer.TokenizeLine(lineText, tokens);
             var lineView = default(ScriptLineView);
-            switch (Script.ResolveLineType(lineText?.TrimFull()).Name)
+            switch (lineType)
             {
-                case nameof(CommentScriptLine):
+                case LineType.Comment:
                     lineView = new CommentLineView(lineIndex, lineText, linesContainer);
                     break;
-                case nameof(LabelScriptLine):
+                case LineType.Label:
                     lineView = new LabelLineView(lineIndex, lineText, linesContainer);
                     break;
-                case nameof(CommandScriptLine):
-                    lineView = CommandLineView.CreateOrError(lineIndex, lineText, linesContainer, config.HideUnusedParameters);
+                case LineType.Command:
+                    lineView = CommandLineView.CreateOrError(lineIndex, lineText, tokens, linesContainer, config.HideUnusedParameters);
                     break;
-                case nameof(GenericTextScriptLine):
+                default:
                     lineView = new GenericTextLineView(lineIndex, lineText, linesContainer);
                     break;
             }
@@ -219,12 +238,19 @@ namespace Naninovel
 
         public void ScrollToLine (ScriptLineView lineView, bool onlyIfOutOfView = true)
         {
-            var scrollView = GetFirstAncestorOfType<ScrollView>();
-            if (scrollView != null && (!onlyIfOutOfView || !scrollView.worldBound.Contains(lineView.worldBound.min)))
+            if (scrollView is null) scrollView = GetFirstAncestorOfType<ScrollView>();
+            if (scrollView is null) return;
+
+            while (!ViewRange.Contains(lineView.LineIndex))
             {
-                var scroller = scrollView.verticalScroller;
-                scroller.value = Mathf.Lerp(scroller.lowValue, scroller.highValue, linesContainer.IndexOf(lineView) / (float)linesContainer.childCount);
+                if (lineView.LineIndex < ViewRange.StartIndex)
+                    SelectPreviousPage();
+                else SelectNextPage();
             }
+
+            if (onlyIfOutOfView && scrollView.worldBound.Contains(lineView.worldBound.min)) return;
+            var scroller = scrollView.verticalScroller;
+            scroller.value = Mathf.Lerp(scroller.lowValue, scroller.highValue, linesContainer.IndexOf(lineView) / (float)linesContainer.childCount);
         }
 
         public void InsertLine (ScriptLineView lineView, int index, int? viewIndex = default)
@@ -262,7 +288,7 @@ namespace Naninovel
         public void HandleLineReordered (ScriptLineView lineView)
         {
             var viewIndex = linesContainer.IndexOf(lineView);
-            var insertIndex = ViewToGlobaIndex(viewIndex);
+            var insertIndex = ViewToGlobalIndex(viewIndex);
             Lines.Remove(lineView);
             Lines.Insert(insertIndex, lineView);
             SyncLineIndexes();
@@ -270,7 +296,7 @@ namespace Naninovel
             ScriptModified = true;
         }
 
-        public int ViewToGlobaIndex (int viewIndex)
+        public int ViewToGlobalIndex (int viewIndex)
         {
             var curViewIndex = 0;
             var globalIndex = ViewRange.StartIndex;
@@ -293,30 +319,45 @@ namespace Naninovel
             }
         }
 
+        private ScriptLineView FindLineNearPosition (Vector2 worldPos)
+        {
+            var localPos = linesContainer.WorldToLocal(worldPos);
+            return linesContainer.Children().OrderBy(v => Vector2.Distance(localPos, v.layout.center)).FirstOrDefault() as ScriptLineView;
+        }
+
         private void ContextMenu (ContextualMenuPopulateEvent evt)
         {
             var worldPos = evt.mousePosition;
-            var localPos = linesContainer.WorldToLocal(evt.mousePosition);
-            var nearLine = linesContainer.Children().OrderBy(v => Vector2.Distance(localPos, v.layout.center)).FirstOrDefault() as ScriptLineView;
+            var localPos = linesContainer.WorldToLocal(worldPos);
+            var nearLine = FindLineNearPosition(worldPos);
             var nearLineViewIndex = linesContainer.IndexOf(nearLine);
-            var insertViewIndex = nearLine is null ? 0 : (nearLine.layout.center.y > localPos.y ? nearLineViewIndex : nearLineViewIndex + 1);
-            var insertIndex = ViewToGlobaIndex(insertViewIndex);
+            var insertViewIndex = nearLine is null ? 0 : nearLine.layout.center.y > localPos.y ? nearLineViewIndex : nearLineViewIndex + 1;
+            var insertIndex = ViewToGlobalIndex(insertViewIndex);
             var hoveringLine = nearLine != null && nearLine.ContainsPoint(new Vector2(nearLine.transform.position.x, nearLine.WorldToLocal(evt.mousePosition).y));
 
             if (config.HotReloadScripts || !EditorApplication.isPlayingOrWillChangePlaymode)
             {
                 evt.menu.AppendAction("Insert...", _ => ShowSearcher(worldPos, insertIndex, insertViewIndex));
-                evt.menu.AppendAction("Remove", _ => { RemoveLine(nearLine); focusable = true; Focus(); focusable = false; }, hoveringLine ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+                evt.menu.AppendAction("Copy", _ => copiedLineText = nearLine?.GenerateLineText(), hoveringLine ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+                evt.menu.AppendAction("Paste", _ => InsertLine(CreateLineView(insertIndex, copiedLineText), insertIndex, insertViewIndex), !string.IsNullOrEmpty(copiedLineText) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+                evt.menu.AppendAction("Remove", _ => {
+                    RemoveLine(nearLine);
+                    focusable = true;
+                    Focus();
+                    focusable = false;
+                }, hoveringLine ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
             }
             if (EditorApplication.isPlayingOrWillChangePlaymode && hoveringLine && (nearLine is CommandLineView || nearLine is GenericTextLineView))
             {
                 var player = Engine.GetService<IScriptPlayer>();
-                var stateMngr = Engine.GetService<IStateManager>();
-                if (stateMngr != null && player != null && player.PlayedScript != null && player.PlayedScript.Name == scriptAsset.name)
+                var stateManager = Engine.GetService<IStateManager>();
+                if (stateManager != null && player != null && player.PlayedScript != null && player.PlayedScript.Name == scriptAsset.name)
                 {
-                    var rewindIndex = ViewToGlobaIndex(nearLineViewIndex);
-                    var status = (rewindIndex > player.PlaybackSpot.LineIndex || 
-                        stateMngr.CanRollbackTo(s => s.PlaybackSpot.ScriptName == player.PlayedScript.Name && s.PlaybackSpot.LineIndex == rewindIndex)) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;
+                    var rewindIndex = ViewToGlobalIndex(nearLineViewIndex);
+                    var status = (rewindIndex > player.PlaybackSpot.LineIndex ||
+                                  stateManager.CanRollbackTo(s => s.PlaybackSpot.ScriptName == player.PlayedScript.Name && s.PlaybackSpot.LineIndex == rewindIndex))
+                        ? DropdownMenuAction.Status.Normal
+                        : DropdownMenuAction.Status.Disabled;
                     evt.menu.AppendAction("Rewind", _ => player.RewindAsync(rewindIndex).Forget(), status);
                 }
             }
@@ -419,12 +460,24 @@ namespace Naninovel
             var url = @"https://naninovel.com/";
             switch (line)
             {
-                case CommentLineView _: url += "guide/naninovel-scripts.html#comment-lines"; break;
-                case LabelLineView _: url += "guide/naninovel-scripts.html#label-lines"; break;
-                case GenericTextLineView _: url += "guide/naninovel-scripts.html#generic-text-lines"; break;
-                case CommandLineView commandLine: url += $"api/#{commandLine.CommandId.ToLowerInvariant()}"; break;
-                case ErrorLineView errorLine: url += $"api/#{errorLine.CommandId}"; break;
-                default: url += "guide/naninovel-scripts.html"; break;
+                case CommentLineView _:
+                    url += "guide/naninovel-scripts.html#comment-lines";
+                    break;
+                case LabelLineView _:
+                    url += "guide/naninovel-scripts.html#label-lines";
+                    break;
+                case GenericTextLineView _:
+                    url += "guide/naninovel-scripts.html#generic-text-lines";
+                    break;
+                case CommandLineView commandLine:
+                    url += $"api/#{commandLine.CommandId.ToLowerInvariant()}";
+                    break;
+                case ErrorLineView errorLine:
+                    url += $"api/#{errorLine.CommandId}";
+                    break;
+                default:
+                    url += "guide/naninovel-scripts.html";
+                    break;
             }
             Application.OpenURL(url);
         }
@@ -438,8 +491,12 @@ namespace Naninovel
                 switch (item.Name)
                 {
                     case "Commands": return false; // Do nothing.
-                    case "Comment": lineText = CommentScriptLine.IdentifierLiteral; break;
-                    case "Label": lineText = LabelScriptLine.IdentifierLiteral; break;
+                    case "Comment":
+                        lineText = Constants.CommentLineId;
+                        break;
+                    case "Label":
+                        lineText = Constants.LabelLineId;
+                        break;
                     case "Generic Text":
                         lineView = new GenericTextLineView(insertIndex, string.Empty, linesContainer);
                         break;
@@ -454,25 +511,71 @@ namespace Naninovel
             }, position);
         }
 
-        private void MonitorKeys (KeyDownEvent evt)
+        private void HandleKeyDownEvent (KeyDownEvent evt)
         {
             if (evt != null)
             {
-                if (evt.keyCode == config.InsertLineKey && (evt.modifiers & config.InsertLineModifier) != 0) { ShowResearcher(); evt.StopImmediatePropagation(); }
-                else if (evt.keyCode == config.SaveScriptKey && (evt.modifiers & config.SaveScriptModifier) != 0) { saveAssetAction?.Invoke(); evt.StopImmediatePropagation(); }
+                if (evt.keyCode == config.InsertLineKey && (evt.modifiers & config.InsertLineModifier) != 0)
+                {
+                    DoShowSearcher();
+                    evt.StopImmediatePropagation();
+                }
+                else if (evt.keyCode == config.SaveScriptKey && (evt.modifiers & config.SaveScriptModifier) != 0)
+                {
+                    saveAssetAction?.Invoke();
+                    evt.StopImmediatePropagation();
+                }
             }
             else if (Event.current != null && Event.current.type == EventType.KeyDown)
             {
-                if (Event.current.keyCode == config.InsertLineKey && Event.current.modifiers == config.InsertLineModifier) { ShowResearcher(); Event.current.Use(); }
-                else if (Event.current.keyCode == config.SaveScriptKey && Event.current.modifiers == config.SaveScriptModifier) { saveAssetAction?.Invoke(); Event.current.Use(); }
+                if (Event.current.keyCode == config.InsertLineKey && Event.current.modifiers == config.InsertLineModifier)
+                {
+                    DoShowSearcher();
+                    Event.current.Use();
+                }
+                else if (Event.current.keyCode == config.SaveScriptKey && Event.current.modifiers == config.SaveScriptModifier)
+                {
+                    saveAssetAction?.Invoke();
+                    Event.current.Use();
+                }
             }
 
-            void ShowResearcher ()
+            void DoShowSearcher ()
             {
                 var insertViewIndex = ScriptLineView.FocusedLine != null ? linesContainer.IndexOf(ScriptLineView.FocusedLine) + 1 : linesContainer.childCount;
-                var insertIndex = ViewToGlobaIndex(insertViewIndex);
-                ShowSearcher(Event.current.mousePosition, insertIndex, insertViewIndex);
+                var insertIndex = ViewToGlobalIndex(insertViewIndex);
+                this.ShowSearcher(Event.current.mousePosition, insertIndex, insertViewIndex);
             }
+        }
+
+        private void HandleMouseDownEvent (MouseDownEvent evt)
+        {
+            if (!Engine.Initialized || !EditorApplication.isPlayingOrWillChangePlaymode) return;
+            if (evt.button != config.RewindMouseButton || (config.RewindModifier != EventModifiers.None && (evt.modifiers & config.RewindModifier) == 0)) return;
+
+            evt.StopPropagation();
+            evt.PreventDefault();
+
+            var nearLine = FindLineNearPosition(evt.mousePosition);
+            var nearLineViewIndex = linesContainer.IndexOf(nearLine);
+            var hoveringLine = nearLine != null && nearLine.ContainsPoint(new Vector2(nearLine.transform.position.x, nearLine.WorldToLocal(evt.mousePosition).y));
+            if (!hoveringLine) return;
+
+            var player = Engine.GetService<IScriptPlayer>();
+            var stateManager = Engine.GetService<IStateManager>();
+            if (stateManager is null || player is null || !player.PlayedScript || player.PlayedScript.Name != scriptAsset.name) return;
+
+            var rewindIndex = ViewToGlobalIndex(nearLineViewIndex);
+            if (rewindIndex == player.PlaybackSpot.LineIndex) return;
+            if (rewindIndex < player.PlaybackSpot.LineIndex)
+            {
+                var lastIndex = player.Playlist.GetLastCommand()?.PlaybackSpot.LineIndex ?? -1;
+                bool CanRollback () => stateManager.CanRollbackTo(s => s.PlaybackSpot.ScriptName == player.PlaybackSpot.ScriptName && s.PlaybackSpot.LineIndex == rewindIndex);
+                while (!CanRollback() && rewindIndex <= lastIndex)
+                    rewindIndex++; // When clicking non-rollbackable lines, perform rollback to the next rollbackable one.
+                if (!CanRollback()) return;
+            }
+            player.RewindAsync(rewindIndex).Forget();
         }
 
         private void HandleEngineInitialized ()
@@ -488,13 +591,25 @@ namespace Naninovel
                 HighlightPlayedCommand(player.PlayedCommand);
         }
 
-        private void HighlightPlayedCommand (Commands.Command command)
+        private void HighlightPlayedCommand (Command command)
         {
-            var player = Engine.GetService<IScriptPlayer>();
+            if (!(Selection.activeObject is Script)) return;
 
-            if (player is null || command is null || !ObjectUtils.IsValid(scriptAsset) || command.PlaybackSpot.ScriptName != scriptAsset.name || 
-                !Lines.IsIndexValid(command.PlaybackSpot.LineIndex) || !ViewRange.Contains(command.PlaybackSpot.LineIndex))
-                return;
+            var player = Engine.GetService<IScriptPlayer>();
+            if (player is null || command is null) return;
+
+            var scriptName = command.PlaybackSpot.ScriptName;
+            if (!scriptAsset || scriptName != scriptAsset.name)
+            {
+                if (!config.SelectPlayedScript) return;
+                var resourcePath = string.IsNullOrEmpty(config.Loader.PathPrefix) ? scriptName : $"{config.Loader.PathPrefix}/{scriptName}";
+                var guid = editorResources.GetGuidByPath(resourcePath);
+                if (guid is null) return;
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                Selection.activeObject = AssetDatabase.LoadMainAssetAtPath(path);
+            }
+
+            if (!Lines.IsIndexValid(command.PlaybackSpot.LineIndex)) return;
 
             var prevPlayedLine = linesContainer.Query<ScriptLineView>(className: playedLineClass);
             prevPlayedLine.ForEach(v => v?.RemoveFromClassList(playedLineClass));
@@ -514,8 +629,7 @@ namespace Naninovel
 
             var player = Engine.GetService<IScriptPlayer>();
 
-            if (player is null || player.PlayedCommand is null || !ObjectUtils.IsValid(scriptAsset) || player.PlaybackSpot.ScriptName != scriptAsset.name ||
-                !Lines.IsIndexValid(player.PlaybackSpot.LineIndex) || !ViewRange.Contains(player.PlaybackSpot.LineIndex))
+            if (player?.PlayedCommand is null || !ObjectUtils.IsValid(scriptAsset) || player.PlaybackSpot.ScriptName != scriptAsset.name || !Lines.IsIndexValid(player.PlaybackSpot.LineIndex) || !ViewRange.Contains(player.PlaybackSpot.LineIndex))
                 return;
 
             var playedLine = Lines[player.PlaybackSpot.LineIndex];

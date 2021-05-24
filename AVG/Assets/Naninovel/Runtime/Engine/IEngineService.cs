@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using UniRx.Async;
 
@@ -27,7 +27,7 @@ namespace Naninovel
     /// <summary>
     /// Implementation represents an <see cref="Engine"/> service with an associated <see cref="Naninovel.Configuration"/>.
     /// </summary>
-    public interface IEngineService<out TConfig> : IEngineService 
+    public interface IEngineService<TConfig> : IEngineService 
         where TConfig : Configuration
     {
         /// <summary>

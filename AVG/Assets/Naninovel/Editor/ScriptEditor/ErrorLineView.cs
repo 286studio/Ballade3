@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using UnityEngine.UIElements;
 
@@ -6,7 +6,7 @@ namespace Naninovel
 {
     public class ErrorLineView : ScriptLineView
     {
-        public string CommandId { get; private set; }
+        public string CommandId { get; }
 
         private readonly LineTextField valueField = default;
 

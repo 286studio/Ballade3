@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using UnityEngine;
@@ -7,7 +7,6 @@ namespace Naninovel
 {
     /// <summary>
     /// A <see cref="IEngineBehaviour"/> implementation using <see cref="MonoBehaviour"/> for runtime environment.
-    /// Behaviour lifetime is independent of the Unity scenes, but will be destroyed when exiting editor play mode.
     /// </summary>
     public class RuntimeBehaviour : MonoBehaviour, IEngineBehaviour
     {
@@ -16,16 +15,19 @@ namespace Naninovel
         public event Action OnBehaviourDestroy;
 
         private GameObject rootObject;
-        private MonoBehaviour monoBehaivour;
+        private MonoBehaviour monoBehaviour;
 
-        public static RuntimeBehaviour Create ()
+
+        /// <param name="dontDestroyOnLoad">Whether behaviour lifetime should be independent of the loaded Unity scenes.</param>
+        public static RuntimeBehaviour Create (bool dontDestroyOnLoad = true)
         {
             var go = new GameObject("Naninovel<Runtime>");
-            DontDestroyOnLoad(go);
-            var behaivourComp = go.AddComponent<RuntimeBehaviour>();
-            behaivourComp.rootObject = go;
-            behaivourComp.monoBehaivour = behaivourComp;
-            return behaivourComp;
+            if (dontDestroyOnLoad)
+                DontDestroyOnLoad(go);
+            var behaviourComp = go.AddComponent<RuntimeBehaviour>();
+            behaviourComp.rootObject = go;
+            behaviourComp.monoBehaviour = behaviourComp;
+            return behaviourComp;
         }
 
         public GameObject GetRootObject () => rootObject;
@@ -38,8 +40,8 @@ namespace Naninovel
 
         public void Destroy ()
         {
-            if (monoBehaivour && monoBehaivour.gameObject)
-                Destroy(monoBehaivour.gameObject);
+            if (monoBehaviour && monoBehaviour.gameObject)
+                Destroy(monoBehaviour.gameObject);
         }
 
         private void Update ()

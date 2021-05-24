@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System.Collections.Generic;
 using UniRx.Async;
@@ -18,7 +18,7 @@ namespace Naninovel
         /// <summary>
         /// Returns all the currently available managed text records.
         /// </summary>
-        IEnumerable<ManagedTextRecord> GetAllRecords (params string[] categoryFilter);
+        IReadOnlyCollection<ManagedTextRecord> GetAllRecords (params string[] categoryFilter);
         /// <summary>
         /// Applies the managed text records replacing static string values marked with <see cref="ManagedTextAttribute"/>.
         /// </summary>

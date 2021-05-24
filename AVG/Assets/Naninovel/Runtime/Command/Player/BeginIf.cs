@@ -1,6 +1,5 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
-using System.Threading;
 using UniRx.Async;
 
 namespace Naninovel.Commands
@@ -16,7 +15,7 @@ namespace Naninovel.Commands
         /// <summary>
         /// A [script expression](/guide/script-expressions.md), which should return a boolean value. 
         /// </summary>
-        [ParameterAlias(NamelessParameterAlias), RequiredParameter]
+        [ParameterAlias(NamelessParameterAlias), RequiredParameter, IDEConstant(IDEConstantAttribute.Expression)]
         public StringParameter Expression;
 
         public override UniTask ExecuteAsync (CancellationToken cancellationToken = default)
@@ -32,7 +31,7 @@ namespace Naninovel.Commands
         }
 
         /// <summary>
-        /// When invoked while inside a condtional block, will navigate the playback to the appropriate command.
+        /// When invoked while inside a conditional block, will navigate the playback to the appropriate command.
         /// </summary>
         /// <param name="conditionMet">Whether condition of the current block branch is met.</param>
         public static void HandleConditionalBlock (bool conditionMet)
@@ -59,7 +58,7 @@ namespace Naninovel.Commands
                 }
             }
 
-            player.PlayedCommand.LogErrorWithPosition($"Conditional (`@if`) block is malformed. Make sure it has a closing `@endif` command.");
+            player.PlayedCommand.LogErrorWithPosition("Conditional (`@if`) block is malformed. Make sure it has a closing `@endif` command.");
         }
 
         private void LogEvalError (string desc = null) => LogErrorWithPosition($"Failed to evaluate conditional (`@if`) expression `{Expression}`. {desc ?? string.Empty}");

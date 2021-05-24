@@ -1,7 +1,10 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
-using Naninovel.UI;
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using Naninovel.UI;
 using UniRx.Async;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -12,36 +15,36 @@ namespace Naninovel
     [InitializeAtRuntime]
     public class InputManager : IStatefulService<GameStateMap>, IInputManager
     {
-        [System.Serializable]
+        [Serializable]
         public class GameState
         {
             public bool ProcessInput = true;
+            public List<string> DisabledSamplers = default;
         }
 
-        public InputConfiguration Configuration { get; }
-        public bool ProcessInput { get; set; } = true;
+        public virtual InputConfiguration Configuration { get; }
+        public virtual bool ProcessInput { get; set; } = true;
 
-        private readonly Dictionary<string, InputSampler> samplersMap = new Dictionary<string, InputSampler>(System.StringComparer.Ordinal);
+        private readonly Dictionary<string, InputSampler> samplersMap = new Dictionary<string, InputSampler>(StringComparer.Ordinal);
         private readonly Dictionary<IManagedUI, string[]> blockingUIs = new Dictionary<IManagedUI, string[]>();
         private readonly HashSet<string> blockedSamplers = new HashSet<string>();
-        private readonly IEngineBehaviour engineBehaviour;
+        private readonly CancellationTokenSource sampleCTS = new CancellationTokenSource();
         private GameObject gameObject;
 
-        public InputManager (InputConfiguration config, IEngineBehaviour engineBehaviour)
+        public InputManager (InputConfiguration config)
         {
             Configuration = config;
-            this.engineBehaviour = engineBehaviour;
         }
 
-        public async UniTask InitializeServiceAsync ()
+        public virtual async UniTask InitializeServiceAsync ()
         {
             foreach (var binding in Configuration.Bindings)
             {
-                var sampler = new InputSampler(Configuration, binding, null, Configuration.TouchFrequencyLimit);
+                var sampler = new InputSampler(Configuration, binding, null);
                 samplersMap[binding.Name] = sampler;
             }
 
-            gameObject = Engine.CreateObject("InputManager");
+            gameObject = Engine.CreateObject(nameof(InputManager));
 
             if (Configuration.SpawnEventSystem)
             {
@@ -67,39 +70,47 @@ namespace Naninovel
                 }
             }
 
-            engineBehaviour.OnBehaviourUpdate += SampleInput;
+            SampleInputAsync(sampleCTS.Token).Forget();
         }
 
-        public void ResetService () { }
+        public virtual void ResetService () { }
 
-        public void DestroyService ()
+        public virtual void DestroyService ()
         {
-            engineBehaviour.OnBehaviourUpdate -= SampleInput;
-            if (gameObject) Object.Destroy(gameObject);
+            sampleCTS?.Cancel();
+            sampleCTS?.Dispose();
+            ObjectUtils.DestroyOrImmediate(gameObject);
         }
 
-        public void SaveServiceState (GameStateMap stateMap)
+        public virtual void SaveServiceState (GameStateMap stateMap)
         {
-            var state = new GameState() {
-                ProcessInput = ProcessInput
+            var state = new GameState {
+                ProcessInput = ProcessInput,
+                DisabledSamplers = samplersMap.Where(kv => !kv.Value.Enabled).Select(kv => kv.Key).ToList()
             };
             stateMap.SetState(state);
         }
 
-        public UniTask LoadServiceStateAsync (GameStateMap stateMap)
+        public virtual UniTask LoadServiceStateAsync (GameStateMap stateMap)
         {
             var state = stateMap.GetState<GameState>();
-            ProcessInput = state?.ProcessInput ?? true;
+            if (state is null) return UniTask.CompletedTask;
+
+            ProcessInput = state.ProcessInput;
+            
+            foreach (var kv in samplersMap)
+                kv.Value.Enabled = !state.DisabledSamplers?.Contains(kv.Key) ?? true;
+
             return UniTask.CompletedTask;
         }
 
-        public IInputSampler GetSampler (string bindingName)
+        public virtual IInputSampler GetSampler (string bindingName)
         {
             if (!samplersMap.ContainsKey(bindingName)) return null;
             return samplersMap[bindingName];
         }
 
-        public void AddBlockingUI (IManagedUI ui, params string[] allowedSamplers)
+        public virtual void AddBlockingUI (IManagedUI ui, params string[] allowedSamplers)
         {
             if (blockingUIs.ContainsKey(ui)) return;
             blockingUIs.Add(ui, allowedSamplers);
@@ -107,7 +118,7 @@ namespace Naninovel
             HandleBlockingUIVisibilityChanged(ui.Visible);
         }
 
-        public void RemoveBlockingUI (IManagedUI ui)
+        public virtual void RemoveBlockingUI (IManagedUI ui)
         {
             if (!blockingUIs.ContainsKey(ui)) return;
             blockingUIs.Remove(ui);
@@ -115,7 +126,7 @@ namespace Naninovel
             HandleBlockingUIVisibilityChanged(ui.Visible);
         }
 
-        private void HandleBlockingUIVisibilityChanged (bool isVisible)
+        private void HandleBlockingUIVisibilityChanged (bool visible)
         {
             // If any of the blocking UIs are visible, all the samplers should be blocked,
             // except ones that are explicitly allowed by ALL the visible blocking UIs.
@@ -133,13 +144,21 @@ namespace Naninovel
             blockedSamplers.SymmetricExceptWith(samplersMap.Keys);
         }
 
-        private void SampleInput ()
+        private async UniTaskVoid SampleInputAsync (CancellationToken cancellationToken)
         {
-            if (!ProcessInput) return;
+            while (Application.isPlaying && !cancellationToken.CancellationRequested)
+            {
+                // It's important to sample early; eg, when sampling later and close button
+                // of a blocking UI (eg, backlog) is pressed with enter key, the UI will un-block
+                // before the sampling is performed, causing an unexpected continue input activation.
+                await UniTask.Yield(PlayerLoopTiming.EarlyUpdate);
+                
+                if (!ProcessInput) continue;
 
-            foreach (var kv in samplersMap)
-                if (!blockedSamplers.Contains(kv.Key) || kv.Value.Binding.AlwaysProcess)
-                    kv.Value.SampleInput();
+                foreach (var kv in samplersMap)
+                    if (!blockedSamplers.Contains(kv.Key) || kv.Value.Binding.AlwaysProcess)
+                        kv.Value.SampleInput();
+            }
         }
     } 
 }

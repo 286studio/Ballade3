@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 #if UNITY_GOOGLE_DRIVE_AVAILABLE
 
@@ -70,7 +70,7 @@ namespace Naninovel
                 var googleFile = new UnityGoogleDrive.Data.File { Content = File.ReadAllBytes(file.FullName) };
                 string uploadMimeType = null;
 
-                if (file.Extension == ".nani") // Transform naniscripts to google documents.
+                if (file.Extension == ".nani") // Transform nani scripts to google documents.
                 {
                     googleFile.MimeType = Helpers.DocumentMimeType;
                     remoteFilePath = remoteFilePath.GetBeforeLast(".nani");
@@ -118,7 +118,7 @@ namespace Naninovel
                     if (File.Exists(localFilePath) && file.Md5Checksum == Helpers.CalculateMD5Checksum(File.ReadAllBytes(localFilePath))) continue;
 
                     byte[] content = null;
-                    if (file.MimeType == Helpers.DocumentMimeType) // Transform google documents to naniscripts.
+                    if (file.MimeType == Helpers.DocumentMimeType) // Transform google documents to nani scripts.
                     {
                         localFilePath += ".nani";
                         content = (await GoogleDriveFiles.Export(file.Id, "text/plain").Send())?.Content;

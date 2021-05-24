@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 2167373322949719176}
   - component: {fileID: 4817266803145733616}
   m_Layer: 5
-  m_Name: IContinueInputUI
+  m_Name: ContinueInputUI
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -49,7 +49,7 @@ Canvas:
   m_GameObject: {fileID: 1785700845218806}
   m_Enabled: 1
   serializedVersion: 3
-  m_RenderMode: 0
+  m_RenderMode: 1
   m_Camera: {fileID: 0}
   m_PlaneDistance: 100
   m_PixelPerfect: 0
@@ -75,15 +75,23 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   disableInteraction: 0
   visibleOnAwake: 1
+  controlOpacity: 1
   fadeTime: 0
+  ignoreTimeScale: 1
   focusObject: {fileID: 0}
-  onVisibilityChanged:
+  focusMode: 0
+  onShow:
+    m_PersistentCalls:
+      m_Calls: []
+  onHide:
     m_PersistentCalls:
       m_Calls: []
   hideOnLoad: 0
   saveVisibilityState: 1
   blockInputWhenVisible: 0
   allowedSamplers: []
+  modalUI: 0
+  fontChangeConfiguration: []
   trigger: {fileID: 1602428326741384131}
 --- !u!225 &2167373322949719176
 CanvasGroup:
@@ -174,6 +182,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 0}
   m_RaycastTarget: 1
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []

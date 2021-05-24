@@ -1,9 +1,9 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
+using System;
 using Naninovel.UI;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using UniRx.Async;
 using UnityEngine;
 
@@ -12,39 +12,37 @@ namespace Naninovel
     /// <summary>
     /// A <see cref="IChoiceHandlerActor"/> implementation using <see cref="UI.ChoiceHandlerPanel"/> to represent the actor.
     /// </summary>
-    public class UIChoiceHandler : MonoBehaviourActor, IChoiceHandlerActor
+    [ActorResources(typeof(ChoiceHandlerPanel), false)]
+    public class UIChoiceHandler : MonoBehaviourActor<ChoiceHandlerMetadata>, IChoiceHandlerActor
     {
         public override string Appearance { get; set; }
         public override bool Visible { get => HandlerPanel.Visible; set => HandlerPanel.Visible = value; }
-        public List<ChoiceState> Choices { get; } = new List<ChoiceState>();
+        public virtual List<ChoiceState> Choices { get; } = new List<ChoiceState>();
 
-        protected ChoiceHandlerPanel HandlerPanel { get; private set; }
+        protected virtual ChoiceHandlerPanel HandlerPanel { get; private set; }
 
         private readonly IStateManager stateManager;
-        private ChoiceHandlerMetadata metadata;
+        private readonly IUIManager uiManager;
 
         public UIChoiceHandler (string id, ChoiceHandlerMetadata metadata)
             : base(id, metadata)
         {
-            this.metadata = metadata;
-
             stateManager = Engine.GetService<IStateManager>();
+            uiManager = Engine.GetService<IUIManager>();
         }
 
         public override async UniTask InitializeAsync ()
         {
             await base.InitializeAsync();
 
-            var providerMngr = Engine.GetService<IResourceProviderManager>();
-            var prefabResource = await metadata.Loader.CreateFor<GameObject>(providerMngr).LoadAsync(Id);
-            if (!prefabResource.IsValid)
-            {
-                Debug.LogError($"Failed to load `{Id}` choice handler resource object. Make sure the handler is correctly configured.");
-                return;
-            }
+            var providerManager = Engine.GetService<IResourceProviderManager>();
+            var localizationManager = Engine.GetService<ILocalizationManager>();
+            var prefabResource = await ActorMetadata.Loader.CreateLocalizableFor<GameObject>(providerManager, localizationManager).LoadAsync(Id);
+            if (!prefabResource.Valid) throw new Exception($"Failed to load `{Id}` choice handler resource object. Make sure the handler is correctly configured.");
 
-            var uiMngr = Engine.GetService<IUIManager>();
-            HandlerPanel = await uiMngr.InstantiatePrefabAsync(prefabResource.Object) as ChoiceHandlerPanel;
+            var uiManager = Engine.GetService<IUIManager>();
+            HandlerPanel = await uiManager.AddUIAsync(prefabResource.Object) as ChoiceHandlerPanel;
+            if (HandlerPanel == null) throw new Exception($"Failed to initialize `{Id}` choice handler actor: choice panel UI instantiation failed.");
             HandlerPanel.OnChoice += HandleChoice;
             HandlerPanel.transform.SetParent(Transform);
 
@@ -75,13 +73,25 @@ namespace Naninovel
             HandlerPanel.RemoveChoiceButton(id);
         }
 
-        public ChoiceState GetChoice (string id) => Choices.FirstOrDefault(c => c.Id == id);
+        public virtual ChoiceState GetChoice (string id) => Choices.FirstOrDefault(c => c.Id == id);
+
+        public override void Dispose ()
+        {
+            base.Dispose();
+
+            if (HandlerPanel != null)
+            {
+                uiManager.RemoveUI(HandlerPanel);
+                ObjectUtils.DestroyOrImmediate(HandlerPanel.gameObject);
+                HandlerPanel = null;
+            }
+        }
 
         protected override Color GetBehaviourTintColor () => Color.white;
 
         protected override void SetBehaviourTintColor (Color tintColor) { }
 
-        protected async void HandleChoice (ChoiceState state)
+        protected virtual async void HandleChoice (ChoiceState state)
         {
             if (!Choices.Exists(c => c.Id.EqualsFast(state.Id))) return;
 
@@ -94,21 +104,18 @@ namespace Naninovel
                 HandlerPanel.RemoveAllChoiceButtonsDelayed(); // Delayed to allow custom onClick logic.
                 HandlerPanel.Hide();
             }
-
-            if (!string.IsNullOrEmpty(state.SetExpression))
+            
+            var script = Script.FromScriptText($"`{Id}` on choice script", state.OnSelectScript);
+            var playlist = new ScriptPlaylist(script);
+            await playlist.ExecuteAsync();
+                
+            var player = Engine.GetService<IScriptPlayer>();
+            if (state.AutoPlay && !player.Playing)
             {
-                var setAction = new Commands.SetCustomVariable { Expression = state.SetExpression };
-                await setAction.ExecuteAsync();
-            }
-
-            if (string.IsNullOrWhiteSpace(state.GotoScript) && string.IsNullOrWhiteSpace(state.GotoLabel))
-            {
-                // When no goto param specified -- attempt to select and play next command.
-                var player = Engine.GetService<IScriptPlayer>();
                 var nextIndex = player.PlayedIndex + 1;
                 player.Play(player.Playlist, nextIndex);
+                return;
             }
-            else await new Commands.Goto { Path = new NamedString(state.GotoScript, state.GotoLabel) }.ExecuteAsync();
         }
     } 
 }

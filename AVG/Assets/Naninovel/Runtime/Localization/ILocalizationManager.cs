@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -20,11 +20,15 @@ namespace Naninovel
         /// Language tag of the currently selected localization.
         /// </summary>
         string SelectedLocale { get; }
+        /// <summary>
+        /// Resource provider list used to access the localization resources.
+        /// </summary>
+        List<IResourceProvider> ProviderList { get; }
 
         /// <summary>
-        /// Return language tags of the available localizations.
+        /// Returns language tags of the available localizations.
         /// </summary>
-        IEnumerable<string> GetAvailableLocales ();
+        IReadOnlyCollection<string> GetAvailableLocales ();
         /// <summary>
         /// Whether localization with the provided language tag is available.
         /// </summary>
@@ -41,28 +45,5 @@ namespace Naninovel
         /// Removes an async delegate to invoke after changing a locale.
         /// </summary>
         void RemoveChangeLocaleTask (Func<UniTask> taskFunc);
-        /// <summary>
-        /// Checks whether a localized resource variant for a source resource with the provided 
-        /// path is available under the currently selected localization.
-        /// </summary>
-        UniTask<bool> LocalizedResourceAvailableAsync<TResource> (string path) where TResource : UnityEngine.Object;
-        /// <summary>
-        /// Loads a localized resource variant for a source resource with the provided 
-        /// path under the currently selected localization.
-        /// </summary>
-        UniTask<Resource<TResource>> LoadLocalizedResourceAsync<TResource> (string path) where TResource : UnityEngine.Object;
-        /// <summary>
-        /// Retrieves a localized resource variant for a source resource with the provided 
-        /// path under the currently selected localization.
-        /// </summary>
-        Resource<TResource> GetLoadedLocalizedResourceOrNull<TResource> (string path) where TResource : UnityEngine.Object;
-        /// <summary>
-        /// Unloads previously loaded localized resource variant for a source resource with the provided path.
-        /// </summary>
-        void UnloadLocalizedResource (string path);
-        /// <summary>
-        /// Checks wither a localized resource variant for a source resource with the provided path is loaded.
-        /// </summary>
-        bool LocalizedResourceLoaded (string path);
     }
 }

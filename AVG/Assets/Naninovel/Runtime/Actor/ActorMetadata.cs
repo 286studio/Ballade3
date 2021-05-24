@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using UnityEngine;
 
@@ -22,11 +22,20 @@ namespace Naninovel
 
         [HideInInspector]
         [SerializeField] private string guid = System.Guid.NewGuid().ToString();
+        [SerializeReference] private CustomMetadata customData = default;
 
         /// <summary>
-        /// Attempts to retrieve an actor state associated with the provided pose name;
+        /// Attempts to retrieve an actor pose associated with the provided name;
         /// returns null when not found.
         /// </summary>
-        public abstract TState GetPoseOrNull<TState> (string poseName) where TState : ActorState;
+        public abstract ActorPose<TState> GetPoseOrNull<TState> (string poseName) where TState : ActorState;
+        /// <summary>
+        /// Attempts to retrieve a custom data of type <typeparamref name="TData"/>.
+        /// </summary>
+        /// <typeparam name="TData">Type of the custom data to retrieve.</typeparam>
+        public virtual TData GetCustomData<TData> () where TData : CustomMetadata
+        {
+            return customData as TData;
+        }
     }
 }

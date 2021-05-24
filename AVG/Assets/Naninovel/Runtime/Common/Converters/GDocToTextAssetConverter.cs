@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System.Text;
 using UniRx.Async;
@@ -8,11 +8,11 @@ namespace Naninovel
 {
     public class GDocToTextAssetConverter : IGoogleDriveConverter<TextAsset>
     {
-        public RawDataRepresentation[] Representations { get { return new RawDataRepresentation[] {
+        public RawDataRepresentation[] Representations { get; } = {
             new RawDataRepresentation(null, "application/vnd.google-apps.document")
-        }; } }
+        };
 
-        public string ExportMimeType { get { return "text/plain"; } }
+        public string ExportMimeType => "text/plain";
 
         public TextAsset Convert (byte[] obj, string name)
         {

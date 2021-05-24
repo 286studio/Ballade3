@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 
 namespace Naninovel.Commands
@@ -13,28 +13,6 @@ namespace Naninovel.Commands
     /// the background appearance and transition type (optional) as a nameless parameter assuming `MainBackground` 
     /// actor should be affected. When this is not the case, ID of the background actor can be explicitly provided via the `id` parameter.
     /// </remarks>
-    /// <example>
-    /// ; Set `River` as the appearance of the main background
-    /// @back River
-    /// 
-    /// ; Same as above, but also use a `RadialBlur` transition effect
-    /// @back River.RadialBlur
-    /// 
-    /// ; Tint all visible backgrounds on scene.
-    /// @back id:* tint:#ffdc22
-    /// 
-    /// ; Given an `ExplosionSound` SFX and an `ExplosionSprite` background, the following 
-    /// ; script sequence will simulate two explosions appearing far and close to the camera.
-    /// @sfx ExplosionSound volume:0.1
-    /// @back id:ExplosionSprite scale:0.3 pos:55,60 time:0 isVisible:false
-    /// @back id:ExplosionSprite
-    /// @fx ShakeBackground params:,1
-    /// @hide ExplosionSprite
-    /// @sfx ExplosionSound volume:1.5
-    /// @back id:ExplosionSprite pos:65 scale:1
-    /// @fx ShakeBackground params:,3
-    /// @hide ExplosionSprite
-    /// </example>
     [CommandAlias("back")]
     public class ModifyBackground : ModifyOrthoActor<IBackgroundActor, BackgroundState, BackgroundMetadata, BackgroundsConfiguration, IBackgroundManager>
     {
@@ -42,16 +20,12 @@ namespace Naninovel.Commands
         /// Appearance (or [pose](/guide/backgrounds.md#poses)) to set for the modified background and type of a [transition effect](/guide/transition-effects.md) to use.
         /// When transition is not provided, a cross-fade effect will be used by default.
         /// </summary>
-        [ParameterAlias(NamelessParameterAlias)]
+        [ParameterAlias(NamelessParameterAlias), IDEAppearance(0), IDEConstant(IDEConstantAttribute.Transition, 1)]
         public NamedStringParameter AppearanceAndTransition;
 
-        protected override bool AllowPreload => !AppearanceAndTransition.DynamicValue;
-        // Default to main background when no ID is specified.
+        protected override bool AllowPreload => Assigned(AppearanceAndTransition) && !AppearanceAndTransition.DynamicValue;
         protected override string AssignedId => base.AssignedId ?? BackgroundsConfiguration.MainActorId;
-        // Allows specifying background appearance as nameless parameter.
-        protected override string AssignedAppearance => Pose?.Appearance ?? AppearanceAndTransition?.Name ?? base.AssignedAppearance;
-        // Allows specifying background transition as nameless parameter.
-        protected override string AssignedTransition => AppearanceAndTransition?.NamedValue ?? base.AssignedTransition;
-        protected override BackgroundState Pose => ActorManager.Configuration.GetMetadataOrDefault(AssignedId).GetPoseOrNull<BackgroundState>(AppearanceAndTransition?.Name);
+        protected override string AlternativeAppearance => AppearanceAndTransition?.Name;
+        protected override string AssignedTransition => base.AssignedTransition ?? AppearanceAndTransition?.NamedValue;
     }
 }

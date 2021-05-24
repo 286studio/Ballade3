@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System.Collections.Generic;
 using UnityEngine;
@@ -32,7 +32,8 @@ namespace Naninovel
             text = actor.Text;
             authorId = actor.AuthorId;
             richTextTags.Clear();
-            richTextTags.AddRange(actor.RichTextTags);
+            if (actor.RichTextTags != null && actor.RichTextTags.Count > 0)
+                richTextTags.AddRange(actor.RichTextTags);
             revealProgress = actor.RevealProgress;
         }
 

@@ -1,18 +1,22 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
-using UnityEngine;
-using System.Linq;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using UnityEngine;
 
 namespace Naninovel
 {
     public class ConsoleGUI : MonoBehaviour
     {
-        /// <summary>
-        /// Whether to automatically spawn a hidden persistent gameobject with the console component when application starts.
-        /// </summary>
-        public static bool AutoInitialize { get; set; } = true;
+        // To prevent garbage when the console is hidden.
+        private class OnGUIProxy : MonoBehaviour
+        {
+            public Action OnGUIDelegate;
+            private void OnGUI () => OnGUIDelegate();
+        }
+
         /// <summary>
         /// The key to toggle console visibility.
         /// </summary>
@@ -24,37 +28,65 @@ namespace Naninovel
 
         private const int height = 25;
         private const string inputControlName = "input";
-        private static char[] separator = new[] { ' ' };
-        private static GUIStyle style;
-        private static bool isVisible;
-        private static bool setFocusPending;
-        private static string input;
-        private static List<string> inputBuffer = new List<string> { string.Empty };
-        private static int inputBufferIndex = 0;
 
-        public static void Show () => isVisible = true;
+        private static ConsoleGUI instance;
 
-        public static void Hide () => isVisible = false;
+        private readonly char[] separator = { ' ' };
+        private readonly List<string> inputBuffer = new List<string>();
+        private OnGUIProxy guiProxy;
+        private GUIStyle style;
+        private bool setFocusPending;
+        private string input;
+        private int inputBufferIndex = 0;
 
-        public static void Toggle () => isVisible = !isVisible;
-
-        private void Awake ()
+        public static void Initialize (Dictionary<string, MethodInfo> commands = null)
         {
-            style = new GUIStyle {
+            if (instance) return;
+
+            CommandDatabase.RegisterCommands(commands);
+
+            var hostObject = new GameObject("UnityConsole");
+            hostObject.hideFlags = HideFlags.HideAndDontSave;
+            DontDestroyOnLoad(hostObject);
+
+            instance = hostObject.AddComponent<ConsoleGUI>();
+            instance.style = new GUIStyle {
                 normal = new GUIStyleState { background = Texture2D.whiteTexture, textColor = Color.white },
                 contentOffset = new Vector2(5, 5),
             };
+
+            instance.guiProxy = hostObject.AddComponent<OnGUIProxy>();
+            instance.guiProxy.OnGUIDelegate = instance.DrawGUI;
+            instance.guiProxy.enabled = false;
         }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        public static void Destroy ()
+        {
+            if (!instance) return;
+
+            if (Application.isPlaying) Destroy(instance.gameObject);
+            else DestroyImmediate(instance.gameObject);
+        }
+
+        public static void Show () => instance.guiProxy.enabled = true;
+
+        public static void Hide () => instance.guiProxy.enabled = false;
+
+        public static void Toggle () => instance.guiProxy.enabled = !instance.guiProxy.enabled;
+
+        private void OnApplicationQuit () => Destroy();
 
         #if ENABLE_LEGACY_INPUT_MANAGER
         private void Update ()
         {
-            if (!isVisible && Application.isPlaying)
-                if (Input.GetKeyUp(ToggleKey) || MultitouchDetected())
-                {
-                    Toggle();
-                    setFocusPending = true;
-                }
+            if (!Application.isPlaying) return;
+
+            if (Input.GetKeyUp(ToggleKey) || MultitouchDetected())
+            {
+                Toggle();
+                setFocusPending = true;
+            }
         }
 
         private bool MultitouchDetected ()
@@ -64,10 +96,8 @@ namespace Naninovel
         }
         #endif
 
-        private void OnGUI ()
+        private void DrawGUI ()
         {
-            if (!isVisible) return;
-
             if (Event.current.isKey && Event.current.keyCode == ToggleKey)
             {
                 Hide();
@@ -90,18 +120,16 @@ namespace Naninovel
             if (GUI.GetNameOfFocusedControl() == inputControlName) HandleGUIInput();
         }
 
-        private void OnApplicationQuit () => Hide();
-
         private void HandleGUIInput ()
         {
-            if (Event.current.isKey && Event.current.keyCode == KeyCode.UpArrow)
+            if (inputBuffer.Count > 0 && Event.current.isKey && Event.current.keyCode == KeyCode.UpArrow)
             {
                 inputBufferIndex--;
                 if (inputBufferIndex < 0) inputBufferIndex = inputBuffer.Count - 1;
                 input = inputBuffer[inputBufferIndex];
             }
 
-            if (Event.current.isKey && Event.current.keyCode == KeyCode.DownArrow)
+            if (inputBuffer.Count > 0 && Event.current.isKey && Event.current.keyCode == KeyCode.DownArrow)
             {
                 inputBufferIndex++;
                 if (inputBufferIndex >= inputBuffer.Count) inputBufferIndex = 0;
@@ -126,22 +154,9 @@ namespace Naninovel
             if (string.IsNullOrWhiteSpace(preprocessedInput)) return;
 
             var command = preprocessedInput.Split(separator, StringSplitOptions.RemoveEmptyEntries);
-            if (command == null || command.Length == 0) return;
+            if (command.Length == 0) return;
             if (command.Length == 1) CommandDatabase.ExecuteCommand(command[0]);
             else CommandDatabase.ExecuteCommand(command[0], command.ToList().GetRange(1, command.Length - 1).ToArray());
-        }
-
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-        private static void Initialize ()
-        {
-            if (!AutoInitialize) return;
-
-            CommandDatabase.RegisterCommands();
-
-            var hostObject = new GameObject("UnityConsole");
-            hostObject.hideFlags = HideFlags.HideAndDontSave;
-            DontDestroyOnLoad(hostObject);
-            hostObject.AddComponent<ConsoleGUI>();
         }
     }
 }

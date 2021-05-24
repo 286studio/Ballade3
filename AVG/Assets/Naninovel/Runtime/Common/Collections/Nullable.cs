@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -33,7 +33,7 @@ namespace Naninovel
     /// </summary>
     /// <typeparam name="TValue">Type of the value; should be natively supported by the Unity serialization system.</typeparam>
     [Serializable]
-    public class Nullable<TValue> : INullable<TValue>, IEquatable<Nullable<TValue>>
+    public class Nullable<TValue> : INullable<TValue>
     {
         /// <summary>
         /// Current value when <see cref="HasValue"/>, default otherwise.
@@ -52,44 +52,20 @@ namespace Naninovel
         [SerializeField] private TValue value = default;
         [SerializeField] private bool hasValue = default;
 
-        public override string ToString () => HasValue ? Value.ToString() : "null";
+        public override string ToString ()
+        {
+            if (!HasValue) return "null";
+            return typeof(TValue) == typeof(bool) ? Value.ToString().ToLowerInvariant() : Value.ToString();
+        }
 
         public static implicit operator TValue (Nullable<TValue> nullable)
         {
-            return (nullable is null || !nullable.HasValue) ? default(TValue) : nullable.Value;
+            return (nullable is null || !nullable.HasValue) ? default : nullable.Value;
         }
 
         public static implicit operator Nullable<TValue> (TValue value)
         {
             return new Nullable<TValue> { Value = value };
-        }
-
-        public static bool operator == (Nullable<TValue> left, Nullable<TValue> right)
-        {
-            return EqualityComparer<Nullable<TValue>>.Default.Equals(left, right);
-        }
-
-        public static bool operator != (Nullable<TValue> left, Nullable<TValue> right)
-        {
-            return !(left == right);
-        }
-
-        public override bool Equals (object obj)
-        {
-            return Equals(obj as Nullable<TValue>);
-        }
-
-        public bool Equals (Nullable<TValue> other)
-        {
-            if (!hasValue) return other == null;
-
-            return other != null &&
-                   EqualityComparer<TValue>.Default.Equals(value, other.value);
-        }
-
-        public override int GetHashCode ()
-        {
-            return -1584136870 + EqualityComparer<TValue>.Default.GetHashCode(value);
         }
 
         protected virtual TValue GetValue ()

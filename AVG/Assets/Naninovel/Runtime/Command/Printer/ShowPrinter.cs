@@ -1,6 +1,5 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
-using System.Threading;
 using UniRx.Async;
 
 namespace Naninovel.Commands
@@ -8,18 +7,12 @@ namespace Naninovel.Commands
     /// <summary>
     /// Shows a text printer.
     /// </summary>
-    /// <example>
-    /// ; Show a default printer.
-    /// @showPrinter
-    /// ; Show printer with ID `Wide`.
-    /// @showPrinter Wide
-    /// </example>
     public class ShowPrinter : PrinterCommand
     {
         /// <summary>
         /// ID of the printer actor to use. Will use a default one when not provided.
         /// </summary>
-        [ParameterAlias(NamelessParameterAlias)]
+        [ParameterAlias(NamelessParameterAlias), IDEActor(TextPrintersConfiguration.DefaultPathPrefix)]
         public StringParameter PrinterId;
         /// <summary>
         /// Duration (in seconds) of the show animation.
@@ -33,12 +26,14 @@ namespace Naninovel.Commands
         public override async UniTask ExecuteAsync (CancellationToken cancellationToken = default)
         {
             var printer = await GetOrAddPrinterAsync();
-            if (cancellationToken.IsCancellationRequested) return;
+            if (cancellationToken.CancelASAP) return;
 
             var printerMeta = PrinterManager.Configuration.GetMetadataOrDefault(printer.Id);
             var showDuration = Assigned(Duration) ? Duration.Value : printerMeta.ChangeVisibilityDuration;
 
-            await printer.ChangeVisibilityAsync(true, showDuration, cancellationToken: cancellationToken);
+            if (cancellationToken.CancelLazy)
+                printer.Visible = true;
+            else await printer.ChangeVisibilityAsync(true, showDuration, cancellationToken: cancellationToken);
         }
     } 
 }

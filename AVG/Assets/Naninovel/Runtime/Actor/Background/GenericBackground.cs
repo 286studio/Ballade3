@@ -1,16 +1,17 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 
 namespace Naninovel
 {
     /// <summary>
-    /// A <see cref="IBackgroundActor"/> implementation using <see cref="BackgroundActorBehaviour"/> to represent the actor.
+    /// A <see cref="IBackgroundActor"/> implementation using <see cref="GenericBackgroundBehaviour"/> to represent the actor.
     /// </summary>
     /// <remarks>
-    /// Resource prefab should have a <see cref="BackgroundActorBehaviour"/> component attached to the root object.
-    /// Apperance and other property changes changes are routed to the events of the <see cref="BackgroundActorBehaviour"/> component.
+    /// Resource prefab should have a <see cref="GenericBackgroundBehaviour"/> component attached to the root object.
+    /// Appearance and other property changes changes are routed to the events of the <see cref="GenericBackgroundBehaviour"/> component.
     /// </remarks>
-    public class GenericBackground : GenericActor<BackgroundActorBehaviour>, IBackgroundActor
+    [ActorResources(typeof(GenericBackgroundBehaviour), false)]
+    public class GenericBackground : GenericActor<GenericBackgroundBehaviour, BackgroundMetadata>, IBackgroundActor
     {
         public GenericBackground (string id, BackgroundMetadata metadata)
             : base(id, metadata) { }

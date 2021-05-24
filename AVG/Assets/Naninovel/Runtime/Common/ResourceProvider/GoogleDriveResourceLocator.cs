@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 #if UNITY_GOOGLE_DRIVE_AVAILABLE
 
@@ -28,10 +28,10 @@ namespace Naninovel
             var result = new List<string>();
 
             // 1. Find all the files by path.
-            var fullpath = PathUtils.Combine(RootPath, Path) + "/";
-            var files = await Helpers.FindFilesByPathAsync(fullpath, fields: new List<string> { "files(name, mimeType)" });
+            var fullPath = PathUtils.Combine(RootPath, Path) + "/";
+            var files = await Helpers.FindFilesByPathAsync(fullPath, fields: new List<string> { "files(name, mimeType)" });
 
-            // 2. Filter the results by represenations (MIME types).
+            // 2. Filter the results by representations (MIME types).
             var reprToFileMap = new Dictionary<RawDataRepresentation, List<UnityGoogleDrive.Data.File>>();
             foreach (var representation in converter.Representations)
                 reprToFileMap.Add(representation, files.Where(f => f.MimeType == representation.MimeType).ToList());

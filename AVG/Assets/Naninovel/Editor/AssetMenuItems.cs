@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using UnityEditor;
@@ -56,12 +56,39 @@ namespace Naninovel
         [MenuItem("Assets/Create/Naninovel/Character/Generic")]
         private static void CreateCharacterGeneric () => CreatePrefabCopy("Templates/GenericCharacter", "NewGenericCharacter");
         [MenuItem("Assets/Create/Naninovel/Character/Layered")]
-        private static void CreateCharacterLayered() => CreatePrefabCopy("Templates/Layered", "NewLayeredCharacter");
+        private static void CreateCharacterLayered() => CreatePrefabCopy("Templates/LayeredCharacter", "NewLayeredCharacter");
 
         [MenuItem("Assets/Create/Naninovel/Background/Generic")]
         private static void CreateBackgroundGeneric () => CreatePrefabCopy("Templates/GenericBackground", "NewGenericBackground");
         [MenuItem("Assets/Create/Naninovel/Background/Layered")]
-        private static void CreateBackgroundLayered () => CreatePrefabCopy("Templates/Layered", "NewLayeredBackground");
+        private static void CreateBackgroundLayered () => CreatePrefabCopy("Templates/LayeredBackground", "NewLayeredBackground");
+
+        [MenuItem("Assets/Create/Naninovel/Default UI/BacklogUI")]
+        private static void CreateBacklogUI () => CreatePrefabCopy("DefaultUI/BacklogUI", "NewBacklogUI");
+        [MenuItem("Assets/Create/Naninovel/Default UI/CGGalleryUI")]
+        private static void CreateCGGalleryUI () => CreatePrefabCopy("DefaultUI/CGGalleryUI", "NewCGGalleryUI");
+        [MenuItem("Assets/Create/Naninovel/Default UI/ConfirmationUI")]
+        private static void CreateConfirmationUI () => CreatePrefabCopy("DefaultUI/ConfirmationUI", "NewConfirmationUI");
+        [MenuItem("Assets/Create/Naninovel/Default UI/ExternalScriptsUI")]
+        private static void CreateExternalScriptsUI () => CreatePrefabCopy("DefaultUI/ExternalScriptsUI", "NewExternalScriptsUI");
+        [MenuItem("Assets/Create/Naninovel/Default UI/LoadingUI")]
+        private static void CreateLoadingUI () => CreatePrefabCopy("DefaultUI/LoadingUI", "NewLoadingUI");
+        [MenuItem("Assets/Create/Naninovel/Default UI/MovieUI")]
+        private static void CreateMovieUI () => CreatePrefabCopy("DefaultUI/MovieUI", "NewMovieUI");
+        [MenuItem("Assets/Create/Naninovel/Default UI/PauseUI")]
+        private static void CreatePauseUI () => CreatePrefabCopy("DefaultUI/PauseUI", "NewPauseUI");
+        [MenuItem("Assets/Create/Naninovel/Default UI/RollbackUI")]
+        private static void CreateRollbackUI () => CreatePrefabCopy("DefaultUI/RollbackUI", "NewRollbackUI");
+        [MenuItem("Assets/Create/Naninovel/Default UI/SaveLoadUI")]
+        private static void CreateSaveLoadUI () => CreatePrefabCopy("DefaultUI/SaveLoadUI", "NewSaveLoadUI");
+        [MenuItem("Assets/Create/Naninovel/Default UI/SettingsUI")]
+        private static void CreateSettingsUI () => CreatePrefabCopy("DefaultUI/SettingsUI", "NewSettingsUI");
+        [MenuItem("Assets/Create/Naninovel/Default UI/TipsUI")]
+        private static void CreateTipsUI () => CreatePrefabCopy("DefaultUI/TipsUI", "NewTipsUI");
+        [MenuItem("Assets/Create/Naninovel/Default UI/TitleUI")]
+        private static void CreateTitleUI () => CreatePrefabCopy("DefaultUI/TitleUI", "NewTitleUI");
+        [MenuItem("Assets/Create/Naninovel/Default UI/VariableInputUI")]
+        private static void CreateVariableInputUI () => CreatePrefabCopy("DefaultUI/VariableInputUI", "NewVariableInputUI");
 
         [MenuItem("Assets/Create/Naninovel/Text Printer/Dialogue")]
         private static void CreatePrinterDialogue () => CreatePrefabCopy("TextPrinters/Dialogue", "NewDialoguePrinter");

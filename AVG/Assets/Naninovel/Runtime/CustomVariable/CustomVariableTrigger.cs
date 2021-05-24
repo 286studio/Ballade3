@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using UniRx.Async;
@@ -12,13 +12,13 @@ namespace Naninovel
     /// </summary>
     public class CustomVariableTrigger : MonoBehaviour
     {
-        [System.Serializable]
+        [Serializable]
         private class VariableValueChangedEvent : UnityEvent<string> { }
-        [System.Serializable]
+        [Serializable]
         private class FloatVariableValueChangedEvent : UnityEvent<float> { }
-        [System.Serializable]
+        [Serializable]
         private class IntVariableValueChangedEvent : UnityEvent<int> { }
-        [System.Serializable]
+        [Serializable]
         private class BoolVariableValueChangedEvent : UnityEvent<bool> { }
 
         /// <summary>

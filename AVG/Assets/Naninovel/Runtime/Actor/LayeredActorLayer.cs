@@ -1,7 +1,6 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace Naninovel
@@ -9,55 +8,76 @@ namespace Naninovel
     /// <summary>
     /// Represents a layer inside <see cref="LayeredActorBehaviour"/> object.
     /// </summary>
-    public class LayeredActorLayer
+    public class LayeredActorLayer : IDisposable
     {
         public readonly string Name;
-        public readonly string Group = string.Empty;
+        public readonly string Group;
         public readonly Mesh Mesh;
-        public readonly SpriteRenderer SpriteRenderer;
-        public bool Enabled { get => SpriteRenderer.enabled; set => SpriteRenderer.enabled = value; }
-        public Vector2 Position => SpriteRenderer.transform.position;
-        public Quaternion Rotation => SpriteRenderer.transform.localRotation;
-        public Vector2 Scale => SpriteRenderer.transform.lossyScale;
-        public Texture Texture => SpriteRenderer.sprite.texture;
+        public readonly Material RenderMaterial;
+        public readonly Renderer Renderer;
+        public bool Enabled { get => Renderer.enabled; set => Renderer.enabled = value; }
+        public Vector2 Position => Renderer.transform.position;
+        public Quaternion Rotation => Renderer.transform.localRotation;
+        public Vector2 Scale => Renderer.transform.lossyScale;
 
-        public LayeredActorLayer (SpriteRenderer spriteRenderer)
+        private static readonly int spriteColorId = Shader.PropertyToID("_RendererColor");
+
+        private readonly SpriteRenderer spriteRenderer;
+
+        public LayeredActorLayer (Renderer renderer, Mesh mesh)
         {
-            this.SpriteRenderer = spriteRenderer;
-            if (Application.isPlaying)
-                spriteRenderer.forceRenderingOff = true;
-            Mesh = BuildSpriteMesh(spriteRenderer);
-            Name = spriteRenderer.gameObject.name;
+            Name = renderer.gameObject.name;
+            Group = BuildGroupName(renderer.transform);
+            Mesh = mesh;
+            Renderer = renderer;
 
-            var transform = spriteRenderer.transform.parent;
-            while (transform != null && !transform.TryGetComponent<LayeredActorBehaviour>(out _))
+            if (Application.isPlaying)
             {
-                Group = transform.name + (string.IsNullOrEmpty(Group) ? string.Empty : $"/{Group}");
-                transform = transform.parent;
+                renderer.forceRenderingOff = true;
+                RenderMaterial = renderer.material;
+                RenderMaterial.hideFlags = HideFlags.HideAndDontSave;
             }
         }
 
-        public override bool Equals (object obj) => obj is LayeredActorLayer layer && Equals(layer);
-
-        public bool Equals (LayeredActorLayer other) => Group == other.Group && Name == other.Name;
-
-        public override int GetHashCode ()
+        public LayeredActorLayer (SpriteRenderer spriteRenderer) :
+            this(spriteRenderer, BuildSpriteMesh(spriteRenderer))
         {
-            var hashCode = -570022382;
-            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(Group);
-            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(Name);
-            return hashCode;
+            this.spriteRenderer = spriteRenderer;
         }
 
-        public static bool operator == (LayeredActorLayer left, LayeredActorLayer right) => left.Equals(right);
+        public void Dispose ()
+        {
+            if (RenderMaterial && RenderMaterial.hideFlags == HideFlags.HideAndDontSave)
+                ObjectUtils.DestroyOrImmediate(RenderMaterial);
+            if (Mesh && Mesh.hideFlags == HideFlags.HideAndDontSave)
+                ObjectUtils.DestroyOrImmediate(Mesh);
+        }
 
-        public static bool operator != (LayeredActorLayer left, LayeredActorLayer right) => !(left == right);
+        public MaterialPropertyBlock GetPropertyBlock (MaterialPropertyBlock block)
+        {
+            Renderer.GetPropertyBlock(block);
+            if (spriteRenderer)
+                block.SetColor(spriteColorId, spriteRenderer.color);
+            return block;
+        }
+
+        private static string BuildGroupName (Transform layerTransform)
+        {
+            var group = string.Empty;
+            var transform = layerTransform.parent;
+            while (transform && !transform.TryGetComponent<LayeredActorBehaviour>(out _))
+            {
+                group = transform.name + (string.IsNullOrEmpty(group) ? string.Empty : $"/{group}");
+                transform = transform.parent;
+            }
+            return group;
+        }
 
         private static Mesh BuildSpriteMesh (SpriteRenderer spriteRenderer)
         {
             var sprite = spriteRenderer.sprite;
             var mesh = new Mesh();
-            mesh.hideFlags = HideFlags.DontSaveInBuild | HideFlags.DontSaveInEditor;
+            mesh.hideFlags = HideFlags.HideAndDontSave;
             mesh.name = $"{sprite.name} Sprite Mesh";
             mesh.vertices = Array.ConvertAll(sprite.vertices, i => new Vector3(i.x * (spriteRenderer.flipX ? -1 : 1), i.y * (spriteRenderer.flipY ? -1 : 1)));
             mesh.uv = sprite.uv;

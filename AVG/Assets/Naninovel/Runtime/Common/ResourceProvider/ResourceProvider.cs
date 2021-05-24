@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -18,12 +18,13 @@ namespace Naninovel
 
         public bool IsLoading => LoadProgress < 1f;
         public float LoadProgress { get; private set; } = 1f;
-        IEnumerable<Resource> IResourceProvider.LoadedResources => LoadedResources.Values;
+        IReadOnlyCollection<Resource> IResourceProvider.LoadedResources => LoadedResources.Values;
 
-        protected Dictionary<string, Resource> LoadedResources = new Dictionary<string, Resource>();
-        protected Dictionary<string, List<Folder>> LocatedFolders = new Dictionary<string, List<Folder>>();
-        protected Dictionary<string, ResourceRunner> LoadRunners = new Dictionary<string, ResourceRunner>();
-        protected Dictionary<Tuple<string, Type>, ResourceRunner> LocateRunners = new Dictionary<Tuple<string, Type>, ResourceRunner>();
+        protected readonly Dictionary<string, Resource> LoadedResources = new Dictionary<string, Resource>();
+        protected readonly Dictionary<string, List<Folder>> LocatedFolders = new Dictionary<string, List<Folder>>();
+        protected readonly Dictionary<string, ResourceRunner> LoadRunners = new Dictionary<string, ResourceRunner>();
+        protected readonly Dictionary<Tuple<string, Type>, ResourceRunner> LocateRunners = new Dictionary<Tuple<string, Type>, ResourceRunner>();
+        protected readonly List<CachedResourceLocation> LocationsCache = new List<CachedResourceLocation>();
 
         public abstract bool SupportsType<T> () where T : UnityEngine.Object;
 
@@ -31,12 +32,10 @@ namespace Naninovel
         {
             if (!SupportsType<T>() || !ResourceLoaded(path)) return null;
 
-            var loadedResourceType = LoadedResources[path].Object?.GetType();
+            var loadedResource = LoadedResources[path];
+            var loadedResourceType = loadedResource.Valid ? loadedResource.Object.GetType() : default;
             if (loadedResourceType != typeof(T))
-            {
-                Debug.LogError($"Failed to get a loaded resource with path `{path}`: the loaded resource is of type `{loadedResourceType.FullName}`, while the requested type is `{typeof(T).FullName}`.");
-                return null;
-            }
+                throw new Exception($"Failed to get a loaded resource with path `{path}`: The loaded resource is of type `{loadedResourceType?.FullName}`, while the requested type is `{typeof(T).FullName}`.");
             else return LoadedResources[path] as Resource<T>;
         }
 
@@ -47,13 +46,14 @@ namespace Naninovel
             if (ResourceLoading(path))
             {
                 if (LoadRunners[path].ResourceType != typeof(T)) UnloadResource(path);
-                else return await (LoadRunners[path] as LoadResourceRunner<T>);
+                else return await (LoadResourceRunner<T>)LoadRunners[path];
             }
 
             if (ResourceLoaded(path))
             {
-                if (LoadedResources[path].Object?.GetType() != typeof(T)) UnloadResource(path);
-                else return LoadedResources[path] as Resource<T>;
+                var loadedResource = LoadedResources[path];
+                if (!loadedResource.Valid || loadedResource.Object.GetType() != typeof(T)) UnloadResource(path);
+                else return loadedResource as Resource<T>;
             }
 
             var loadRunner = CreateLoadResourceRunner<T>(path);
@@ -67,12 +67,12 @@ namespace Naninovel
             return resource;
         }
 
-        public virtual async UniTask<IEnumerable<Resource<T>>> LoadResourcesAsync<T> (string path) where T : UnityEngine.Object
+        public virtual async UniTask<IReadOnlyCollection<Resource<T>>> LoadResourcesAsync<T> (string path) where T : UnityEngine.Object
         {
             if (!SupportsType<T>()) return null;
 
             var locatedResourcePaths = await LocateResourcesAsync<T>(path);
-            return await UniTask.WhenAll(locatedResourcePaths.Select(p => LoadResourceAsync<T>(p)));
+            return await UniTask.WhenAll(locatedResourcePaths.Select(LoadResourceAsync<T>));
         }
 
         public virtual void UnloadResource (string path)
@@ -85,9 +85,11 @@ namespace Naninovel
             var resource = LoadedResources[path];
             LoadedResources.Remove(path);
 
-            DisposeResource(resource);
+            // Make sure no other resources use the same object before disposing it.
+            if (!LoadedResources.Any(r => r.Value.Object == resource.Object))
+                DisposeResource(resource);
 
-            LogMessage($"Resource '{path}' unloaded.");
+            LogMessage($"Resource `{path}` unloaded.");
         }
 
         public virtual void UnloadResources ()
@@ -114,6 +116,7 @@ namespace Naninovel
 
         public virtual async UniTask<bool> ResourceExistsAsync<T> (string path) where T : UnityEngine.Object
         {
+            if (LocationsCache.Count > 0) return IsLocationCached<T>(path);
             if (!SupportsType<T>()) return false;
             if (ResourceLoaded<T>(path)) return true;
             var folderPath = path.Contains("/") ? path.GetBeforeLast("/") : string.Empty;
@@ -121,16 +124,22 @@ namespace Naninovel
             return locatedResourcePaths.Any(p => p.EqualsFast(path));
         }
 
-        public virtual async UniTask<IEnumerable<string>> LocateResourcesAsync<T> (string path) where T : UnityEngine.Object
+        public virtual async UniTask<IReadOnlyCollection<string>> LocateResourcesAsync<T> (string path) where T : UnityEngine.Object
         {
             if (!SupportsType<T>()) return null;
-
             if (path is null) path = string.Empty;
+
+            if (LocationsCache.Count > 0) 
+                return LocateCached<T>(path);
 
             var locateKey = new Tuple<string, Type>(path, typeof(T));
 
             if (ResourceLocating<T>(path))
-                return await (LocateRunners[locateKey] as LocateResourcesRunner<T>);
+            {
+                var locateTask = LocateRunners[locateKey] as LocateResourcesRunner<T>;
+                if (locateTask is null) throw new Exception($"Failed to wait for `{path}` resource location runner.");
+                await locateTask;
+            }
 
             var locateRunner = CreateLocateResourcesRunner<T>(path);
             LocateRunners.Add(locateKey, locateRunner);
@@ -143,7 +152,7 @@ namespace Naninovel
             return locatedResourcePaths;
         }
 
-        public virtual async UniTask<IEnumerable<Folder>> LocateFoldersAsync (string path)
+        public virtual async UniTask<IReadOnlyCollection<Folder>> LocateFoldersAsync (string path)
         {
             if (path is null) path = string.Empty;
 
@@ -152,7 +161,11 @@ namespace Naninovel
             var locateKey = new Tuple<string, Type>(path, typeof(Folder));
 
             if (ResourceLocating<Folder>(path))
-                return await (LocateRunners[locateKey] as LocateFoldersRunner);
+            {
+                var locateTask = LocateRunners[locateKey] as LocateFoldersRunner;
+                if (locateTask is null) throw new Exception($"Failed to wait for `{path}` folder location runner.");
+                return await locateTask;
+            }
 
             var locateRunner = CreateLocateFoldersRunner(path);
             LocateRunners.Add(locateKey, locateRunner);
@@ -205,7 +218,7 @@ namespace Naninovel
 
         protected virtual void HandleResourceLoaded<T> (Resource<T> resource) where T : UnityEngine.Object
         {
-            if (!resource.IsValid) Debug.LogError($"Resource '{resource.Path}' failed to load.");
+            if (!resource.Valid) throw new Exception($"Resource `{resource.Path}` failed to load.");
             else LoadedResources[resource.Path] = resource;
 
             if (LoadRunners.ContainsKey(resource.Path))
@@ -214,7 +227,7 @@ namespace Naninovel
             UpdateLoadProgress();
         }
 
-        protected virtual void HandleResourcesLocated<T> (IEnumerable<string> locatedResourcePaths, string path) where T : UnityEngine.Object
+        protected virtual void HandleResourcesLocated<T> (IReadOnlyCollection<string> locatedResourcePaths, string path) where T : UnityEngine.Object
         {
             var locateKey = new Tuple<string, Type>(path, typeof(T));
             LocateRunners.Remove(locateKey);
@@ -222,7 +235,7 @@ namespace Naninovel
             UpdateLoadProgress();
         }
 
-        protected virtual void HandleFoldersLocated (IEnumerable<Folder> locatedFolders, string path)
+        protected virtual void HandleFoldersLocated (IReadOnlyCollection<Folder> locatedFolders, string path)
         {
             var locateKey = new Tuple<string, Type>(path, typeof(Folder));
             LocateRunners.Remove(locateKey);
@@ -238,7 +251,22 @@ namespace Naninovel
             var runnersCount = LoadRunners.Count + LocateRunners.Count;
             if (runnersCount == 0) LoadProgress = 1f;
             else LoadProgress = Mathf.Min(1f / runnersCount, .999f);
-            if (prevProgress != LoadProgress) OnLoadProgress?.Invoke(LoadProgress);
+            if (!Mathf.Approximately(prevProgress, LoadProgress)) OnLoadProgress?.Invoke(LoadProgress);
+        }
+        
+        protected virtual bool AreTypesCompatible (Type sourceType, Type targetType) => sourceType == targetType;
+
+        protected virtual bool IsLocationCached<T> (string path)
+        {
+            var targetType = typeof(T);
+            return LocationsCache.Any(r => r.Path.EqualsFast(path) && AreTypesCompatible(r.Type, targetType));
+        }
+
+        protected virtual IReadOnlyCollection<string> LocateCached<T> (string path)
+        {
+            var targetType = typeof(T);
+            return LocationsCache.Where(r => AreTypesCompatible(r.Type, targetType))
+                                 .Select(r => r.Path).LocateResourcePathsAtFolder(path);
         }
     }
 }

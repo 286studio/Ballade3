@@ -60,6 +60,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -137,6 +138,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -207,6 +209,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -281,6 +284,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 0, g: 0, b: 0, a: 0.392}
   m_RaycastTarget: 1
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -387,7 +391,7 @@ GameObject:
   - component: {fileID: 114579363058760492}
   - component: {fileID: 225492186654018154}
   m_Layer: 5
-  m_Name: GameStateSlot
+  m_Name: SaveLoadSlot
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -484,10 +488,28 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   hoverOpacityFade: 0.25
-  deleteButton: {fileID: 114646063786051816}
-  titleText: {fileID: 114890830260228958}
+  onClicked:
+    m_PersistentCalls:
+      m_Calls: []
+  dateFormat: yyyy-MM-dd HH:mm:ss
+  titleTemplate: '{N}. {D}'
+  deleteButton: {fileID: 114259534568533590}
   thumbnailImage: {fileID: 114397098227101058}
-  emptySlotThambnail: {fileID: 2800000, guid: 7362e9cfcb2846b4f8f1b82ee772ba48, type: 3}
+  emptySlotThumbnail: {fileID: 2800000, guid: 7362e9cfcb2846b4f8f1b82ee772ba48, type: 3}
+  onTitleTextChanged:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 114890830260228958}
+        m_MethodName: set_text
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!225 &225492186654018154
 CanvasGroup:
   m_ObjectHideFlags: 0

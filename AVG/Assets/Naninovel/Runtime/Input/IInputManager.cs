@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 
 namespace Naninovel
@@ -9,7 +9,8 @@ namespace Naninovel
     public interface IInputManager : IEngineService<InputConfiguration>
     {
         /// <summary>
-        /// Whether to process input.
+        /// Whether to process input. Individual samplers can be
+        /// "muted" via <see cref="IInputSampler.Enabled"/> property.
         /// </summary>
         bool ProcessInput { get; set; }
 

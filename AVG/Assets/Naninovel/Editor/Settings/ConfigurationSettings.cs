@@ -1,8 +1,9 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using UnityEditor;
 using UnityEditor.Presets;
 using UnityEngine;
@@ -11,30 +12,17 @@ using UnityEngine.UIElements;
 namespace Naninovel
 {
     /// <summary>
-    /// A default editor and project settings provider for <see cref="Naninovel.Configuration"/> assets.
+    /// A default editor and project settings provider for <see cref="Naninovel.Configuration"/> assets
+    /// with <see cref="Naninovel.Configuration.EditInProjectSettingsAttribute"/> applied.
     /// </summary>
     public class ConfigurationSettings : SettingsProvider
     {
-        /// <summary>
-        /// Relative (to the application data directory) path to store the automatically generated package assets.
-        /// </summary>
-        public static string GeneratedDataPath
-        {
-            get => PlayerPrefs.GetString(editorDataPathKey, EngineConfiguration.DefaultGeneratedDataPath);
-            protected set => PlayerPrefs.SetString(editorDataPathKey, value);
-        }
-
         protected Type ConfigurationType { get; }
         protected Configuration Configuration { get; private set; }
         protected SerializedObject SerializedObject { get; private set; }
         protected virtual string EditorTitle { get; }
         protected virtual string HelpUri { get; }
-        /// <summary>
-        /// Override to use custom drawers instead of the default ones in <see cref="DrawDefaultEditor()"/>.
-        /// </summary>
-        protected virtual Dictionary<string, Action<SerializedProperty>> OverrideConfigurationDrawers { get; }
-
-        private const string editorDataPathKey = "Naninovel." + nameof(ConfigurationSettings) + "." + nameof(GeneratedDataPath);
+        
         private const string settingsPathPrefix = "Project/Naninovel/";
         private static readonly GUIContent helpIcon;
         private static readonly Type settingsScopeType = typeof(EditorWindow).Assembly.GetType("UnityEditor.SettingsWindow+GUIScope");
@@ -56,7 +44,6 @@ namespace Naninovel
             ConfigurationType = configType;
             EditorTitle = ConfigurationType.Name.Replace("Configuration", string.Empty).InsertCamel();
             HelpUri = $"guide/configuration.html#{ConfigurationType.Name.Replace("Configuration", string.Empty).InsertCamel('-').ToLowerInvariant()}";
-            overrideDrawers = OverrideConfigurationDrawers;
         }
 
         public static TConfig LoadOrDefaultAndSave<TConfig> () 
@@ -74,12 +61,13 @@ namespace Naninovel
             Configuration = ProjectConfigurationProvider.LoadOrDefault(ConfigurationType);
             SerializedObject = new SerializedObject(Configuration);
             keywords = GetSearchKeywordsFromSerializedObject(SerializedObject);
+            overrideDrawers = OverrideConfigurationDrawers();
 
             // Save the asset in case it was just generated.
             if (!AssetDatabase.Contains(Configuration))
                 SaveConfigurationObject(Configuration);
 
-            assetTargets = new[] { Configuration };
+            assetTargets = new UnityEngine.Object[] { Configuration };
         }
 
         public override void OnTitleBarGUI ()
@@ -111,6 +99,12 @@ namespace Naninovel
                 SerializedObject.ApplyModifiedProperties();
             }
         }
+
+        /// <summary>
+        /// Return a [property path -> draw property delegate] map to use custom drawers for
+        /// specific properties instead of the default ones in <see cref="DrawDefaultEditor()"/>.
+        /// </summary>
+        protected virtual Dictionary<string, Action<SerializedProperty>> OverrideConfigurationDrawers () => new Dictionary<string, Action<SerializedProperty>>();
 
         /// <summary>
         /// Override this method for custom configuration editors.
@@ -147,10 +141,28 @@ namespace Naninovel
         {
             return settingsPathPrefix + type.Name.Replace("Configuration", string.Empty).InsertCamel();
         }
+        
+        protected static void InitializeImplementationOptions<TImplementation> (ref string[] values, ref string[] labels)
+        {
+            values = Engine.Types
+                .Where(t => !t.IsAbstract && t.GetInterfaces().Contains(typeof(TImplementation)))
+                .Select(t => t.AssemblyQualifiedName).ToArray();
+            labels = values.Select(s => s.GetBefore(",")).ToArray();
+        }
+        
+        protected static void DrawImplementationDropdown (SerializedProperty property, string[] values, string[] labels)
+        {
+            var label = EditorGUI.BeginProperty(Rect.zero, null, property);
+            var curIndex = ArrayUtility.IndexOf(values, property.stringValue ?? string.Empty);
+            var newIndex = EditorGUILayout.Popup(label, curIndex, labels);
+            property.stringValue = values.IsIndexValid(newIndex) ? values[newIndex] : string.Empty;
+            EditorGUI.EndProperty();
+        }
 
         private static void SaveConfigurationObject (Configuration configuration)
         {
-            var dirPath = PathUtils.Combine(Application.dataPath, $"{GeneratedDataPath}/Resources/{ProjectConfigurationProvider.DefaultResourcesPath}");
+            var generatedDataPath = ProjectConfigurationProvider.LoadOrDefault<EngineConfiguration>().GeneratedDataPath;
+            var dirPath = PathUtils.Combine(Application.dataPath, $"{generatedDataPath}/Resources/{ProjectConfigurationProvider.DefaultResourcesPath}");
             var assetPath = PathUtils.AbsoluteToAssetPath(PathUtils.Combine(dirPath, $"{configuration.GetType().Name}.asset"));
             System.IO.Directory.CreateDirectory(dirPath);
             AssetDatabase.CreateAsset(configuration, assetPath);
@@ -159,7 +171,8 @@ namespace Naninovel
         }
 
         /// <summary>
-        /// Builds a <see cref="Naninovel.Configuration"/> to <see cref="ConfigurationSettings"/> types map based on the available implementations in the project. 
+        /// Builds a <see cref="Naninovel.Configuration"/> to <see cref="ConfigurationSettings"/> types map based on
+        /// the available implementations in the project with <see cref="Naninovel.Configuration.EditInProjectSettingsAttribute"/> applied.
         /// When a <see cref="ConfigurationSettings{TConfig}"/> for a configuration is found, will map it, otherwise will use a base <see cref="ConfigurationSettings"/>.
         /// </summary>
         private static Dictionary<Type, Type> BuildSettingsTypeMap ()
@@ -176,13 +189,37 @@ namespace Naninovel
                 return false;
             }
 
-            var configTypes = ReflectionUtils.ExportedDomainTypes.Where(t => t.IsSubclassOf(typeof(Configuration)) && !t.IsAbstract);
-            var editorTypes = ReflectionUtils.ExportedDomainTypes.Where(t => t.IsSubclassOf(typeof(ConfigurationSettings)) && !t.IsAbstract);
+            var configTypes = new List<Type>();
+            var editorTypes = new List<Type>();
+            foreach (var type in Engine.Types)
+            {
+                if (type.IsAbstract) continue;
+                if (type.IsSubclassOf(typeof(Configuration)) && type.IsDefined(typeof(Configuration.EditInProjectSettingsAttribute)))
+                    configTypes.Add(type);
+                else if (type.IsSubclassOf(typeof(ConfigurationSettings)))
+                    editorTypes.Add(type);
+            }
+            
             var typeMap = new Dictionary<Type, Type>();
             foreach (var configType in configTypes)
             {
-                var editorType = editorTypes.FirstOrDefault(t => IsEditorFor(t, configType)) ?? typeof(ConfigurationSettings);
-                typeMap.Add(configType, editorType);
+                var compatibleEditors = editorTypes.Where(t => IsEditorFor(t, configType)).ToList();
+                if (compatibleEditors.Count == 0) // No specialized editors are found; use the default one.
+                    typeMap.Add(configType, typeof(ConfigurationSettings));
+                else if (compatibleEditors.Count == 1) // Single specialized editor is found; use it.
+                    typeMap.Add(configType, compatibleEditors.First());
+                else // Multiple specialized editors for the config are found.
+                {
+                    if (compatibleEditors.Count > 2)
+                        Debug.LogWarning($"Multiple editors for `{configType}` configuration are found. That is not supported. First overridden one will be used.");
+                    var overriddenEditor = compatibleEditors.Find(t => t.IsDefined(typeof(OverrideSettingsAttribute)));
+                    if (overriddenEditor is null)
+                    {
+                        Debug.LogWarning($"Multiple editors for `{configType}` configuration are found, while none has `{nameof(OverrideSettingsAttribute)}` applied. First found one will be used.");
+                        typeMap.Add(configType, compatibleEditors.First());
+                    }
+                    else typeMap.Add(configType, overriddenEditor);
+                }
             }
 
             return typeMap;

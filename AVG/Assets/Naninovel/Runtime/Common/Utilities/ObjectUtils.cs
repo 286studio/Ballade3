@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -27,7 +27,7 @@ namespace Naninovel
         /// <summary>
         /// Invokes <see cref="DestroyOrImmediate(Object)"/> on each direct descendent of the provided transform.
         /// </summary>
-        public static void DestroyAllChilds (Transform trs)
+        public static void DestroyAllChildren (Transform trs)
         {
             var childCount = trs.childCount;
             for (int i = 0; i < childCount; i++)
@@ -36,7 +36,7 @@ namespace Naninovel
 
         /// <summary>
         /// Wrapper over FindObjectsOfType to allow searching by any type and with predicate.
-        /// Be aware this is slow and scales lineary with scene complexity.
+        /// Be aware this is slow and scales linearly with scene complexity.
         /// </summary>
         public static T FindObject<T> (Predicate<T> predicate = null) where T : class
         {
@@ -46,12 +46,12 @@ namespace Naninovel
 
         /// <summary>
         /// Wrapper over FindObjectsOfType to allow searching by any type and with predicate.
-        /// Be aware this is slow and scales lineary with scene complexity.
+        /// Be aware this is slow and scales linearly with scene complexity.
         /// </summary>
         public static List<T> FindObjects<T> (Predicate<T> predicate = null) where T : class
         {
-            return Object.FindObjectsOfType<Object>().Where(obj => obj is T &&
-                (predicate == null || predicate(obj as T))).Cast<T>().ToList();
+            return Object.FindObjectsOfType<Object>().Where(obj => obj is T arg &&
+                (predicate == null || predicate(arg))).Cast<T>().ToList();
         }
 
         /// <summary>
@@ -61,13 +61,12 @@ namespace Naninovel
         {
             var objectType = unityObject.GetType();
             Debug.Assert(Object.FindObjectsOfType(objectType).Length == 1,
-               string.Format("More than one instance of {0} found on scene.", objectType.Name));
+                $"More than one instance of {objectType.Name} found on scene.");
         }
 
         /// <summary>
         /// Asserts validity of all the required objects.
         /// </summary>
-        /// <param name="unityObject"></param>
         /// <param name="requiredObjects">Objects to check for validity.</param>
         /// <returns>Whether all the required objects are valid.</returns>
         public static bool AssertRequiredObjects (this Object unityObject, params Object[] requiredObjects)
@@ -94,13 +93,31 @@ namespace Naninovel
         }
 
         /// <summary>
-        /// Checks if provided reference targets to a valid (not-destoyed) <see cref="UnityEngine.Object"/>.
+        /// Checks if provided reference targets to a valid (not-destroyed) <see cref="UnityEngine.Object"/>.
         /// </summary>
         public static bool IsValid (object obj)
         {
             if (obj is UnityEngine.Object unityObject)
                 return unityObject != null && unityObject;
             else return false;
+        }
+
+        /// <summary>
+        /// Checks whether the provided game object is currently edited in prefab isolation mode.
+        /// Always returns false in case provided object is not valid and in builds.
+        /// </summary>
+        public static bool IsEditedInPrefabMode (GameObject obj)
+        {
+            if (!IsValid(obj)) return false;
+            #if UNITY_EDITOR
+            #if UNITY_2021_2_OR_NEWER
+            return UnityEditor.SceneManagement.PrefabStageUtility.GetPrefabStage(obj) != null;
+            #else
+            return UnityEditor.Experimental.SceneManagement.PrefabStageUtility.GetPrefabStage(obj) != null;
+            #endif
+            #else
+            return false;
+            #endif
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using UnityEngine.EventSystems;
 
@@ -6,7 +6,7 @@ namespace Naninovel
 {
     public abstract class ScriptableUIComponent<T> : ScriptableUIBehaviour where T : UIBehaviour
     {
-        public T UIComponent { get { return uiComponent ?? (uiComponent = GetComponent<T>()); } }
+        public virtual T UIComponent => uiComponent ? uiComponent : (uiComponent = GetComponent<T>());
 
         private T uiComponent;
     }

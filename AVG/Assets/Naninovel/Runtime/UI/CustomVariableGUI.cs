@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -8,9 +8,9 @@ namespace Naninovel.UI
 {
     public class CustomVariableGUI : MonoBehaviour
     {
-        private class Record : IEquatable<Record>
+        private class Record
         {
-            public string Name = string.Empty, Value = string.Empty, EditedValue = string.Empty;
+            public string Name, Value, EditedValue;
             public bool Changed => !Value.Equals(EditedValue, StringComparison.Ordinal);
 
             public Record (string name, string value)
@@ -18,12 +18,6 @@ namespace Naninovel.UI
                 Name = name;
                 Value = EditedValue = value;
             }
-
-            public override bool Equals (object obj) => obj is Record record && Equals(record);
-            public bool Equals (Record other) => Name == other.Name;
-            public override int GetHashCode () => 539060726 + EqualityComparer<string>.Default.GetHashCode(Name);
-            public static bool operator == (Record left, Record right) => left.Equals(right);
-            public static bool operator != (Record left, Record right) => !(left == right);
         }
 
         private const float width = 400;
@@ -45,6 +39,12 @@ namespace Naninovel.UI
                 instance = Engine.CreateObject<CustomVariableGUI>(nameof(CustomVariableGUI));
             show = !show;
             if (show) instance.UpdateRecords();
+        }
+        
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetOnPlayMode ()
+        {
+            show = false;
         }
 
         private void Awake ()

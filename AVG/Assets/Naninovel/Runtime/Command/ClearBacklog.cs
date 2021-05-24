@@ -1,16 +1,12 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
-using System.Threading;
 using UniRx.Async;
 
 namespace Naninovel.Commands
 {
     /// <summary>
-    /// Removes all the messages from [printer backlog](/guide/printer-backlog.md).
+    /// Removes all the messages from [printer backlog](/guide/text-printers.md#printer-backlog).
     /// </summary>
-    /// <example>
-    /// @clearBacklog
-    /// </example>
     public class ClearBacklog : Command
     {
         public override UniTask ExecuteAsync (CancellationToken cancellationToken = default)

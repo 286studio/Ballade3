@@ -1,8 +1,8 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
-using Naninovel.Commands;
 using System;
 using System.Collections.Generic;
+using Naninovel.Commands;
 using UniRx.Async;
 
 namespace Naninovel
@@ -45,11 +45,6 @@ namespace Naninovel
         /// Whether script playback routine is currently running.
         /// </summary>
         bool Playing { get; }
-        /// <summary>
-        /// Whether skip mode can be enabled at the moment.
-        /// Result depends on <see cref="PlayerSkipMode"/> and currently played command.
-        /// </summary>
-        bool SkipAllowed { get; }
         /// <summary>
         /// Whether skip mode is currently active.
         /// </summary>
@@ -94,23 +89,6 @@ namespace Naninovel
         /// Total number of unique commands ever played by the player (global state scope).
         /// </summary>
         int PlayedCommandsCount { get; }
-
-        /// <summary>
-        /// Adds an delegate to invoke before a command is going to be executed.
-        /// </summary>
-        void AddPreExecutionTask (Func<Command, UniTask> taskFunc);
-        /// <summary>
-        /// Removes an delegate to invoke before a command is going to be executed.
-        /// </summary>
-        void RemovePreExecutionTask (Func<Command, UniTask> taskFunc);
-        /// <summary>
-        /// Adds an delegate to invoke after a command is executed.
-        /// </summary>
-        void AddPostExecutionTask (Func<Command, UniTask> taskFunc);
-        /// <summary>
-        /// Removes an delegate to invoke after a command is executed.
-        /// </summary>
-        void RemovePostExecutionTask (Func<Command, UniTask> taskFunc);
         /// <summary>
         /// Starts <see cref="PlayedScript"/> playback at <see cref="PlayedIndex"/>.
         /// </summary>
@@ -129,14 +107,14 @@ namespace Naninovel
         /// <param name="startInlineIndex">Command inline index to start playback from.</param>
         void Play (Script script, int startLineIndex = 0, int startInlineIndex = 0);
         /// <summary>
-        /// Loads a script with the provided name, preloads the script's commands and starts playing at the provided line and inline indexes or a label;
+        /// Preloads the script's commands and starts playing at the provided line and inline indexes or a label;
         /// when <paramref name="label"/> is provided, will ignore line and inline indexes.
         /// </summary>
-        /// <param name="scriptName">Name (resource path) of the script to load and play.</param>
+        /// <param name="script">The script to play.</param>
         /// <param name="startLineIndex">Line index to start playback from.</param>
         /// <param name="startInlineIndex">Command inline index to start playback from.</param>
         /// <param name="label">Name of a label within the script to start playback from.</param>
-        UniTask PreloadAndPlayAsync (string scriptName, int startLineIndex = 0, int startInlineIndex = 0, string label = null);
+        UniTask PreloadAndPlayAsync (Script script, int startLineIndex = 0, int startInlineIndex = 0, string label = null);
         /// <summary>
         /// Halts the playback of the currently played script.
         /// </summary>
@@ -160,5 +138,30 @@ namespace Naninovel
         /// Sets the player waiting for input mode.
         /// </summary>
         void SetWaitingForInputEnabled (bool enabled);
-    } 
+        /// <summary>
+        /// Adds a task to perform before a command is executed.
+        /// </summary>
+        void AddPreExecutionTask (Func<Command, UniTask> task);
+        /// <summary>
+        /// Removes a task to perform before a command is executed.
+        /// </summary>
+        void RemovePreExecutionTask (Func<Command, UniTask> task);
+        /// <summary>
+        /// Adds a task to perform after a command is executed.
+        /// </summary>
+        void AddPostExecutionTask (Func<Command, UniTask> task);
+        /// <summary>
+        /// Removes a task to perform after a command is executed.
+        /// </summary>
+        void RemovePostExecutionTask (Func<Command, UniTask> task);
+        /// <summary>
+        /// Requests lazy cancellation of all the concurrently-running commands (via <see cref="CancellationToken.CancelLazy"/>)
+        /// and waits for them to finish before performing the provided task and executing next commands.
+        /// </summary>
+        UniTask SynchronizeAndDoAsync (Func<UniTask> task);
+        /// <summary>
+        /// Whether the player has ever played a command at the provided script and playlist index (global state).
+        /// </summary>
+        bool HasPlayed (string scriptName, int playlistIndex);
+    }
 }

@@ -1,6 +1,7 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
+using UnityEditor;
 using UnityEngine.UIElements;
 
 namespace Naninovel
@@ -12,7 +13,9 @@ namespace Naninovel
         public PaginationView (Action nextPageSelected, Action previousPageSelected)
         {
             styleSheets.Add(ScriptView.StyleSheet);
-            if (ScriptView.CustomStyleSheet != null)
+            if (EditorGUIUtility.isProSkin)
+                styleSheets.Add(ScriptView.DarkStyleSheet);
+            if (ScriptView.CustomStyleSheet)
                 styleSheets.Add(ScriptView.CustomStyleSheet);
 
             var prevButton = new Button(previousPageSelected);

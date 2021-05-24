@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -29,10 +29,7 @@ namespace Naninovel
             {
                 var specialFolderStr = rootPath.GetBetween("%SPECIAL{", "}%");
                 if (!Enum.TryParse<Environment.SpecialFolder>(specialFolderStr, true, out var specialFolder))
-                {
-                    Debug.LogError($"Failed to parse `{rootPath}` special folder path for local resource provider root.");
-                    return;
-                }
+                    throw new Exception($"Failed to parse `{rootPath}` special folder path for local resource provider root.");
                 RootPath = string.Concat(Environment.GetFolderPath(specialFolder), rootPath.GetAfterFirst("}%"));
             }
             else RootPath = rootPath; // Absolute path.
@@ -68,7 +65,7 @@ namespace Naninovel
 
         protected override void DisposeResource (Resource resource)
         {
-            if (!resource.IsValid) return;
+            if (!resource.Valid) return;
             ObjectUtils.DestroyOrImmediate(resource.Object);
         }
 
@@ -76,10 +73,7 @@ namespace Naninovel
         {
             var resourceType = typeof(T);
             if (!converters.ContainsKey(resourceType))
-            {
-                Debug.LogError($"Converter for resource of type '{resourceType.Name}' is not available.");
-                return null;
-            }
+                throw new Exception($"Converter for resource of type '{resourceType.Name}' is not available.");
             return converters[resourceType] as IRawConverter<T>;
         }
     }

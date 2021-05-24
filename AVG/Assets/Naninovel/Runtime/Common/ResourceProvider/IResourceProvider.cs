@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -7,7 +7,7 @@ using UniRx.Async;
 namespace Naninovel
 {
     /// <summary>
-    /// Implementation is able to load and unload <see cref="Resource"/> objects at runtime.
+    /// Implementation is able to load and unload <see cref="Resource"/> objects from a specific provision source.
     /// </summary>
     public interface IResourceProvider
     {
@@ -31,7 +31,7 @@ namespace Naninovel
         /// <summary>
         /// Returns a collection of resources loaded by the provider.
         /// </summary>
-        IEnumerable<Resource> LoadedResources { get; }
+        IReadOnlyCollection<Resource> LoadedResources { get; }
 
         /// <summary>
         /// Whether the provider can work with resource objects of the provided type.
@@ -49,19 +49,19 @@ namespace Naninovel
         /// </summary>
         /// <typeparam name="T">Type of the resources to load.</typeparam>
         /// <param name="path">Path to the resources location.</param>
-        UniTask<IEnumerable<Resource<T>>> LoadResourcesAsync<T> (string path) where T : UnityEngine.Object;
+        UniTask<IReadOnlyCollection<Resource<T>>> LoadResourcesAsync<T> (string path) where T : UnityEngine.Object;
         /// <summary>
         /// Locates all available resources at the provided path.
         /// </summary>
         /// <typeparam name="T">Type of the resources to locate.</typeparam>
         /// <param name="path">Path (root) to the resources location.</param>
         /// <returns>Collection of the located resource paths.</returns>
-        UniTask<IEnumerable<string>> LocateResourcesAsync<T> (string path) where T : UnityEngine.Object;
+        UniTask<IReadOnlyCollection<string>> LocateResourcesAsync<T> (string path) where T : UnityEngine.Object;
         /// <summary>
         /// Locates all available folders at the provided path.
         /// </summary>
         /// <param name="path">Path to the parent folder or empty string if none.</param>
-        UniTask<IEnumerable<Folder>> LocateFoldersAsync (string path);
+        UniTask<IReadOnlyCollection<Folder>> LocateFoldersAsync (string path);
         /// <summary>
         /// Checks whether resource with the provided type and path is available.
         /// </summary>

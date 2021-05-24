@@ -1,52 +1,25 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
+using System;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.EventSystems;
 
 namespace Naninovel
 {
     [RequireComponent(typeof(CanvasGroup)), RequireComponent(typeof(UnityEngine.UI.Button))]
     public class ScriptableGridSlot : ScriptableButton, IPointerEnterHandler, IPointerExitHandler, ISelectHandler, IDeselectHandler
-    { 
-        public class Constructor<TSlot> where TSlot : ScriptableGridSlot
-        {
-            public readonly TSlot ConstructedSlot;
+    {
+        [Serializable]
+        private class OnSlotClickedEvent : UnityEvent<string> { }
 
-            public Constructor (TSlot prototype, string id, OnClicked onClicked = null)
-            {
-                ConstructedSlot = Instantiate(prototype);
-                ConstructedSlot.Id = id;
-                ConstructedSlot.onClickedAction = onClicked;
-            }
-        }
+        public virtual string Id { get; }
 
-        /// <summary>
-        /// Action to invoke when the slot body is clicked by the user.
-        /// </summary>
-        /// <param name="slotId">ID of the clicked slot.</param>
-        public delegate void OnClicked (string slotId);
-
-        public string Id { get; private set; }
-        public int NumberInGrid => transform.GetSiblingIndex() + 1;
-
+        [Tooltip("Opacity to fade to when the slot is hovered or selected; set to zero to disable the fade behaviour.")]
         [SerializeField] private float hoverOpacityFade = .25f;
+        [SerializeField] private OnSlotClickedEvent onSlotClicked = default;
 
-        private Tweener<FloatTween> fadeTweener;
-        private OnClicked onClickedAction;
-
-        protected override void Awake ()
-        {
-            base.Awake();
-
-            fadeTweener = new Tweener<FloatTween>();
-        }
-
-        protected override void Start ()
-        {
-            base.Start();
-
-            SetOpacity(1 - hoverOpacityFade);
-        }
+        private readonly Tweener<FloatTween> fadeTweener = new Tweener<FloatTween>();
 
         public virtual void OnPointerEnter (PointerEventData eventData) => FadeInSlot();
 
@@ -56,15 +29,24 @@ namespace Naninovel
 
         public virtual void OnDeselect (BaseEventData eventData) => FadeOutSlot();
 
+        protected override void Start ()
+        {
+            base.Start();
+
+            if (hoverOpacityFade > 0)
+                SetOpacity(1 - hoverOpacityFade);
+        }
+
         protected override void OnButtonClick ()
         {
             base.OnButtonClick();
 
-            onClickedAction?.Invoke(Id);
+            onSlotClicked?.Invoke(Id);
         }
 
         protected virtual void FadeInSlot ()
         {
+            if (hoverOpacityFade <= 0) return;
             if (fadeTweener.Running) fadeTweener.CompleteInstantly();
             var tween = new FloatTween(Opacity, 1f, FadeTime, SetOpacity, true, target: this);
             fadeTweener.Run(tween);
@@ -72,6 +54,7 @@ namespace Naninovel
 
         protected virtual void FadeOutSlot ()
         {
+            if (hoverOpacityFade <= 0) return;
             if (fadeTweener.Running) fadeTweener.CompleteInstantly();
             var tween = new FloatTween(Opacity, 1f - hoverOpacityFade, FadeTime, SetOpacity, true, target: this);
             fadeTweener.Run(tween);

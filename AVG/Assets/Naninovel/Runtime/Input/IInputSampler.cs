@@ -1,7 +1,6 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
-using System.Threading;
 using UniRx.Async;
 using UnityEngine;
 
@@ -26,6 +25,10 @@ namespace Naninovel
         /// </summary>
         InputBinding Binding { get; }
         /// <summary>
+        /// Whether input should be sampled; can be used to temporary "mute" specific inputs.
+        /// </summary>
+        bool Enabled { get; set; }
+        /// <summary>
         /// Whether input is being activated.
         /// </summary>
         bool Active { get; }
@@ -42,6 +45,11 @@ namespace Naninovel
         /// </summary>
         bool EndedDuringFrame { get; }
 
+        /// <summary>
+        /// Activates the input.
+        /// </summary>
+        /// <param name="value">Value (force) of the activation, in 0.0 to 1.0 range.</param>
+        void Activate (float value);
         /// <summary>
         /// When any of the provided game objects are clicked or touched, input event will trigger.
         /// </summary>
@@ -66,10 +74,10 @@ namespace Naninovel
         /// <summary>
         /// Returned token will be canceled on next input start activation.
         /// </summary>
-        CancellationToken GetInputStartCancellationToken ();
+        System.Threading.CancellationToken GetInputStartCancellationToken ();
         /// <summary>
         /// Returned token will be canceled on next input end activation.
         /// </summary>
-        CancellationToken GetInputEndCancellationToken ();
+        System.Threading.CancellationToken GetInputEndCancellationToken ();
     }
 }

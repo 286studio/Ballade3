@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using UnityEngine;
 
@@ -13,7 +13,7 @@ namespace Naninovel
         public string Path => path;
         public string Name => Path.Contains("/") ? Path.GetAfter("/") : Path;
 
-        [SerializeField] string path = null;
+        [SerializeField] private string path = null;
 
         public Folder (string path)
         {

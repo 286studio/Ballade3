@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using UniRx.Async;
 using UnityEngine;
@@ -10,10 +10,10 @@ namespace Naninovel
     /// </summary>
     public class JpgOrPngToTextureConverter : IRawConverter<Texture2D>
     {
-        public RawDataRepresentation[] Representations { get { return new RawDataRepresentation[] {
+        public RawDataRepresentation[] Representations { get; } = {
             new RawDataRepresentation(".png", "image/png"),
             new RawDataRepresentation(".jpg", "image/jpeg")
-        }; } }
+        };
 
         public Texture2D Convert (byte[] obj, string name)
         {

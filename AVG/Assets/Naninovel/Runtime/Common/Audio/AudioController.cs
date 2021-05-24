@@ -1,8 +1,7 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using UniRx.Async;
 using UnityEngine;
 using UnityEngine.Audio;
@@ -18,7 +17,7 @@ namespace Naninovel
         public float Volume { get => AudioListener.volume; set => AudioListener.volume = value; }
         public bool Mute { get => AudioListener.pause; set => AudioListener.pause = value; }
 
-        private readonly Dictionary<AudioClip, AudioTrack> audioTracks = new Dictionary<AudioClip, AudioTrack>();
+        private readonly List<AudioTrack> audioTracks = new List<AudioTrack>();
         private readonly Stack<AudioSource> sourcesPool = new Stack<AudioSource>();
         private AudioListener listenerCache;
         private Tweener<FloatTween> listenerVolumeTweener;
@@ -50,15 +49,15 @@ namespace Naninovel
         public bool ClipPlaying (AudioClip clip)
         {
             if (!clip) return false;
-            return audioTracks.ContainsKey(clip) && audioTracks[clip].Playing;
+            return audioTracks.Any(t => t.Clip == clip && t.Playing);
         }
 
         public void PlayClip (AudioClip clip, AudioSource audioSource = null, float volume = 1f, 
-            bool loop = false, AudioMixerGroup mixerGroup = null, AudioClip introClip = null)
+            bool loop = false, AudioMixerGroup mixerGroup = null, AudioClip introClip = null, bool additive = false)
         {
             if (!clip) return;
 
-            if (audioTracks.ContainsKey(clip)) StopClip(clip);
+            if (!additive) StopClip(clip);
             PoolUnusedSources();
 
             // In case user somehow provided one of our pooled sources, don't use it.
@@ -66,16 +65,16 @@ namespace Naninovel
             if (!audioSource) audioSource = GetPooledSource();
 
             var track = new AudioTrack(clip, audioSource, volume, loop, mixerGroup, introClip);
-            audioTracks.Add(clip, track);
+            audioTracks.Add(track);
             track.Play();
         }
 
         public async UniTask PlayClipAsync (AudioClip clip, float fadeInTime, AudioSource audioSource = null, float volume = 1f,
-            bool loop = false, AudioMixerGroup mixerGroup = null, AudioClip introClip = null, CancellationToken cancellationToken = default)
+            bool loop = false, AudioMixerGroup mixerGroup = null, AudioClip introClip = null, bool additive = false, CancellationToken cancellationToken = default)
         {
             if (!clip) return;
 
-            if (audioTracks.ContainsKey(clip)) StopClip(clip);
+            if (!additive) StopClip(clip);
             PoolUnusedSources();
 
             // In case user somehow provided one of our pooled sources, don't use it.
@@ -83,37 +82,49 @@ namespace Naninovel
             if (!audioSource) audioSource = GetPooledSource();
 
             var track = new AudioTrack(clip, audioSource, volume, loop, mixerGroup, introClip);
-            audioTracks.Add(clip, track);
+            audioTracks.Add(track);
             await track.PlayAsync(fadeInTime, cancellationToken);
         }
 
         public void StopClip (AudioClip clip)
         {
             if (!clip || !ClipPlaying(clip)) return;
-            GetTrack(clip).Stop();
+            foreach (var track in GetTracks(clip))
+                track.Stop();
         }
 
         public void StopAllClips ()
         {
-            foreach (var track in audioTracks.Values)
+            foreach (var track in GetAllTracks())
                 track.Stop();
         }
 
         public async UniTask StopClipAsync (AudioClip clip, float fadeOutTime, CancellationToken cancellationToken = default)
         {
             if (!clip || !ClipPlaying(clip)) return;
-            await GetTrack(clip).StopAsync(fadeOutTime, cancellationToken);
+            var tasks = new List<UniTask>();
+            foreach (var track in GetTracks(clip))
+                tasks.Add(track.StopAsync(fadeOutTime, cancellationToken));
+            await UniTask.WhenAll(tasks);
         }
 
         public async UniTask StopAllClipsAsync (float fadeOutTime, CancellationToken cancellationToken = default)
         {
-            await UniTask.WhenAll(audioTracks.Values.Select(t => t.StopAsync(fadeOutTime, cancellationToken)));
+            var tasks = new List<UniTask>();
+            foreach (var track in GetAllTracks())
+                tasks.Add(track.StopAsync(fadeOutTime, cancellationToken));
+            await UniTask.WhenAll(tasks);
         }
 
-        public AudioTrack GetTrack (AudioClip clip)
+        public IReadOnlyCollection<AudioTrack> GetTracks (AudioClip clip)
         {
             if (!clip) return null;
-            return audioTracks.ContainsKey(clip) ? audioTracks[clip] : null;
+            return audioTracks.Where(t => t.Clip == clip).ToArray();
+        }
+        
+        public IReadOnlyCollection<AudioTrack> GetAllTracks ()
+        {
+            return audioTracks.ToArray();
         }
 
         private AudioListener FindOrAddListener ()
@@ -125,7 +136,7 @@ namespace Naninovel
 
         private bool IsOwnedByController (AudioSource audioSource)
         {
-            return GetComponents<AudioSource>().Contains(audioSource);
+            return audioSource && audioSource.gameObject == gameObject;
         }
 
         private AudioSource GetPooledSource ()
@@ -136,13 +147,14 @@ namespace Naninovel
 
         private void PoolUnusedSources ()
         {
-            foreach (var track in audioTracks.Values.ToList())
-                if (!track.Playing)
-                {
-                    if (IsOwnedByController(track.Source))
-                        sourcesPool.Push(track.Source);
-                    audioTracks.Remove(track.Clip);
-                }
+            for (int i = audioTracks.Count - 1; i >= 0; i--)
+            {
+                var track = audioTracks[i];
+                if (track.Playing) continue;
+                if (IsOwnedByController(track.Source))
+                    sourcesPool.Push(track.Source);
+                audioTracks.Remove(track);
+            }
         }
     }
 }

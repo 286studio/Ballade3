@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Naninovel
 {
-    [System.Serializable]
+    [EditInProjectSettings]
     public class CustomVariablesConfiguration : Configuration
     {
         /// <summary>
@@ -14,7 +14,7 @@ namespace Naninovel
         /// </summary>
         public const string GlobalPrefix = "G_";
 
-        [Tooltip("The list of variables to initialize by default. Global variables (names starting with `G_` or `g_`) are intialized on first application start, and others on each state reset.")]
+        [Tooltip("The list of variables to initialize by default. Global variables (names starting with `G_` or `g_`) are initialized on first application start, and others on each state reset.")]
         public List<CustomVariable> PredefinedVariables = new List<CustomVariable>();
 
         /// <summary>

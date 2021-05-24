@@ -1,15 +1,13 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Naninovel
 {
-    public class LineTextField : TextField
+    public sealed class LineTextField : TextField
     {
         private static readonly FieldUndoData undoData;
-
-        private readonly VisualElement inputField;
 
         static LineTextField ()
         {
@@ -25,7 +23,7 @@ namespace Naninovel
             this.value = value;
 
             labelElement.name = "InputLabel";
-            inputField = this.Q<VisualElement>(textInputUssName);
+            var inputField = this.Q<VisualElement>(textInputUssName);
             inputField.RegisterCallback<MouseDownEvent>(HandleFieldMouseDown);
             AddToClassList("Inlined");
 

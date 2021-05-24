@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using System.Threading;
@@ -8,7 +8,6 @@ namespace Naninovel
 {
     public static class SyncContextUtils
     {
-        public static int UnityThreadId { get; private set; }
         public static SynchronizationContext UnitySynchronizationContext { get; private set; }
 
         /// <summary>
@@ -24,7 +23,6 @@ namespace Naninovel
         private static void Initialize ()
         {
             UnitySynchronizationContext = SynchronizationContext.Current;
-            UnityThreadId = Thread.CurrentThread.ManagedThreadId;
         }
     }
 }

@@ -1,8 +1,7 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using UniRx.Async;
 using UnityEngine;
 
@@ -12,32 +11,24 @@ namespace Naninovel.Commands
     /// Arranges specified characters by X-axis.
     /// When no parameters provided, will execute an auto-arrange evenly distributing visible characters by X-axis.
     /// </summary>
-    /// <example>
-    /// ; Evenly distribute all the visible characters
-    /// @arrange
-    /// 
-    /// ; Place character with ID `Jenna` 15%, `Felix` 50% and `Mia` 85% away 
-    /// ; from the left border of the screen.
-    /// @arrange Jenna.15,Felix.50,Mia.85
-    /// </example>
     [CommandAlias("arrange")]
     public class ArrangeCharacters : Command
     {
         /// <summary>
-        /// A collection of character ID to scene X-axis position (relative to the left screen border, in percents) named values.
-        /// Position 0 relates to the left border and 100 to the right border of the screen; 50 is the center.
+        /// A collection of character ID to scene X-axis position (relative to the left scene border, in percents) named values.
+        /// Position 0 relates to the left border and 100 to the right border of the scene; 50 is the center.
         /// </summary>
-        [ParameterAlias(NamelessParameterAlias)]
+        [ParameterAlias(NamelessParameterAlias), IDEActor(CharactersConfiguration.DefaultPathPrefix, 0)]
         public NamedDecimalListParameter CharacterPositions;
         /// <summary>
         /// When performing auto-arrange, controls whether to also make the characters look at the scene origin (enabled by default).
         /// </summary>
-        [ParameterAlias("look")]
+        [ParameterAlias("look"), ParameterDefaultValue("true")]
         public BooleanParameter LookAtOrigin = true;
         /// <summary>
         /// Duration (in seconds) of the arrangement animation. Default value: 0.35 seconds.
         /// </summary>
-        [ParameterAlias("time")]
+        [ParameterAlias("time"), ParameterDefaultValue("0.35")]
         public DecimalParameter Duration = .35f;
 
         public override async UniTask ExecuteAsync (CancellationToken cancellationToken = default)

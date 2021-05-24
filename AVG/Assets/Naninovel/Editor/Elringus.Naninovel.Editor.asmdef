@@ -16,7 +16,10 @@
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": true,
-    "precompiledReferences": [],
+    "precompiledReferences": [
+        "Naninovel.Lexing.dll",
+        "Naninovel.Parsing.dll"
+    ],
     "autoReferenced": true,
     "defineConstraints": [],
     "versionDefines": [
@@ -29,11 +32,6 @@
             "name": "com.elringus.unitygoogledrive",
             "expression": "",
             "define": "UNITY_GOOGLE_DRIVE_AVAILABLE"
-        },
-        {
-            "name": "com.unity.textmeshpro",
-            "expression": "",
-            "define": "TMPRO_AVAILABLE"
         },
         {
             "name": "com.unity.addressables",

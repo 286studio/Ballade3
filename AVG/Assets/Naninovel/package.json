@@ -1,9 +1,9 @@
 {
     "name": "com.elringus.naninovel",
-    "version": "1.9.8",
+    "version": "1.15",
     "displayName": "Naninovel",
-    "description": "Writer-friendly visual novel engine powered by Unity",
-    "unity": "2019.3",
+    "description": "A full-featured, writer-friendly and completely customizable visual novel extension for Unity game engine",
+    "unity": "2019.4",
     "author": {
         "name": "Elringus",
         "url": "https://naninovel.com"

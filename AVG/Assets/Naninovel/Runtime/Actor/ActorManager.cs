@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -9,7 +9,7 @@ using UnityEngine;
 namespace Naninovel
 {
     /// <inheritdoc cref="IActorManager{TActor, TState, TMeta, TConfig}"/>
-    public abstract class ActorManager<TActor, TState, TMeta, TConfig> : IActorManager<TActor, TState, TMeta, TConfig>, IStatefulService<GameStateMap>
+    public abstract class ActorManager<TActor, TState, TMeta, TConfig> : IActorManager<TActor, TState, TMeta, TConfig>
         where TActor : IActor
         where TState : ActorState<TActor>, new()
         where TMeta : ActorMetadata
@@ -44,29 +44,31 @@ namespace Naninovel
             }
         }
 
+        public event Action<string> OnActorAdded;
+        public event Action<string> OnActorRemoved;
+        
         public TConfig Configuration { get; }
-        ActorManagerConfiguration IActorManager.Configuration => Configuration;
+        public ActorManagerConfiguration ActorManagerConfiguration => Configuration;
 
         protected readonly Dictionary<string, TActor> ManagedActors;
 
-        private static readonly IEnumerable<Type> implementationTypes;
+        private static IReadOnlyCollection<Type> implementationTypes;
 
         private readonly Dictionary<string, UniTaskCompletionSource<TActor>> pendingAddActorTasks;
 
-        static ActorManager ()
-        {
-            implementationTypes = ReflectionUtils.ExportedDomainTypes
-                .Where(t => t.GetInterfaces().Contains(typeof(TActor)));
-        }
-
-        public ActorManager (TConfig config)
+        protected ActorManager (TConfig config)
         {
             Configuration = config;
             ManagedActors = new Dictionary<string, TActor>(StringComparer.Ordinal);
             pendingAddActorTasks = new Dictionary<string, UniTaskCompletionSource<TActor>>();
         }
 
-        public virtual UniTask InitializeServiceAsync () => UniTask.CompletedTask;
+        public virtual UniTask InitializeServiceAsync ()
+        {
+            if (implementationTypes is null)
+                implementationTypes = Engine.Types.Where(t => t.GetInterfaces().Contains(typeof(TActor))).ToArray();
+            return UniTask.CompletedTask;
+        }
 
         public virtual void ResetService ()
         {
@@ -112,7 +114,7 @@ namespace Naninovel
             }
         }
 
-        public bool ActorExists (string actorId) => !string.IsNullOrEmpty(actorId) && ManagedActors.ContainsKey(actorId);
+        public virtual bool ActorExists (string actorId) => !string.IsNullOrEmpty(actorId) && ManagedActors.ContainsKey(actorId);
 
         public virtual async UniTask<TActor> AddActorAsync (string actorId)
         {
@@ -133,6 +135,8 @@ namespace Naninovel
             pendingAddActorTasks[actorId].TrySetResult(constructedActor);
             pendingAddActorTasks.Remove(actorId);
 
+            OnActorAdded?.Invoke(actorId);
+            
             return constructedActor;
         }
 
@@ -153,11 +157,8 @@ namespace Naninovel
 
         public virtual TActor GetActor (string actorId)
         {
-            if (!ActorExists(actorId))
-            {
-                Debug.LogError($"Can't find '{actorId}' actor.");
-                return default;
-            }
+            if (!ActorExists(actorId)) 
+                throw new Exception($"Can't find '{actorId}' actor.");
 
             return ManagedActors[actorId];
         }
@@ -166,16 +167,19 @@ namespace Naninovel
 
         public virtual async UniTask<TActor> GetOrAddActorAsync (string actorId) => ActorExists(actorId) ? GetActor(actorId) : await AddActorAsync(actorId);
 
-        public virtual IEnumerable<TActor> GetAllActors () => ManagedActors?.Values;
+        public virtual IReadOnlyCollection<TActor> GetAllActors () => ManagedActors?.Values;
 
-        IEnumerable<IActor> IActorManager.GetAllActors () => ManagedActors?.Values.Cast<IActor>();
+        IReadOnlyCollection<IActor> IActorManager.GetAllActors () => ManagedActors?.Values.Cast<IActor>().ToArray();
 
         public virtual void RemoveActor (string actorId)
         {
             if (!ActorExists(actorId)) return;
+            
             var actor = GetActor(actorId);
             ManagedActors.Remove(actor.Id);
             (actor as IDisposable)?.Dispose();
+            
+            OnActorRemoved?.Invoke(actorId);
         }
 
         public virtual void RemoveAllActors ()
@@ -192,10 +196,7 @@ namespace Naninovel
         public virtual TState GetActorState (string actorId)
         {
             if (!ActorExists(actorId))
-            {
-                Debug.LogError($"Can't retrieve state of a '{actorId}' actor: actor not found.");
-                return default;
-            }
+                throw new Exception($"Can't retrieve state of a '{actorId}' actor: actor not found.");
 
             var actor = GetActor(actorId);
             var state = new TState();
@@ -208,11 +209,11 @@ namespace Naninovel
             var metadata = Configuration.GetMetadataOrDefault(actorId);
 
             var implementationType = implementationTypes.FirstOrDefault(t => t.AssemblyQualifiedName == metadata.Implementation);
-            Debug.Assert(implementationType != null, $"`{metadata.Implementation}` actor implementation type for `{typeof(TActor).Name}` is not found.");
+            if (implementationType is null) throw new Exception($"`{metadata.Implementation}` actor implementation type for `{typeof(TActor).Name}` is not found.");
 
             var actor = default(TActor);
             try { actor = (TActor)Activator.CreateInstance(implementationType, actorId, metadata); }
-            catch { Debug.LogError($"Failed to create instance of `{implementationType.FullName}` actor. Make sure the implementation has a compatible constructor."); }
+            catch { throw new Exception($"Failed to create instance of `{implementationType.FullName}` actor. Make sure the implementation has a compatible constructor."); }
 
             await actor.InitializeAsync();
 

@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -8,15 +8,14 @@ using UnityEngine;
 namespace Naninovel
 {
     /// <summary>
-    /// When applied to a <see cref="GameObject"/>, containing child objects with <see cref="SpriteRenderer"/> components (layers), 
-    /// handles the composition (layers enabled state) and rendering to a texture in back to front order based on z-position and sprite order.
-    /// Will prevent the child sprite renderers from being rendered by the cameras at play mode.
+    /// When applied to a <see cref="GameObject"/>, containing child objects with <see cref="Renderer"/> components (layers), 
+    /// handles the composition (layers enabled state) and rendering to a texture in back to front order based on z-position and sort order.
+    /// Will prevent the child renderers from being rendered by the cameras at play mode.
     /// </summary>
-    [ExecuteAlways]
-    public class LayeredActorBehaviour : MonoBehaviour
+    public abstract class LayeredActorBehaviour : MonoBehaviour
     {
         [Serializable]
-        public class CompositionMapItem
+        private class CompositionMapItem
         {
             public string Key = default;
             [TextArea(1, 5)]
@@ -26,20 +25,40 @@ namespace Naninovel
         /// <summary>
         /// Current layer composition of the actor.
         /// </summary>
-        public string Composition => string.Join(splitLiteral, layers.Select(l => $"{l.Group}{(l.Enabled ? enableLiteral : disableLiteral)}{l.Name}"));
+        public virtual string Composition => string.Join(splitLiteral, drawer.Layers.Select(l => $"{l.Group}{(l.Enabled ? enableLiteral : disableLiteral)}{l.Name}"));
+        public virtual bool Animated => animated;
+
+        protected virtual bool Reversed => reversed;
+        protected virtual Material SharedRenderMaterial => renderMaterial;
 
         private const string selectLiteral = ">";
         private const string enableLiteral = "+";
         private const string disableLiteral = "-";
         private const string splitLiteral = ",";
-        private static readonly string[] splitLiterals = new[] { splitLiteral };
+        private static readonly string[] splitLiterals = { splitLiteral };
 
+        [Tooltip("Whether the actor should be rendered every frame. Enable when animating the layers or implementing other dynamic behaviour.")]
+        [SerializeField] private bool animated = false;
+        [Tooltip("Whether to render the layers in a reversed order.")]
+        [SerializeField] private bool reversed = false;
+        [Tooltip("Shared material to use when rendering the layers. Will use layer renderer's material when not assigned.")]
+        [SerializeField] private Material renderMaterial = default;
         [Tooltip("Allows to map layer composition expressions to keys; the keys can then be used to specify layered actor appearances instead of the full expressions.")]
         [SerializeField] private List<CompositionMapItem> compositionMap = new List<CompositionMapItem>();
 
-        private Material renderMaterial;
-        private LayeredActorLayer[] layers;
-        private Vector2 canvasSize;
+        private LayeredDrawer drawer;
+
+        /// <summary>
+        /// Returns all the composition expressions mapped to keys via <see cref="compositionMap"/> serialized field.
+        /// Records with duplicate keys are ignored.
+        /// </summary>
+        public virtual IReadOnlyDictionary<string, string> GetCompositionMap ()
+        {
+            var map = new Dictionary<string, string>();
+            foreach (var item in compositionMap)
+                map[item.Key] = item.Composition;
+            return map;
+        }
 
         /// <summary>
         /// Applies provided layer composition expression to the actor.
@@ -51,7 +70,7 @@ namespace Naninovel
         /// </remarks>
         public virtual void ApplyComposition (string value)
         {
-            if (layers is null || layers.Length == 0 || string.IsNullOrEmpty(value)) return;
+            if (drawer.Layers is null || drawer.Layers.Count == 0 || string.IsNullOrEmpty(value)) return;
 
             value = value.Trim();
 
@@ -64,10 +83,10 @@ namespace Naninovel
             {
                 if (ParseExpression(expression, selectLiteral, out var group, out var name)) // Select expression (>).
                 {
-                    if (string.IsNullOrEmpty(name)) // Enable all in the group, disable all in neighbour groups.
+                    if (string.IsNullOrEmpty(name)) // Enable all in the group, disable all in neighbour groups (recursive).
                     {
                         var parentGroup = group.Contains("/") ? group.GetBeforeLast("/") : string.Empty;
-                        ForEachLayer(l => l.Group.StartsWithFast(parentGroup), l => l.Enabled = l.Group.EqualsFast(group), group);
+                        ForEachLayer(l => l.Group.StartsWithFast(parentGroup), l => l.Enabled = l.Group.StartsWithFast(group), group);
                     }
                     else ForEachLayer(l => l.Group.EqualsFast(group), l => l.Enabled = l.Name.EqualsFast(name), group);
                 }
@@ -93,114 +112,61 @@ namespace Naninovel
             bool ParseExpression (string expression, string operationLiteral, out string group, out string name)
             {
                 group = expression.GetBefore(operationLiteral);
-                if (group is null) { name = null; return false; }
+                if (group is null)
+                {
+                    name = null;
+                    return false;
+                }
                 name = expression.Substring(group.Length + operationLiteral.Length);
                 return true;
             }
 
             void ForEachLayer (Func<LayeredActorLayer, bool> selector, Action<LayeredActorLayer> action, string group)
             {
-                var layers = this.layers.Where(selector);
-                if (layers?.Count() == 0) Debug.LogWarning($"`{gameObject.name}` layered actor composition group `{group}` not found.");
-                else foreach (var layer in layers)
+                var layers = drawer.Layers.Where(selector).ToArray();
+                if (!layers.Any()) Debug.LogWarning($"`{gameObject.name}` layered actor composition group `{group}` not found.");
+                else
+                    foreach (var layer in layers)
                         action.Invoke(layer);
             }
 
             void ForLayer (string group, string name, Action<LayeredActorLayer> action)
             {
-                var layer = this.layers.FirstOrDefault(l => l.Group.EqualsFast(group) && l.Name.EqualsFast(name));
+                var layer = drawer.Layers.FirstOrDefault(l => l.Group.EqualsFast(group) && l.Name.EqualsFast(name));
                 if (layer is null) Debug.LogWarning($"`{gameObject.name}` layered actor layer `{name}` inside composition group `{group}` not found.");
                 else action.Invoke(layer);
             }
         }
 
         /// <summary>
-        /// Renders the enabled layers scaled by <paramref name="pixelsPerUnit"/> to a temporary <see cref="RenderTexture"/>.
-        /// Don't forget to releease unused render textures.
+        /// Rebuilds the layers and associated rendering parameters.
         /// </summary>
-        public virtual RenderTexture Render (int pixelsPerUnit)
+        public virtual void RebuildLayers () => drawer.BuildLayers();
+
+        /// <summary>
+        /// Renders the enabled layers scaled by <paramref name="pixelsPerUnit"/> to the provided or a temporary <see cref="RenderTexture"/>.
+        /// Don't forget to release unused render textures.
+        /// </summary>
+        /// <param name="pixelsPerUnit">PPU to use when rendering.</param>
+        /// <param name="renderTexture">Render texture to render the content into; when not provided, will create a temporary one.</param>
+        /// <returns>Temporary render texture created when no render texture is provided.</returns>
+        public virtual RenderTexture Render (int pixelsPerUnit, RenderTexture renderTexture = default) => drawer.DrawLayers(pixelsPerUnit, renderTexture);
+
+        protected virtual void Awake ()
         {
-            if (layers is null || layers.Length == 0)
-            {
-                Debug.LogWarning($"Can't render layered actor `{name}`: layers data is empty. Make sure the actor prefab contains child objects with at least one sprite renderer.");
-                return null;
-            }
-
-            var renderDimensions = canvasSize * pixelsPerUnit;
-            var renderTexture = RenderTexture.GetTemporary(Mathf.RoundToInt(renderDimensions.x), Mathf.RoundToInt(renderDimensions.y), 24, RenderTextureFormat.ARGB32);
-
-            Graphics.SetRenderTarget(renderTexture);
-            GL.Clear(true, true, Color.clear);
-            GL.PushMatrix();
- 
-            var orthoMin = Vector3.Scale(-renderDimensions / 2f, transform.parent.localScale) + transform.position * pixelsPerUnit;
-            var orthoMax = Vector3.Scale(renderDimensions / 2f, transform.parent.localScale) + transform.position * pixelsPerUnit;
-            var orthoMatrix = Matrix4x4.Ortho(orthoMin.x, orthoMax.x, orthoMin.y, orthoMax.y, 0f, 1000f);
-            var rotationMatrix = Matrix4x4.Rotate(Quaternion.Inverse(transform.parent.localRotation));
-            GL.LoadProjectionMatrix(orthoMatrix);
-
-            for (int i = 0; i < layers.Length; i++)
-            {
-                var layer = layers[i];
-                if (!layer.Enabled) continue;
-                renderMaterial.mainTexture = layer.Texture;
-                renderMaterial.color = layer.SpriteRenderer.color;
-                renderMaterial.SetPass(0);
-                var renderPosition = transform.TransformPoint(rotationMatrix // Compensate actor (parent game object) rotation.
-                    .MultiplyPoint3x4(transform.InverseTransformPoint(layer.Position)));
-                var renderTransform = Matrix4x4.TRS(renderPosition * pixelsPerUnit, layer.Rotation, layer.Scale * pixelsPerUnit);
-                Graphics.DrawMeshNow(layer.Mesh, renderTransform);
-            }
-
-            GL.PopMatrix();
-
-            return renderTexture;
+            drawer = new LayeredDrawer(transform, SharedRenderMaterial, Reversed);
         }
 
-        protected virtual void BuildLayerData ()
+        protected virtual void OnDestroy ()
         {
-            var spriteRenderers = GetComponentsInChildren<SpriteRenderer>()
-                .Where(s => s.sprite)
-                .OrderBy(s => s.sortingOrder)
-                .OrderByDescending(s => s.transform.position.z);
-
-            if (spriteRenderers.Count() == 0)
-            {
-                if (layers?.Length > 0)
-                    Array.Clear(layers, 0, layers.Length);
-                return;
-            }
-
-            var maxPosX = spriteRenderers.Max(s => Mathf.Max(Mathf.Abs(s.bounds.max.x), Mathf.Abs(s.bounds.min.x)));
-            var maxPosY = spriteRenderers.Max(s => Mathf.Max(Mathf.Abs(s.bounds.max.y), Mathf.Abs(s.bounds.min.y)));
-            canvasSize = new Vector2(maxPosX * 2, maxPosY * 2);
-
-            layers = spriteRenderers.Select(s => new LayeredActorLayer(s)).ToArray();
+            drawer?.Dispose();
         }
 
-        private void Awake ()
+        protected virtual void OnDrawGizmos ()
         {
-            renderMaterial = new Material(Shader.Find("Sprites/Default"));
-            renderMaterial.hideFlags = HideFlags.DontSaveInBuild | HideFlags.DontSaveInEditor;
-
-            BuildLayerData();
-        }
-
-        private void Update ()
-        {
-            if (!Application.isPlaying)
-                BuildLayerData();
-        }
-
-        private void OnDrawGizmos ()
-        {
-            Gizmos.DrawWireCube(transform.position, canvasSize);
-        }
-
-        private void OnDestroy ()
-        {
-            if (ObjectUtils.IsValid(renderMaterial))
-                ObjectUtils.DestroyOrImmediate(renderMaterial);
+            if (drawer is null)
+                drawer = new LayeredDrawer(transform, SharedRenderMaterial, Reversed);
+            drawer.DrawGizmos();
         }
     }
 }

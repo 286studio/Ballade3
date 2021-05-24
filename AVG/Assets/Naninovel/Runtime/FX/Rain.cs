@@ -1,8 +1,7 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using Naninovel.Commands;
 using System.Linq;
-using System.Threading;
 using UniRx.Async;
 using UnityEngine;
 
@@ -21,10 +20,14 @@ namespace Naninovel.FX
         [SerializeField] private float defaultVelocityX = 1f;
         [SerializeField] private float defaultVelocityY = 1f;
 
+        private static readonly int tintColorId = Shader.PropertyToID("_TintColor");
+
         private readonly Tweener<FloatTween> intensityTweener = new Tweener<FloatTween>();
         private ParticleSystem particles;
         private ParticleSystem.EmissionModule emissionModule;
         private ParticleSystem.VelocityOverLifetimeModule velocityModule;
+        private Material particlesMaterial;
+        private Color tintColor;
 
         public virtual void SetSpawnParameters (string[] parameters)
         {
@@ -39,7 +42,8 @@ namespace Naninovel.FX
             if (intensityTweener.Running)
                 intensityTweener.CompleteInstantly();
 
-            var tween = new FloatTween(emissionModule.rateOverTimeMultiplier, Intensity, FadeInTime, SetIntensity, target: particles);
+            var time = cancellationToken.CancelLazy ? 0 : FadeInTime;
+            var tween = new FloatTween(emissionModule.rateOverTimeMultiplier, Intensity, time, SetIntensity, target: particles);
             await intensityTweener.RunAsync(tween, cancellationToken);
         }
 
@@ -53,7 +57,8 @@ namespace Naninovel.FX
             if (intensityTweener.Running)
                 intensityTweener.CompleteInstantly();
 
-            var tween = new FloatTween(emissionModule.rateOverTimeMultiplier, 0, FadeOutTime, SetIntensity, target: particles);
+            var time = cancellationToken.CancelLazy ? 0 : FadeOutTime;
+            var tween = new FloatTween(Intensity, 0, time, SetTintOpacity, target: particles);
             await intensityTweener.RunAsync(tween, cancellationToken);
         }
 
@@ -62,6 +67,8 @@ namespace Naninovel.FX
             particles = GetComponent<ParticleSystem>();
             emissionModule = particles.emission;
             velocityModule = particles.velocityOverLifetime;
+            particlesMaterial = GetComponent<ParticleSystemRenderer>().material;
+            tintColor = particlesMaterial.GetColor(tintColorId);
 
             SetIntensity(0);
         }
@@ -75,6 +82,13 @@ namespace Naninovel.FX
         private void SetIntensity (float value)
         {
             emissionModule.rateOverTimeMultiplier = value;
+        }
+
+        private void SetTintOpacity (float value)
+        {
+            var color = tintColor;
+            color.a *= Mathf.Clamp01(value / defaultIntensity);
+            particlesMaterial.SetColor(tintColorId, color);
         }
     }
 }

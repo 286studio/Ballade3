@@ -1,16 +1,16 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using UnityEngine;
 
 namespace Naninovel
 {
-    [System.Serializable]
+    [EditInProjectSettings]
     public class MoviesConfiguration : Configuration
     {
-        public const string DefaultMoviesPathPrefix = "Movies";
+        public const string DefaultPathPrefix = "Movies";
 
         [Tooltip("Configuration of the resource loader used with movie resources.")]
-        public ResourceLoaderConfiguration Loader = new ResourceLoaderConfiguration { PathPrefix = DefaultMoviesPathPrefix };
+        public ResourceLoaderConfiguration Loader = new ResourceLoaderConfiguration { PathPrefix = DefaultPathPrefix };
         [Tooltip("Whether to skip movie playback when user activates `cancel` input keys.")]
         public bool SkipOnInput = true;
         [Tooltip("Whether to skip frames to catch up with current time.")]

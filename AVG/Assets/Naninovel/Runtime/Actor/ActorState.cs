@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using UnityEngine;
 
@@ -25,7 +25,9 @@ namespace Naninovel
 
         [SerializeField] private string appearance = default;
         [SerializeField] private bool visible = false;
+        [ScenePosition]
         [SerializeField] private Vector3 position = Vector3.zero;
+        [DrawAsEuler]
         [SerializeField] private Quaternion rotation = Quaternion.identity;
         [SerializeField] private Vector3 scale = Vector3.one;
         [SerializeField] private Color tintColor = Color.white;

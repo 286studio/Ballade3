@@ -1,13 +1,11 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
-using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace Naninovel
 {
-    [Serializable]
-    public class InputAxisTrigger : IEquatable<InputAxisTrigger>
+    [System.Serializable]
+    public class InputAxisTrigger
     {
         [Tooltip("Name of the axis.")]
         public string AxisName = string.Empty;
@@ -35,36 +33,6 @@ namespace Naninovel
             #else
             return 0;
             #endif
-        }
-
-        public override bool Equals (object obj)
-        {
-            return Equals(obj as InputAxisTrigger);
-        }
-
-        public bool Equals (InputAxisTrigger other)
-        {
-            return other != null &&
-                   AxisName == other.AxisName &&
-                   TriggerMode == other.TriggerMode;
-        }
-
-        public override int GetHashCode ()
-        {
-            var hashCode = 1471448403;
-            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(AxisName);
-            hashCode = hashCode * -1521134295 + TriggerMode.GetHashCode();
-            return hashCode;
-        }
-
-        public static bool operator == (InputAxisTrigger trigger1, InputAxisTrigger trigger2)
-        {
-            return EqualityComparer<InputAxisTrigger>.Default.Equals(trigger1, trigger2);
-        }
-
-        public static bool operator != (InputAxisTrigger trigger1, InputAxisTrigger trigger2)
-        {
-            return !(trigger1 == trigger2);
         }
     }
 }

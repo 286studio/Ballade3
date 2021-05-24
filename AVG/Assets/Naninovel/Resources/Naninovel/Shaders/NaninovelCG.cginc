@@ -1,17 +1,17 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 #ifndef NANINOVEL_CG_INCLUDED
 #define NANINOVEL_CG_INCLUDED
 
 static const float PI = 3.14159;
 
-inline float IsPositionOutsideRect(in float2 position, in float4 rect)
+inline float IsPositionOutsideRect(float2 position, float4 rect)
 {
     float2 isInside = step(rect.xy, position.xy) * step(position.xy, rect.zw);
     return 1.0 - isInside.x * isInside.y;
 }
 
-inline float IsPositionOutsideParallelogram(in float2 position, in float4 rect, in float parallelogramAngle)
+inline float IsPositionOutsideParallelogram(float2 position, float4 rect, float parallelogramAngle)
 {
     float alpha = PI / 2.0 - radians(parallelogramAngle);
     float2 dPoint = rect.zw - rect.xy;
@@ -24,7 +24,7 @@ inline float IsPositionOutsideParallelogram(in float2 position, in float4 rect, 
 }
 
 // Performs standard tex2D but returns clip color when UV is out of 0-1 range.
-inline fixed4 Tex2DClip01(in sampler2D tex, in float2 uvCoord, in fixed4 clipColor)
+inline fixed4 Tex2DClip01(sampler2D tex, float2 uvCoord, fixed4 clipColor)
 {
     const float4 UV_RANGE = float4(0, 0, 1, 1);
     float isUVOutOfRange = IsPositionOutsideRect(uvCoord, UV_RANGE);

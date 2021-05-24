@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -18,7 +18,7 @@ namespace Naninovel
         public bool RemoveResourcesOnUnload { get; set; } = true;
         public bool IsLoading => false;
         public float LoadProgress => 1;
-        public IEnumerable<Resource> LoadedResources => Resources?.Values;
+        public IReadOnlyCollection<Resource> LoadedResources => Resources?.Values;
 
         #pragma warning disable 0067
         public event Action<float> OnLoadProgress;
@@ -36,9 +36,9 @@ namespace Naninovel
 
         public bool SupportsType<T> () where T : UnityEngine.Object => true;
 
-        public void AddResource (string path, UnityEngine.Object obj)
+        public void AddResource<T> (string path, T obj) where T : UnityEngine.Object
         {
-            Resources[path] = new Resource(path, obj, this);
+            Resources[path] = new Resource<T>(path, obj);
         }
 
         public void RemoveResource (string path)
@@ -72,34 +72,34 @@ namespace Naninovel
             return UniTask.FromResult(resource);
         }
 
-        public IEnumerable<Resource<T>> LoadResources<T> (string path) where T : UnityEngine.Object
+        public IReadOnlyCollection<Resource<T>> LoadResources<T> (string path) where T : UnityEngine.Object
         {
-            return Resources.Where(kv => kv.Value is T).Select(kv => kv.Key).LocateResourcePathsAtFolder(path).Select(p => LoadResource<T>(p));
+            return Resources.Where(kv => kv.Value?.Object.GetType() == typeof(T)).Select(kv => kv.Key).LocateResourcePathsAtFolder(path).Select(LoadResource<T>).ToArray();
         }
 
-        public UniTask<IEnumerable<Resource<T>>> LoadResourcesAsync<T> (string path) where T : UnityEngine.Object
+        public UniTask<IReadOnlyCollection<Resource<T>>> LoadResourcesAsync<T> (string path) where T : UnityEngine.Object
         {
-            var resoucres = LoadResources<T>(path);
-            return UniTask.FromResult(resoucres);
+            var resources = LoadResources<T>(path);
+            return UniTask.FromResult(resources);
         }
 
-        public IEnumerable<Folder> LocateFolders (string path)
+        public IReadOnlyCollection<Folder> LocateFolders (string path)
         {
-            return FolderPaths.LocateFolderPathsAtFolder(path).Select(p => new Folder(p));
+            return FolderPaths.LocateFolderPathsAtFolder(path).Select(p => new Folder(p)).ToArray();
         }
 
-        public UniTask<IEnumerable<Folder>> LocateFoldersAsync (string path)
+        public UniTask<IReadOnlyCollection<Folder>> LocateFoldersAsync (string path)
         {
             var folders = LocateFolders(path);
             return UniTask.FromResult(folders);
         }
 
-        public IEnumerable<string> LocateResources<T> (string path) where T : UnityEngine.Object
+        public IReadOnlyCollection<string> LocateResources<T> (string path) where T : UnityEngine.Object
         {
-            return Resources.Where(kv => kv.Value is T).Select(kv => kv.Key).LocateResourcePathsAtFolder(path);
+            return Resources.Where(kv => kv.Value?.Object.GetType() == typeof(T)).Select(kv => kv.Key).LocateResourcePathsAtFolder(path).ToArray();
         }
 
-        public UniTask<IEnumerable<string>> LocateResourcesAsync<T> (string path) where T : UnityEngine.Object
+        public UniTask<IReadOnlyCollection<string>> LocateResourcesAsync<T> (string path) where T : UnityEngine.Object
         {
             var resources = LocateResources<T>(path);
             return UniTask.FromResult(resources);
@@ -107,7 +107,7 @@ namespace Naninovel
 
         public bool ResourceExists<T> (string path) where T : UnityEngine.Object
         {
-            return Resources.ContainsKey(path) && Resources[path] is T;
+            return Resources.ContainsKey(path) && Resources[path].Object.GetType() == typeof(T);
         }
 
         public UniTask<bool> ResourceExistsAsync<T> (string path) where T : UnityEngine.Object

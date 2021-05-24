@@ -1,8 +1,8 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
+using Naninovel.Lexing;
 using UniRx.Async;
 using UnityEngine;
 using UnityEngine.Events;
@@ -14,7 +14,7 @@ namespace Naninovel.UI
     /// A <see cref="UITextPrinterPanel"/> implementation that uses <see cref="IRevealableText"/> to reveal text over time.
     /// </summary>
     /// <remarks>
-    /// A <see cref="IRevealableText"/> component should be attached to the underlying gameobject or one of it's child objects.
+    /// A <see cref="IRevealableText"/> component should be attached to the underlying game object or one of it's child objects.
     /// </remarks>
     public class RevealableTextPrinterPanel : UITextPrinterPanel
     {
@@ -23,7 +23,7 @@ namespace Naninovel.UI
         {
             [Tooltip("The characters for which to trigger the SFX.")]
             public string Characters = default;
-            [ResourcesPopup(AudioConfiguration.DefaultAudioPathPrefix, AudioConfiguration.DefaultAudioPathPrefix, "None (disabled)")]
+            [ResourcePopup(AudioConfiguration.DefaultAudioPathPrefix, AudioConfiguration.DefaultAudioPathPrefix, "None (disabled)")]
             [Tooltip("The name (local path) of the SFX to trigger for the specified characters.")]
             public string SfxName = default;
         }
@@ -35,7 +35,7 @@ namespace Naninovel.UI
             public string Characters = default;
             [Tooltip("The text of the script command to execute for the specified characters.")]
             public string CommandText = default;
-            public Commands.Command Command { get; set; }
+            public Command Command { get; set; }
         }
 
         [System.Serializable]
@@ -44,33 +44,33 @@ namespace Naninovel.UI
         public override string PrintedText { get => RevealableText.Text; set => RevealableText.Text = value; }
         public override string AuthorNameText { get => authorNamePanel ? authorNamePanel.Text : null; set => SetAuthorNameText(value); }
         public override float RevealProgress { get => RevealableText.RevealProgress; set => SetRevealProgress(value); }
-        public override string Apperance { get => GetActiveAppearance(); set => SetActiveAppearance(value); }
+        public override string Appearance { get => GetActiveAppearance(); set => SetActiveAppearance(value); }
         public virtual IRevealableText RevealableText { get; private set; }
 
         protected const string DefaultAppearanceName = "Default";
 
         protected virtual string AuthorId { get; private set; }
         protected virtual CharacterMetadata AuthorMeta { get; private set; }
+        protected virtual IInputIndicator InputIndicator { get; private set; }
 
-        protected AuthorNamePanel AuthorNamePanel => authorNamePanel;
-        protected AuthorImage AuthorAvatarImage => authorAvatarImage;
-        protected WaitingForInputIndicator InputIndicator => inputIndicator;
-        protected bool PositionIndicatorOverText => positionIndicatorOverText;
-        protected List<CanvasGroup> Appearances => appearances;
-        protected string RevealSfx => RevealSfx;
-        protected List<CharsToSfx> CharsSfx => charsSfx;
-        protected List<CharsToCommand> CharsCommands => charsCommands;
+        protected virtual AuthorNamePanel AuthorNamePanel => authorNamePanel;
+        protected virtual AuthorImage AuthorAvatarImage => authorAvatarImage;
+        protected virtual bool PositionIndicatorOverText => positionIndicatorOverText;
+        protected virtual List<CanvasGroup> Appearances => appearances;
+        protected virtual string RevealSfx => revealSfx;
+        protected virtual List<CharsToSfx> CharsSfx => charsSfx;
+        protected virtual List<CharsToCommand> CharsCommands => charsCommands;
 
         [SerializeField] private AuthorNamePanel authorNamePanel = default;
         [SerializeField] private AuthorImage authorAvatarImage = default;
-        [FormerlySerializedAs("inputIndicatorPrefab"), Tooltip("Object to use as an indicator when player is supposed to activate a `Continue` input to progress further. Will instatiate a clone when an external prefab is assigned.")]
-        [SerializeField] private WaitingForInputIndicator inputIndicator = default;
+        [FormerlySerializedAs("inputIndicatorPrefab"), Tooltip("Object to use as an indicator when player is supposed to activate a `Continue` input to progress further. The prefab should have an `IInputIndicator` component on the root game object. Will instantiate a clone when an external prefab is assigned.")]
+        [SerializeField] private MonoBehaviour inputIndicator = default;
         [Tooltip("Whether to automatically move input indicator so it appears after the last revealed text character.")]
         [SerializeField] private bool positionIndicatorOverText = true;
         [Tooltip("Assigned canvas groups will represent printer appearances. Game object name of the canvas group represents the appearance name. Alpha of the group will be set to 1 when the appearance is activated and vice-versa.")]
         [SerializeField] private List<CanvasGroup> appearances = default;
-        [ResourcesPopup(AudioConfiguration.DefaultAudioPathPrefix, AudioConfiguration.DefaultAudioPathPrefix, "None (disabled)")]
-        [Tooltip ("If specified, SFX with the provided name (local path) will be played whenever a character is revealed. Can be overrided in the characters metadata to play character-specific SFXs.")]
+        [ResourcePopup(AudioConfiguration.DefaultAudioPathPrefix, AudioConfiguration.DefaultAudioPathPrefix, "None (disabled)")]
+        [Tooltip("If specified, SFX with the provided name (local path) will be played whenever a character is revealed. Can be overridden in the characters metadata to play character-specific SFXs.")]
         [SerializeField] private string revealSfx = default;
         [Tooltip("When `Reveal SFX` is assigned, controls whether to clip (restart if playing) the sound on consequent character reveals.")]
         [SerializeField] private bool clipRevealSfx = true;
@@ -81,39 +81,52 @@ namespace Naninovel.UI
         [Tooltip("Invoked when author (character ID) of the currently printed text is changed.")]
         [SerializeField] private AuthorChangedEvent onAuthorChanged = default;
 
+        private readonly CommandParser commandParser = new CommandParser();
+
         private Color defaultMessageColor, defaultNameColor;
-        private WaitingForInputIndicator inputIndicatorRef;
         private IAudioManager audioManager;
+        private IScriptPlayer scriptPlayer;
 
         public override async UniTask InitializeAsync ()
         {
             await base.InitializeAsync();
 
             if (!string.IsNullOrEmpty(revealSfx))
-                await audioManager.HoldAudioResourcesAsync(this, revealSfx);
+                await audioManager.AudioLoader.LoadAndHoldAsync(revealSfx, this);
             if (charsSfx != null && charsSfx.Count > 0)
             {
                 var loadTasks = new List<UniTask>();
                 foreach (var charSfx in charsSfx)
                     if (!string.IsNullOrEmpty(charSfx.SfxName))
-                        loadTasks.Add(audioManager.HoldAudioResourcesAsync(this, charSfx.SfxName));
+                        loadTasks.Add(audioManager.AudioLoader.LoadAndHoldAsync(charSfx.SfxName, this));
                 await UniTask.WhenAll(loadTasks);
             }
 
             if (charsCommands != null && charsCommands.Count > 0)
-            {
                 foreach (var charsCommand in charsCommands)
-                {
-                    if (string.IsNullOrEmpty(charsCommand.CommandText)) continue;
-                    var commandLine = new CommandScriptLine("Text Printer Char Command", 0, charsCommand.CommandText);
-                    charsCommand.Command = commandLine.Command;
-                }
+                    if (!string.IsNullOrEmpty(charsCommand.CommandText))
+                        charsCommand.Command = ParseCommandText(charsCommand.CommandText);
+
+            Command ParseCommandText (string text)
+            {
+                var bodyText = text.StartsWithFast(Constants.CommandLineId)
+                    ? text.GetAfterFirst(Constants.CommandLineId)
+                    : text;
+                return commandParser.Parse(bodyText, name, 0, 0);
             }
         }
 
         public override async UniTask RevealPrintedTextOverTimeAsync (float revealDelay, CancellationToken cancellationToken)
         {
-            if (revealDelay <= 0) { RevealableText.RevealProgress = 1f; return; }
+            // Force-hide the indicator. Required when printing by non-played commands (eg, PlayScript component),
+            // while the script player is actually waiting for input.
+            SetWaitForInputIndicatorVisible(false);
+        
+            if (revealDelay <= 0)
+            {
+                RevealableText.RevealProgress = 1f;
+                return;
+            }
 
             var lastRevealTime = Time.time;
             while (RevealableText.RevealProgress < 1)
@@ -122,41 +135,53 @@ namespace Naninovel.UI
                 var charsToReveal = Mathf.FloorToInt(timeSinceLastReveal / revealDelay);
                 if (charsToReveal > 0)
                 {
-                    lastRevealTime = Time.time; 
+                    lastRevealTime = Time.time;
                     RevealableText.RevealNextChars(charsToReveal, revealDelay, cancellationToken);
-                    while (RevealableText.Revealing && !cancellationToken.IsCancellationRequested)
+                    while (RevealableText.Revealing)
+                    {
                         await AsyncUtils.WaitEndOfFrame;
-                    if (cancellationToken.IsCancellationRequested) return;
+                        if (cancellationToken.CancelASAP) return;
+                        else if (cancellationToken.CancelLazy)
+                            RevealableText.RevealProgress = 1f;
+                    }
 
                     var lastRevealedChar = RevealableText.GetLastRevealedChar();
                     PlayRevealSfxForChar(lastRevealedChar);
-                    if (charsCommands != null && charsCommands.Count > 0 && !cancellationToken.IsCancellationRequested)
+                    if (charsCommands != null && charsCommands.Count > 0)
                     {
                         var execStartTime = Time.time;
                         await ExecuteCommandForCharAsync(lastRevealedChar, cancellationToken);
+                        if (cancellationToken.CancelASAP) return;
                         lastRevealTime += Time.time - execStartTime; // Prevent command execution time from affecting the reveal routine.
                     }
-                    if (cancellationToken.IsCancellationRequested) return;
                 }
 
                 await AsyncUtils.WaitEndOfFrame;
-                if (cancellationToken.IsCancellationRequested) return;
+                if (cancellationToken.CancelASAP) return;
             }
+            
+            if (scriptPlayer.WaitingForInput)
+                SetWaitForInputIndicatorVisible(true);
         }
 
-        public override void SetWaitForInputIndicatorVisible (bool isVisible)
+        public override async void SetWaitForInputIndicatorVisible (bool isVisible)
         {
             if (isVisible)
             {
-                inputIndicatorRef.Show();
-                if (positionIndicatorOverText)
+                InputIndicator.Show();
+                if (PositionIndicatorOverText)
                 {
+                    // Wait a frame, so it'll return a correct position when reveal speed is instant.
+                    // Only affect uGUI printers, where rebuild is postponed by a frame.
+                    await UniTask.DelayFrame(1);
+                    if (!InputIndicator.Visible) return;
+
                     var lastRevelPos = RevealableText.GetLastRevealedCharPosition();
                     if (float.IsNaN(lastRevelPos.x) || float.IsNaN(lastRevelPos.y)) return;
-                    inputIndicatorRef.RectTransform.position = lastRevelPos;
+                    InputIndicator.RectTransform.position = lastRevelPos;
                 }
             }
-            else inputIndicatorRef.Hide();
+            else InputIndicator.Hide();
         }
 
         public override void OnAuthorChanged (string authorId, CharacterMetadata authorMeta)
@@ -195,14 +220,15 @@ namespace Naninovel.UI
             defaultNameColor = authorNamePanel ? authorNamePanel.TextColor : default;
 
             if (inputIndicator.transform.IsChildOf(transform))
-                inputIndicatorRef = inputIndicator;
+                InputIndicator = inputIndicator.GetComponent<IInputIndicator>();
             else
             {
-                inputIndicatorRef = Instantiate(inputIndicator);
-                inputIndicatorRef.RectTransform.SetParent(RevealableText.GameObject.transform, false);
+                InputIndicator = Instantiate(inputIndicator).GetComponent<IInputIndicator>();
+                InputIndicator.RectTransform.SetParent(RevealableText.GameObject.transform, false);
             }
 
             audioManager = Engine.GetService<IAudioManager>();
+            scriptPlayer = Engine.GetService<IScriptPlayer>();
 
             SetAuthorNameText(null);
         }
@@ -226,13 +252,21 @@ namespace Naninovel.UI
             base.OnDestroy();
 
             if (!string.IsNullOrEmpty(revealSfx))
-                audioManager?.ReleaseAudioResources(this, revealSfx);
+                audioManager?.AudioLoader?.Release(revealSfx, this);
             if (charsSfx != null && charsSfx.Count > 0)
             {
                 foreach (var charSfx in charsSfx)
                     if (!string.IsNullOrEmpty(charSfx.SfxName))
-                        audioManager?.ReleaseAudioResources(this, charSfx.SfxName);
+                        audioManager?.AudioLoader?.Release(charSfx.SfxName, this);
             }
+        }
+        
+        protected override void OnRectTransformDimensionsChange ()
+        {
+            base.OnRectTransformDimensionsChange();
+
+            if (PositionIndicatorOverText)
+                InputIndicator?.Hide();
         }
 
         protected override void HandleVisibilityChanged (bool visible)
@@ -248,7 +282,8 @@ namespace Naninovel.UI
             if (appearances is null || appearances.Count == 0)
                 return DefaultAppearanceName;
             foreach (var grp in appearances)
-                if (grp.alpha == 1f) return grp.gameObject.name;
+                if (Mathf.Approximately(grp.alpha, 1f))
+                    return grp.gameObject.name;
             return DefaultAppearanceName;
         }
 
@@ -261,16 +296,9 @@ namespace Naninovel.UI
                 grp.alpha = grp.gameObject.name == appearance ? 1 : 0;
         }
 
-        protected virtual async void SetRevealProgress (float value)
+        protected virtual void SetRevealProgress (float value)
         {
             RevealableText.RevealProgress = value;
-
-            // A hack to wait for Unity's UI text to rebuilt; otherwise the input indicator will get a wrong position.
-            // TMPro printers are not affected by this.
-            await AsyncUtils.WaitEndOfFrame;
-
-            if (inputIndicatorRef.Visible) // Update indicator position.
-                SetWaitForInputIndicatorVisible(true);
         }
 
         protected virtual void SetAuthorNameText (string text)
@@ -307,9 +335,9 @@ namespace Naninovel.UI
             }
 
             if (AuthorMeta != null && !string.IsNullOrEmpty(AuthorMeta.MessageSound))
-                audioManager.PlaySfxFast(AuthorMeta.MessageSound, restartIfPlaying: AuthorMeta.ClipMessageSound);
+                audioManager.PlaySfxFast(AuthorMeta.MessageSound, restart: AuthorMeta.ClipMessageSound);
             else if (!string.IsNullOrEmpty(revealSfx))
-                audioManager.PlaySfxFast(revealSfx, restartIfPlaying: clipRevealSfx);
+                audioManager.PlaySfxFast(revealSfx, restart: clipRevealSfx);
         }
 
         protected virtual async UniTask ExecuteCommandForCharAsync (char character, CancellationToken cancellationToken)
@@ -324,7 +352,7 @@ namespace Naninovel.UI
                 if (charsCommand.Command != null && charsCommand.Command.ShouldExecute)
                 {
                     var task = charsCommand.Command.ExecuteAsync(cancellationToken);
-                    while (Application.isPlaying && !task.IsCompleted && !cancellationToken.IsCancellationRequested)
+                    while (Application.isPlaying && !task.IsCompleted() && !cancellationToken.CancelASAP)
                         await AsyncUtils.WaitEndOfFrame;
                 }
                 return;

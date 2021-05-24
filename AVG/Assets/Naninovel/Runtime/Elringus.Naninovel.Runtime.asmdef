@@ -14,7 +14,9 @@
     "allowUnsafeCode": false,
     "overrideReferences": true,
     "precompiledReferences": [
-        "NCalc.dll",
+        "Naninovel.Lexing.dll",
+        "Naninovel.Parsing.dll",
+        "Naninovel.NCalc.dll",
         "NLayer.dll"
     ],
     "autoReferenced": true,
@@ -31,11 +33,6 @@
             "define": "UNITY_GOOGLE_DRIVE_AVAILABLE"
         },
         {
-            "name": "com.unity.textmeshpro",
-            "expression": "",
-            "define": "TMPRO_AVAILABLE"
-        },
-        {
             "name": "com.unity.addressables",
             "expression": "",
             "define": "ADDRESSABLES_AVAILABLE"
@@ -44,6 +41,11 @@
             "name": "com.unity.inputsystem",
             "expression": "",
             "define": "INPUT_SYSTEM_AVAILABLE"
+        },
+        {
+            "name": "com.cysharp.unitask",
+            "expression": "",
+            "define": "UNITASK2_AVAILABLE"
         }
     ],
     "noEngineReferences": false

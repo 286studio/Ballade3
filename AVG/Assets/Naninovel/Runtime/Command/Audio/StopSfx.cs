@@ -1,6 +1,5 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
-using System.Threading;
 using UniRx.Async;
 
 namespace Naninovel.Commands
@@ -11,25 +10,18 @@ namespace Naninovel.Commands
     /// <remarks>
     /// When sound effect track name (SfxPath) is not specified, will stop all the currently played tracks.
     /// </remarks>
-    /// <example>
-    /// ; Stop playing an SFX with the name `Rain`, fading-out for 15 seconds.
-    /// @stopSfx Rain fade:15
-    /// 
-    /// ; Stops all the currently played sound effect tracks
-    /// @stopSfx
-    /// </example>
     public class StopSfx : AudioCommand
     {
         /// <summary>
         /// Path to the sound effect to stop.
         /// </summary>
-        [ParameterAlias(NamelessParameterAlias)]
+        [ParameterAlias(NamelessParameterAlias), IDEResource(AudioConfiguration.DefaultAudioPathPrefix)]
         public StringParameter SfxPath;
         /// <summary>
         /// Duration of the volume fade-out before stopping playback, in seconds (0.35 by default).
         /// </summary>
-        [ParameterAlias("fade")]
-        public DecimalParameter FadeOutDuration = 0.35f;
+        [ParameterAlias("fade"), ParameterDefaultValue("0.35")]
+        public DecimalParameter FadeOutDuration = .35f;
 
         public override async UniTask ExecuteAsync (CancellationToken cancellationToken = default)
         {

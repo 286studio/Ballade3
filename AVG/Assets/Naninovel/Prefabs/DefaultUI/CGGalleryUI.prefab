@@ -52,7 +52,7 @@ Canvas:
   m_GameObject: {fileID: 1249989664728418}
   m_Enabled: 1
   serializedVersion: 3
-  m_RenderMode: 0
+  m_RenderMode: 1
   m_Camera: {fileID: 0}
   m_PlaneDistance: 100
   m_PixelPerfect: 0
@@ -80,6 +80,7 @@ MonoBehaviour:
   visibleOnAwake: 0
   controlOpacity: 1
   fadeTime: 0.3
+  ignoreTimeScale: 1
   focusObject: {fileID: 1709518715411574}
   focusMode: 1
   onShow:
@@ -93,7 +94,7 @@ MonoBehaviour:
   blockInputWhenVisible: 0
   allowedSamplers: []
   modalUI: 1
-  unlockableIdPrefix: CG
+  fontChangeConfiguration: []
   cgSources:
   - PathPrefix: Unlockables/CG
     ProviderTypes:
@@ -107,8 +108,7 @@ MonoBehaviour:
       Culture=neutral, PublicKeyToken=null
     - Naninovel.ProjectResourceProvider, Elringus.Naninovel.Runtime, Version=0.0.0.0,
       Culture=neutral, PublicKeyToken=null
-  viewerPanel: {fileID: 7028915917830802994}
-  viewerImage: {fileID: 4366063164016287649}
+  viewerPanel: {fileID: 7024225021272710772}
   grid: {fileID: 5574319400583961586}
 --- !u!225 &225933482615153488
 CanvasGroup:
@@ -223,6 +223,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -349,6 +350,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 0.13725491, g: 0.12156863, b: 0.1254902, a: 1}
   m_RaycastTarget: 1
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -429,6 +431,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 0, g: 0, b: 0, a: 0.39215687}
   m_RaycastTarget: 1
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -558,6 +561,7 @@ MonoBehaviour:
   visibleOnAwake: 1
   controlOpacity: 1
   fadeTime: 0.3
+  ignoreTimeScale: 1
   focusObject: {fileID: 0}
   focusMode: 0
   onShow:
@@ -568,11 +572,24 @@ MonoBehaviour:
       m_Calls: []
   slotPrototype: {fileID: 8006815634053980518, guid: 893c751376efc6d4f9dadeb5925a9b9c,
     type: 3}
-  slotsPerPage: 9
+  itemsPerPage: 9
   paginationPanel: {fileID: 1444607796987344}
-  pageNumberText: {fileID: 114987292424824192}
-  previousPageButton: {fileID: 114658501006960682}
-  nextPageButton: {fileID: 114644660837900666}
+  previousPageButton: {fileID: 114554754966565814}
+  nextPageButton: {fileID: 114881949830457292}
+  onPageChanged:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 114987292424824192}
+        m_MethodName: set_text
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &1654595209861452
 GameObject:
   m_ObjectHideFlags: 0
@@ -634,6 +651,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -746,6 +764,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -838,6 +857,7 @@ MonoBehaviour:
   visibleOnAwake: 1
   controlOpacity: 1
   fadeTime: 0.3
+  ignoreTimeScale: 1
   focusObject: {fileID: 0}
   focusMode: 0
   onShow:
@@ -858,7 +878,7 @@ GameObject:
   - component: {fileID: 8047116151445474076}
   - component: {fileID: 4508785986354893495}
   - component: {fileID: 7731066919066296972}
-  - component: {fileID: 7028915917830802994}
+  - component: {fileID: 7024225021272710772}
   - component: {fileID: 2920165007939585309}
   m_Layer: 5
   m_Name: ViewerPanel
@@ -910,6 +930,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -966,7 +987,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &7028915917830802994
+--- !u!114 &7024225021272710772
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -975,13 +996,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 508418073994104356}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 96dbf35e76c265a47bd5229855b2330a, type: 3}
+  m_Script: {fileID: 11500000, guid: 0bb088d2defadcd4ab3f7c153ed19cdd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   disableInteraction: 0
   visibleOnAwake: 0
   controlOpacity: 1
   fadeTime: 0.3
+  ignoreTimeScale: 1
   focusObject: {fileID: 0}
   focusMode: 0
   onShow:
@@ -990,6 +1012,8 @@ MonoBehaviour:
   onHide:
     m_PersistentCalls:
       m_Calls: []
+  contentImage: {fileID: 4366063164016287649}
+  crossfadeDuration: 0.3
 --- !u!225 &2920165007939585309
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -1119,6 +1143,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -1347,16 +1372,16 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: ae0c45c69e038b4499eeb5b00d90c939, type: 3}
---- !u!114 &114658501006960682 stripped
+--- !u!114 &114554754966565814 stripped
 MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 3720876700585126916, guid: ae0c45c69e038b4499eeb5b00d90c939,
+  m_CorrespondingSourceObject: {fileID: 3720701275818817432, guid: ae0c45c69e038b4499eeb5b00d90c939,
     type: 3}
   m_PrefabInstance: {fileID: 3617636151648109614}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 96dbf35e76c265a47bd5229855b2330a, type: 3}
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!224 &224502600307319732 stripped
@@ -1383,15 +1408,15 @@ GameObject:
     type: 3}
   m_PrefabInstance: {fileID: 3617636151648109614}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &114644660837900666 stripped
+--- !u!114 &114881949830457292 stripped
 MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 3720853312170075476, guid: ae0c45c69e038b4499eeb5b00d90c939,
+  m_CorrespondingSourceObject: {fileID: 3723430637318136802, guid: ae0c45c69e038b4499eeb5b00d90c939,
     type: 3}
   m_PrefabInstance: {fileID: 3617636151648109614}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 96dbf35e76c265a47bd5229855b2330a, type: 3}
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 

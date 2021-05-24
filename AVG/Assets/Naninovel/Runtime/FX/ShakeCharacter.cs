@@ -1,7 +1,6 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System.Linq;
-using System.Threading;
 using UniRx.Async;
 using UnityEngine;
 
@@ -14,10 +13,10 @@ namespace Naninovel.FX
     {
         [SerializeField] private bool preventPositiveYOffset = true;
 
-        protected override Transform GetShakedTransform ()
+        protected override Transform GetShakenTransform ()
         {
-            var mngr = Engine.GetService<ICharacterManager>();
-            var id = string.IsNullOrEmpty(ObjectName) ? mngr.GetAllActors().FirstOrDefault(a => a.Visible)?.Id : ObjectName;
+            var manager = Engine.GetService<ICharacterManager>();
+            var id = string.IsNullOrEmpty(ObjectName) ? manager.GetAllActors().FirstOrDefault(a => a.Visible)?.Id : ObjectName;
             var go = GameObject.Find(id);
             return ObjectUtils.IsValid(go) ? go.transform : null;
         }

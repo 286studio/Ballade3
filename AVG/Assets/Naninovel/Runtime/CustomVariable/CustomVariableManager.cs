@@ -1,23 +1,25 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using System.Collections.Generic;
+using Naninovel.Commands;
 using UniRx.Async;
 using UnityEngine;
 
 namespace Naninovel
 {
     /// <inheritdoc cref="ICustomVariableManager"/>
-    [InitializeAtRuntime]
+    /// <remarks>Initialization order lowered, as other services implicitly use custom variables (eg, via <see cref="ExpressionEvaluator"/>).</remarks>
+    [InitializeAtRuntime(int.MinValue + 1), Goto.DontReset]
     public class CustomVariableManager : IStatefulService<GameStateMap>, IStatefulService<GlobalStateMap>, ICustomVariableManager
     {
-        [System.Serializable]
+        [Serializable]
         public class GlobalState
         {
             public SerializableLiteralStringMap GlobalVariableMap;
         }
 
-        [System.Serializable]
+        [Serializable]
         public class GameState
         {
             public SerializableLiteralStringMap LocalVariableMap;
@@ -25,7 +27,7 @@ namespace Naninovel
 
         public event Action<CustomVariableUpdatedArgs> OnVariableUpdated;
 
-        public CustomVariablesConfiguration Configuration { get; }
+        public virtual CustomVariablesConfiguration Configuration { get; }
 
         private readonly SerializableLiteralStringMap globalVariableMap;
         private readonly SerializableLiteralStringMap localVariableMap;
@@ -37,16 +39,16 @@ namespace Naninovel
             localVariableMap = new SerializableLiteralStringMap();
         }
 
-        public UniTask InitializeServiceAsync () => UniTask.CompletedTask;
+        public virtual UniTask InitializeServiceAsync () => UniTask.CompletedTask;
 
-        public void ResetService ()
+        public virtual void ResetService ()
         {
             ResetLocalVariables();
         }
 
-        public void DestroyService () { }
+        public virtual void DestroyService () { }
 
-        public void SaveServiceState (GlobalStateMap stateMap)
+        public virtual void SaveServiceState (GlobalStateMap stateMap)
         {
             var state = new GlobalState {
                 GlobalVariableMap = new SerializableLiteralStringMap(globalVariableMap)
@@ -54,7 +56,7 @@ namespace Naninovel
             stateMap.SetState(state);
         }
 
-        public UniTask LoadServiceStateAsync (GlobalStateMap stateMap)
+        public virtual UniTask LoadServiceStateAsync (GlobalStateMap stateMap)
         {
             ResetGlobalVariables();
 
@@ -66,7 +68,7 @@ namespace Naninovel
             return UniTask.CompletedTask;
         }
 
-        public void SaveServiceState (GameStateMap stateMap)
+        public virtual void SaveServiceState (GameStateMap stateMap)
         {
             var state = new GameState {
                 LocalVariableMap = new SerializableLiteralStringMap(localVariableMap)
@@ -74,7 +76,7 @@ namespace Naninovel
             stateMap.SetState(state);
         }
 
-        public UniTask LoadServiceStateAsync (GameStateMap stateMap)
+        public virtual UniTask LoadServiceStateAsync (GameStateMap stateMap)
         {
             ResetLocalVariables();
 
@@ -86,15 +88,19 @@ namespace Naninovel
             return UniTask.CompletedTask;
         }
 
-        public bool VariableExists (string name) => CustomVariablesConfiguration.IsGlobalVariable(name) ? globalVariableMap.ContainsKey(name) : localVariableMap.ContainsKey(name);
+        public virtual bool VariableExists (string name)
+        {
+            if (string.IsNullOrEmpty(name)) throw new ArgumentException("Variable name cannot be null or empty.", nameof(name));
+            return CustomVariablesConfiguration.IsGlobalVariable(name) ? globalVariableMap.ContainsKey(name) : localVariableMap.ContainsKey(name);
+        }
 
-        public string GetVariableValue (string name)
+        public virtual string GetVariableValue (string name)
         {
             if (!VariableExists(name)) return null;
             return CustomVariablesConfiguration.IsGlobalVariable(name) ? globalVariableMap[name] : localVariableMap[name];
         }
 
-        public IEnumerable<CustomVariable> GetAllVariables ()
+        public virtual IReadOnlyCollection<CustomVariable> GetAllVariables ()
         {
             var result = new List<CustomVariable>();
             foreach (var kv in globalVariableMap)
@@ -104,8 +110,10 @@ namespace Naninovel
             return result;
         }
 
-        public void SetVariableValue (string name, string value)
+        public virtual void SetVariableValue (string name, string value)
         {
+            if (string.IsNullOrEmpty(name)) throw new ArgumentException("Variable name cannot be null or empty.", nameof(name));
+            
             var isGlobal = CustomVariablesConfiguration.IsGlobalVariable(name);
             var initialValue = default(string);
 
@@ -124,7 +132,7 @@ namespace Naninovel
                 OnVariableUpdated?.Invoke(new CustomVariableUpdatedArgs(name, value, initialValue));
         }
 
-        public void ResetLocalVariables ()
+        public virtual void ResetLocalVariables ()
         {
             localVariableMap?.Clear();
 
@@ -136,7 +144,7 @@ namespace Naninovel
             }
         }
 
-        public void ResetGlobalVariables ()
+        public virtual void ResetGlobalVariables ()
         {
             globalVariableMap?.Clear();
 
@@ -148,6 +156,6 @@ namespace Naninovel
             }
         }
 
-        private void LogInitializeVarError (string varName, string expr, string error) => Debug.LogWarning($"Failed to initialize `{varName}` varaible with `{expr}` expression: {error}");
+        private void LogInitializeVarError (string varName, string expr, string error) => Debug.LogWarning($"Failed to initialize `{varName}` variable with `{expr}` expression: {error}");
     }
 }

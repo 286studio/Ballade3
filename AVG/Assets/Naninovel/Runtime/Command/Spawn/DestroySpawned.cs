@@ -1,8 +1,6 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
-using System.Threading;
 using UniRx.Async;
-using UnityEngine;
 
 namespace Naninovel.Commands
 {
@@ -10,15 +8,11 @@ namespace Naninovel.Commands
     /// Destroys an object spawned with [@spawn] command.
     /// </summary>
     /// <remarks>
-    /// If prefab has a <see cref="MonoBehaviour"/> component attached the root object, and the component implements
-    /// a <see cref="IParameterized"/> interface, will pass the specified `params` values before destroying the object;
-    /// if the component implements <see cref="IAwaitable"/> interface, command execution will wait for
+    /// If prefab has a `MonoBehaviour` component attached the root object, and the component implements
+    /// a `IParameterized` interface, will pass the specified `params` values before destroying the object;
+    /// if the component implements `IAwaitable` interface, command execution will wait for
     /// the async completion task returned by the implementation before destroying the object.
     /// </remarks>
-    /// <example>
-    /// ; Given a "@spawn Rainbow" command was executed before
-    /// @despawn Rainbow
-    /// </example>
     [CommandAlias("despawn")]
     public class DestroySpawned : Command
     {
@@ -32,8 +26,8 @@ namespace Naninovel.Commands
         [ParameterAlias(NamelessParameterAlias), RequiredParameter]
         public StringParameter Path;
         /// <summary>
-        /// Parameters to set before destoying the prefab.
-        /// Requires the prefab to have a <see cref="IParameterized"/> component attached the root object.
+        /// Parameters to set before destroying the prefab.
+        /// Requires the prefab to have a `IParameterized` component attached the root object.
         /// </summary>
         public StringListParameter Params;
 
@@ -43,7 +37,7 @@ namespace Naninovel.Commands
         {
             if (!SpawnManager.IsObjectSpawned(Path))
             {
-                Debug.LogWarning($"Failed to destroy spawned object '{Path}': the object is not found.");
+                LogWarningWithPosition($"Failed to destroy spawned object '{Path}': the object is not found.");
                 return;
             }
 

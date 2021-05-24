@@ -1,6 +1,6 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
-using System.Threading;
+using System.Collections.Generic;
 using UniRx.Async;
 using UnityEngine;
 
@@ -10,12 +10,12 @@ namespace Naninovel.UI
     /// Used by <see cref="UITextPrinter"/> to control the printed text.
     /// </summary>
     [RequireComponent(typeof(CanvasGroup))]
-    public abstract class UITextPrinterPanel : ScriptableUIBehaviour, IManagedUI
+    public abstract class UITextPrinterPanel : CustomUI, IManagedUI
     {
         /// <summary>
         /// Contents of the printer to be used for transformations.
         /// </summary>
-        public RectTransform Content => content;
+        public virtual RectTransform Content => content;
         /// <summary>
         /// The text to be printed inside the printer panel. 
         /// Note that the visibility of the text is controlled independently.
@@ -32,30 +32,33 @@ namespace Naninovel.UI
         /// <summary>
         /// Current appearance of the printer.
         /// </summary>
-        public abstract string Apperance { get; set; }
+        public abstract string Appearance { get; set; }
         /// <summary>
-        /// Object that should trigger continue input when interacted with.
+        /// Objects that should trigger continue input when interacted with.
         /// </summary>
-        public GameObject ContinueInputTrigger => continueInputTrigger;
+        public virtual IReadOnlyCollection<GameObject> ContinueInputTriggers => continueInputTriggers;
 
         protected ICharacterManager CharacterManager { get; private set; }
 
         [Tooltip("Transform used for printer position, scale and rotation external manipulations.")]
         [SerializeField] private RectTransform content = default;
-        [Tooltip("Object that should trigger continue input when interacted with. Make sure the object is a raycast target and is not blocked by other raycast target objects.")]
-        [SerializeField] private GameObject continueInputTrigger = default;
+        [Tooltip("Objects that should trigger continue input when interacted with. Make sure the objects are a raycast target and not blocked by other raycast targets.")]
+        [SerializeField] private List<GameObject> continueInputTriggers = default;
 
-        private IInputManager inputManager;
+        private IInputSampler continueInput;
         private IScriptPlayer scriptPlayer;
 
-        public virtual UniTask InitializeAsync ()
+        public override async UniTask InitializeAsync ()
         {
-            inputManager?.GetContinue()?.AddObjectTrigger(ContinueInputTrigger);
+            await base.InitializeAsync();
+
+            if (continueInput != null)
+                foreach (var go in ContinueInputTriggers)
+                    continueInput.AddObjectTrigger(go);
             scriptPlayer.OnWaitingForInput += SetWaitForInputIndicatorVisible;
-            return UniTask.CompletedTask;
         }
 
-        UniTask IManagedUI.ChangeVisibilityAsync (bool visible, float? duration)
+        UniTask IManagedUI.ChangeVisibilityAsync (bool visible, float? duration, CancellationToken cancellationToken)
         {
             Debug.LogError("@showUI and @hideUI commands can't be used with text printers; use @show/hide or @show/hidePrinter commands instead");
             return UniTask.CompletedTask;
@@ -74,16 +77,16 @@ namespace Naninovel.UI
         /// <summary>
         /// Invoked by <see cref="UITextPrinter"/> when author meta of the printed text changes.
         /// </summary>
-        /// <param name="authorId">Acotr ID of the new author.</param>
+        /// <param name="authorId">Actor ID of the new author.</param>
         /// <param name="authorMeta">Metadata of the new author.</param>
         public abstract void OnAuthorChanged (string authorId, CharacterMetadata authorMeta);
 
         protected override void Awake ()
         {
             base.Awake();
-            this.AssertRequiredObjects(content, continueInputTrigger);
+            this.AssertRequiredObjects(content);
 
-            inputManager = Engine.GetService<IInputManager>();
+            continueInput = Engine.GetService<IInputManager>().GetContinue();
             scriptPlayer = Engine.GetService<IScriptPlayer>();
 
             CharacterManager = Engine.GetService<ICharacterManager>();
@@ -93,7 +96,9 @@ namespace Naninovel.UI
         {
             base.OnDestroy();
 
-            inputManager?.GetContinue()?.RemoveObjectTrigger(ContinueInputTrigger);
+            if (continueInput != null)
+                foreach (var go in ContinueInputTriggers)
+                    continueInput.RemoveObjectTrigger(go);
             if (scriptPlayer != null)
                 scriptPlayer.OnWaitingForInput -= SetWaitForInputIndicatorVisible;
         }

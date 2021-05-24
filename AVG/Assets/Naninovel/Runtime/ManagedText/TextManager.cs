@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -11,12 +11,12 @@ namespace Naninovel
     [InitializeAtRuntime]
     public class TextManager : ITextManager
     {
-        public ManagedTextConfiguration Configuration { get; }
+        public virtual ManagedTextConfiguration Configuration { get; }
 
         private readonly IResourceProviderManager providersManager;
         private readonly ILocalizationManager localizationManager;
         private readonly HashSet<ManagedTextRecord> records = new HashSet<ManagedTextRecord>();
-        private ResourceLoader<TextAsset> documentLoader;
+        private LocalizableResourceLoader<TextAsset> documentLoader;
 
         public TextManager (ManagedTextConfiguration config, IResourceProviderManager providersManager, ILocalizationManager localizationManager)
         {
@@ -25,22 +25,22 @@ namespace Naninovel
             this.localizationManager = localizationManager;
         }
 
-        public UniTask InitializeServiceAsync ()
+        public virtual UniTask InitializeServiceAsync ()
         {
-            localizationManager.AddChangeLocaleTask(ApplyManagedTextAsync);
             documentLoader = Configuration.Loader.CreateLocalizableFor<TextAsset>(providersManager, localizationManager);
+            localizationManager.AddChangeLocaleTask(ApplyManagedTextAsync);
             return UniTask.CompletedTask;
         }
 
-        public void ResetService () { }
+        public virtual void ResetService () { }
 
-        public void DestroyService ()
+        public virtual void DestroyService ()
         {
             localizationManager?.RemoveChangeLocaleTask(ApplyManagedTextAsync);
-            documentLoader?.UnloadAll();
+            documentLoader?.ReleaseAll(this);
         }
 
-        public string GetRecordValue (string key, string category = ManagedTextRecord.DefaultCategoryName)
+        public virtual string GetRecordValue (string key, string category = ManagedTextRecord.DefaultCategoryName)
         {
             foreach (var record in records)
                 if (record.Category.EqualsFast(category) && record.Key.EqualsFast(key))
@@ -48,7 +48,7 @@ namespace Naninovel
             return null;
         }
 
-        public IEnumerable<ManagedTextRecord> GetAllRecords (params string[] categoryFilter)
+        public virtual IReadOnlyCollection<ManagedTextRecord> GetAllRecords (params string[] categoryFilter)
         {
             if (categoryFilter is null || categoryFilter.Length == 0)
                 return records.ToList();
@@ -60,19 +60,18 @@ namespace Naninovel
             return result;
         }
 
-        public async UniTask ApplyManagedTextAsync ()
+        public virtual async UniTask ApplyManagedTextAsync ()
         {
             records.Clear();
-            documentLoader.UnloadAll();
-            var documentResources = await documentLoader.LoadAllAsync();
+            var documentResources = await documentLoader.LoadAndHoldAllAsync(this);
             foreach (var documentResource in documentResources)
             {
-                if (!documentResource.IsValid)
+                if (!documentResource.Valid)
                 {
                     Debug.LogWarning($"Failed to load `{documentResource.Path}` managed text document.");
                     continue;
                 }
-                var managedTextSet = ManagedTextUtils.ParseDocument(documentResource.Object.text, documentLoader.BuildLocalPath(documentResource.Path));
+                var managedTextSet = ManagedTextUtils.ParseDocument(documentResource.Object.text, documentLoader.GetLocalPath(documentResource));
 
                 foreach (var text in managedTextSet)
                     records.Add(new ManagedTextRecord(text.Key, text.Value, text.Category));

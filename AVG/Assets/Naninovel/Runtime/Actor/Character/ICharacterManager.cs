@@ -1,7 +1,6 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
-using System.Threading;
 using UniRx.Async;
 using UnityEngine;
 
@@ -22,7 +21,7 @@ namespace Naninovel
         /// </summary>
         bool AvatarTextureExists (string avatarTexturePath);
         /// <summary>
-        /// Un-asigns avatar texture from a character with the provided ID.
+        /// Un-assigns avatar texture from a character with the provided ID.
         /// </summary>
         void RemoveAvatarTextureFor (string characterId);
         /// <summary>
@@ -52,6 +51,8 @@ namespace Naninovel
         /// Evenly distribute visible controlled characters positions over specified time.
         /// </summary>
         /// <param name="lookAtOrigin">Whether to also make the characters look at the scene origin.</param>
+        /// <param name="duration">Duration of the arrangement animation, in seconds.</param>
+        /// <param name="easingType">Easing type to use for the arrangement animation.</param>
         UniTask ArrangeCharactersAsync (bool lookAtOrigin = true, float duration = 0, EasingType easingType = default, CancellationToken cancellationToken = default);
     }
 }

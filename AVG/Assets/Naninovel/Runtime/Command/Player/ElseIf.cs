@@ -1,6 +1,5 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
-using System.Threading;
 using UniRx.Async;
 
 namespace Naninovel.Commands
@@ -16,7 +15,7 @@ namespace Naninovel.Commands
         /// <summary>
         /// A [script expression](/guide/script-expressions.md), which should return a boolean value. 
         /// </summary>
-        [ParameterAlias(NamelessParameterAlias), RequiredParameter]
+        [ParameterAlias(NamelessParameterAlias), RequiredParameter, IDEConstant(IDEConstantAttribute.Expression)]
         public StringParameter Expression;
 
         public override UniTask ExecuteAsync (CancellationToken cancellationToken = default)

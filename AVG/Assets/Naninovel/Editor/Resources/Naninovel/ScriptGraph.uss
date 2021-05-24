@@ -28,6 +28,17 @@ ScriptGraphNode #title Label {
     color: white;
 }
 
+ScriptGraphNode #synopsis {
+    background-color: #575757;
+}
+
+ScriptGraphNode #synopsis Label {
+    color: #d9d9d9;
+    margin: 6px;
+    max-width: 256px;
+    white-space: normal;
+}
+
 Port #type:hover,#type.if:hover {
     color: white;
 }

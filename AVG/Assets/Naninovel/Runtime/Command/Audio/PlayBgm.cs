@@ -1,7 +1,6 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System.Linq;
-using System.Threading;
 using UniRx.Async;
 
 namespace Naninovel.Commands
@@ -15,45 +14,34 @@ namespace Naninovel.Commands
     /// When invoked for a track that is already playing, the playback won't be affected (track won't start playing from the start),
     /// but the specified parameters (volume and whether the track is looped) will be applied.
     /// </remarks>
-    /// <example>
-    /// ; Starts playing a music track with the name `Sanctuary` in a loop
-    /// @bgm Sanctuary
-    /// 
-    /// ; Same as above, but fades-in the volume over 10 seconds and plays only once
-    /// @bgm Sanctuary fade:10 loop:false
-    /// 
-    /// ; Changes volume of all the played music tracks to 50% over 2.5 seconds and makes them play in a loop
-    /// @bgm volume:0.5 loop:true time:2.5
-    /// 
-    /// ; Playes `BattleThemeIntro` once and then immediately `BattleThemeMain` in a loop.
-    /// @bgm BattleThemeMain intro:BattleThemeIntro
-    /// </example>
     [CommandAlias("bgm")]
     public class PlayBgm : AudioCommand, Command.IPreloadable
     {
         /// <summary>
         /// Path to the music track to play.
         /// </summary>
-        [ParameterAlias(NamelessParameterAlias)]
+        [ParameterAlias(NamelessParameterAlias), IDEResource(AudioConfiguration.DefaultAudioPathPrefix)]
         public StringParameter BgmPath;
         /// <summary>
         /// Path to the intro music track to play once before the main track (not affected by the loop parameter).
         /// </summary>
-        [ParameterAlias("intro")]
+        [ParameterAlias("intro"), IDEResource(AudioConfiguration.DefaultAudioPathPrefix)]
         public StringParameter IntroBgmPath;
         /// <summary>
         /// Volume of the music track.
         /// </summary>
+        [ParameterDefaultValue("1")]
         public DecimalParameter Volume = 1f;
         /// <summary>
         /// Whether to play the track from beginning when it finishes.
         /// </summary>
+        [ParameterDefaultValue("true")]
         public BooleanParameter Loop = true;
         /// <summary>
         /// Duration of the volume fade-in when starting playback, in seconds (0.0 by default); 
         /// doesn't have effect when modifying a playing track.
         /// </summary>
-        [ParameterAlias("fade")]
+        [ParameterAlias("fade"), ParameterDefaultValue("0")]
         public DecimalParameter FadeInDuration = 0f;
         /// <summary>
         /// Audio mixer [group path](https://docs.unity3d.com/ScriptReference/Audio.AudioMixer.FindMatchingGroups) that should be used when playing the audio.
@@ -63,37 +51,37 @@ namespace Naninovel.Commands
         /// <summary>
         /// Duration (in seconds) of the modification. Default value: 0.35 seconds.
         /// </summary>
-        [ParameterAlias("time")]
+        [ParameterAlias("time"), ParameterDefaultValue("0.35")]
         public DecimalParameter Duration = .35f;
 
-        public async UniTask HoldResourcesAsync ()
+        public async UniTask PreloadResourcesAsync ()
         {
             if (!Assigned(BgmPath) || BgmPath.DynamicValue) return;
-            await AudioManager.HoldAudioResourcesAsync(this, BgmPath);
+            await AudioManager.AudioLoader.LoadAndHoldAsync(BgmPath, this);
 
             if (!Assigned(IntroBgmPath) || IntroBgmPath.DynamicValue) return;
-            await AudioManager.HoldAudioResourcesAsync(this, IntroBgmPath);
+            await AudioManager.AudioLoader.LoadAndHoldAsync(IntroBgmPath, this);
         }
 
-        public void ReleaseResources ()
+        public void ReleasePreloadedResources ()
         {
             if (!Assigned(BgmPath) || BgmPath.DynamicValue) return;
-            AudioManager.ReleaseAudioResources(this, BgmPath);
+            AudioManager?.AudioLoader?.Release(BgmPath, this);
 
             if (!Assigned(IntroBgmPath) || IntroBgmPath.DynamicValue) return;
-            AudioManager.ReleaseAudioResources(this, IntroBgmPath);
+            AudioManager?.AudioLoader?.Release(IntroBgmPath, this);
         }
 
         public override async UniTask ExecuteAsync (CancellationToken cancellationToken = default)
         {
             if (Assigned(BgmPath)) await PlayOrModifyTrackAsync(AudioManager, BgmPath, Volume, Loop, Duration, FadeInDuration, IntroBgmPath, GroupPath, cancellationToken);
-            else await UniTask.WhenAll(AudioManager.GetPlayedBgmPaths().Select(path => PlayOrModifyTrackAsync(AudioManager, path, Volume, Loop, Duration, FadeInDuration, IntroBgmPath, null, cancellationToken)));
+            else await UniTask.WhenAll(AudioManager.GetPlayedBgmPaths().ToList().Select(path => PlayOrModifyTrackAsync(AudioManager, path, Volume, Loop, Duration, FadeInDuration, IntroBgmPath, null, cancellationToken)));
         }
 
-        private static async UniTask PlayOrModifyTrackAsync (IAudioManager mngr, string path, float volume, bool loop, float time, float fade, string introPath, string group, CancellationToken cancellationToken)
+        private static async UniTask PlayOrModifyTrackAsync (IAudioManager manager, string path, float volume, bool loop, float time, float fade, string introPath, string group, CancellationToken cancellationToken)
         {
-            if (mngr.BgmPlaying(path)) await mngr.ModifyBgmAsync(path, volume, loop, time, cancellationToken);
-            else await mngr.PlayBgmAsync(path, volume, fade, loop, introPath, group, cancellationToken);
+            if (manager.IsBgmPlaying(path)) await manager.ModifyBgmAsync(path, volume, loop, time, cancellationToken);
+            else await manager.PlayBgmAsync(path, volume, fade, loop, introPath, group, cancellationToken);
         }
     } 
 }

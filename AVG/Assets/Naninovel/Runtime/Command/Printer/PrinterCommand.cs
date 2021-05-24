@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using UniRx.Async;
 
@@ -15,15 +15,15 @@ namespace Naninovel.Commands
 
         private ITextPrinterActor heldPrinterActor;
 
-        public virtual async UniTask HoldResourcesAsync ()
+        public virtual async UniTask PreloadResourcesAsync ()
         {
             heldPrinterActor = await GetOrAddPrinterAsync();
-            await heldPrinterActor.HoldResourcesAsync(this, null);
+            await heldPrinterActor.HoldResourcesAsync(null, this);
         }
 
-        public virtual void ReleaseResources ()
+        public virtual void ReleasePreloadedResources ()
         {
-            heldPrinterActor?.ReleaseResources(this, null);
+            heldPrinterActor?.ReleaseResources(null, this);
         }
 
         protected virtual async UniTask<ITextPrinterActor> GetOrAddPrinterAsync ()

@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System.Collections.Generic;
 using UnityEngine;
@@ -6,7 +6,7 @@ using UnityEngine.EventSystems;
 
 namespace Naninovel
 {
-    [System.Serializable]
+    [EditInProjectSettings]
     public class InputConfiguration : Configuration
     {
         public const string SubmitName = "Submit";
@@ -31,6 +31,8 @@ namespace Naninovel
         public BaseInputModule CustomInputModule = null;
         [Tooltip("Limits frequency of the registered touch inputs, in seconds.")]
         public float TouchFrequencyLimit = .1f;
+        [Tooltip("Limits distance of the registered touch inputs, in pixels.")]
+        public float TouchDistanceLimit = 25f;
         #if ENABLE_INPUT_SYSTEM && INPUT_SYSTEM_AVAILABLE
         [Tooltip("When Unity's new input system is installed, assign input actions asset here.\n\nTo map input actions to Naninovel's input bindings, create `Naninovel` action map and add actions with names equal to the binding names (found below under `Control Scheme` -> Bindings list).\n\nBe aware, that 2-dimensional (Vector2) axes are not supported.")]
         public UnityEngine.InputSystem.InputActionAsset InputActions = default;
@@ -40,24 +42,47 @@ namespace Naninovel
 
         [Header("Control Scheme"), Tooltip("Bindings to process input for.")]
         public List<InputBinding> Bindings = new List<InputBinding> {
-            new InputBinding { Name = SubmitName, Keys = new List<KeyCode> { KeyCode.Return, KeyCode.JoystickButton0 } },
-            new InputBinding { Name = CancelName, Keys = new List<KeyCode> { KeyCode.Escape, KeyCode.JoystickButton1 }, AlwaysProcess = true },
+            new InputBinding {
+                Name = SubmitName, 
+                Keys = new List<KeyCode> { KeyCode.Return, KeyCode.JoystickButton0 }
+            },
+            new InputBinding {
+                Name = CancelName, 
+                Keys = new List<KeyCode> { KeyCode.Escape, KeyCode.JoystickButton1 }, AlwaysProcess = true
+            },
             new InputBinding {
                 Name = ContinueName,
                 Keys = new List<KeyCode> { KeyCode.Return, KeyCode.KeypadEnter, KeyCode.JoystickButton0 },
                 Axes = new List<InputAxisTrigger> { new InputAxisTrigger { AxisName = "Mouse ScrollWheel", TriggerMode = InputAxisTriggerMode.Negative } },
                 Swipes = new List<InputSwipeTrigger> { new InputSwipeTrigger { Direction = InputSwipeDirection.Left } }
             },
-            new InputBinding { Name = PauseName, Keys = new List<KeyCode> { KeyCode.Backspace, KeyCode.JoystickButton7 } },
-            new InputBinding { Name = SkipName, Keys = new List<KeyCode> { KeyCode.LeftControl, KeyCode.RightControl, KeyCode.JoystickButton1 } },
-            new InputBinding { Name = AutoPlayName, Keys = new List<KeyCode> { KeyCode.A, KeyCode.JoystickButton2 } },
-            new InputBinding { Name = ToggleUIName, Keys = new List<KeyCode> { KeyCode.Space, KeyCode.JoystickButton3 } },
-            new InputBinding { Name = ShowBacklogName, Keys = new List<KeyCode> { KeyCode.L, KeyCode.JoystickButton5 } },
+            new InputBinding {
+                Name = PauseName, 
+                Keys = new List<KeyCode> { KeyCode.Backspace, KeyCode.JoystickButton7 }
+            },
+            new InputBinding {
+                Name = SkipName, 
+                Keys = new List<KeyCode> { KeyCode.LeftControl, KeyCode.RightControl, KeyCode.JoystickButton1 }
+            },
+            new InputBinding {
+                Name = AutoPlayName, 
+                Keys = new List<KeyCode> { KeyCode.A, KeyCode.JoystickButton2 }
+            },
+            new InputBinding {
+                Name = ToggleUIName, 
+                Keys = new List<KeyCode> { KeyCode.Space, KeyCode.JoystickButton3 }, 
+                Swipes = new List<InputSwipeTrigger> { new InputSwipeTrigger { Direction = InputSwipeDirection.Down } }
+            },
+            new InputBinding {
+                Name = ShowBacklogName, 
+                Keys = new List<KeyCode> { KeyCode.L, KeyCode.JoystickButton5 },
+                Swipes = new List<InputSwipeTrigger> { new InputSwipeTrigger { Direction = InputSwipeDirection.Up } }
+            },
             new InputBinding {
                 Name = RollbackName,
                 Keys = new List<KeyCode> { KeyCode.JoystickButton4 },
                 Axes = new List<InputAxisTrigger> { new InputAxisTrigger { AxisName = "Mouse ScrollWheel", TriggerMode = InputAxisTriggerMode.Positive } },
-                Swipes = new List<InputSwipeTrigger> { new InputSwipeTrigger { Direction = InputSwipeDirection.Right } }
+                Swipes = new List<InputSwipeTrigger> { new InputSwipeTrigger { Direction = InputSwipeDirection.Right } },
             },
             new InputBinding {
                 Name = CameraLookXName,

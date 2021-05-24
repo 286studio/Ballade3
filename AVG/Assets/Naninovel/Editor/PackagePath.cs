@@ -1,5 +1,6 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
+using System;
 using System.IO;
 using System.Linq;
 using UnityEngine;
@@ -17,7 +18,7 @@ namespace Naninovel
         public static string RuntimeResourcesPath => Path.Combine(PackageRootPath, "Resources/Naninovel");
         public static string PrefabsPath => Path.Combine(PackageRootPath, "Prefabs");
 
-        private const string markerSearchPattern = "Elringus.Naninovel.Editor.asmdef";
+        private const string markerSearchPattern = "Elringus.Naninovel.Editor.marker";
         private static string cachedPackageRootPath;
 
         private static string GetPackageRootPath ()
@@ -25,7 +26,7 @@ namespace Naninovel
             if (string.IsNullOrEmpty(cachedPackageRootPath) || !File.Exists(PackageMarkerPath))
             {
                 var marker = Directory.GetFiles(Application.dataPath, markerSearchPattern, SearchOption.AllDirectories).FirstOrDefault();
-                if (marker is null) { Debug.LogError($"Failed to find `{markerSearchPattern}` file."); return null; }
+                if (marker is null) throw new Exception($"Failed to find `{markerSearchPattern}` file.");
                 cachedPackageRootPath = Directory.GetParent(marker)?.Parent?.FullName;
             }
             return cachedPackageRootPath;

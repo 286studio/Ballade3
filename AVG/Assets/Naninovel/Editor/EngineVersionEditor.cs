@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using System.Globalization;
@@ -18,8 +18,8 @@ namespace Naninovel
     ""name"": ""com.elringus.naninovel"",
     ""version"": ""{VERSION}"",
     ""displayName"": ""Naninovel"",
-    ""description"": ""Writer-friendly visual novel engine powered by Unity"",
-    ""unity"": ""2019.3"",
+    ""description"": ""A full-featured, writer-friendly and completely customizable visual novel extension for Unity game engine"",
+    ""unity"": ""2019.4"",
     ""author"": {
         ""name"": ""Elringus"",
         ""url"": ""https://naninovel.com""
@@ -47,21 +47,27 @@ namespace Naninovel
 
                 // Try resolve git version option #1.
                 var gitPath = $"{GitHubProjectPath}/.git/refs/tags";
-                if (Directory.Exists(gitPath)) engineVersionProperty.stringValue = Directory.GetFiles(gitPath)?.Max()?.GetAfter(Path.DirectorySeparatorChar.ToString());
-
+                if (Directory.Exists(gitPath))
+                    engineVersionProperty.stringValue = Directory.GetFiles(gitPath)
+                        .Where(p => !p.EndsWith("beta")).Select(p => p.GetAfter("v1.")).Max();
+            
                 // Try resolve git version option #2.
                 if (string.IsNullOrWhiteSpace(engineVersionProperty.stringValue))
                 {
                     gitPath = $"{GitHubProjectPath}/.git/packed-refs";
-                    if (File.Exists(gitPath)) engineVersionProperty.stringValue = File.ReadAllText(gitPath).GetAfter("/").TrimFull();
+                    if (File.Exists(gitPath))
+                        engineVersionProperty.stringValue = File.ReadAllText(gitPath).SplitByNewLine()
+                            ?.Where(l => l.Contains("refs/tags/v") && !l.EndsWith("beta")).Select(l => l.GetAfter("v1.").TrimFull()).Max();
                 }
+
+                engineVersionProperty.stringValue = "v1." + engineVersionProperty.stringValue;
 
                 buildDateProperty.stringValue = $"{DateTime.Now:yyyy-MM-dd}";
 
                 serializedObj.ApplyModifiedProperties();
 
                 // 2. Update package version.
-                var packageVersion = engineVersionProperty.stringValue.GetBetween("v", "-");
+                var packageVersion = engineVersionProperty.stringValue.GetAfter("v");
                 var packageText = packageTextTemplate.Replace("{VERSION}", packageVersion);
                 var packagePath = PathUtils.Combine(PackagePath.PackageRootPath, "package.json");
                 File.WriteAllText(packagePath, packageText);

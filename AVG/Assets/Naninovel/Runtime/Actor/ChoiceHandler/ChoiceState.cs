@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -33,45 +33,39 @@ namespace Naninovel
         /// </summary>
         public bool OverwriteButtonPosition => overwriteButtonPosition;
         /// <summary>
-        /// The choice will load script with the specified name.
+        /// Script text to execute when the choice is selected.
         /// </summary>
-        public string GotoScript => gotoScript;
+        public string OnSelectScript => onSelectScript;
         /// <summary>
-        /// The choice will lead to label with the specified name.
+        /// Whether to continue playing next command when the choice is selected.
         /// </summary>
-        public string GotoLabel => gotoLabel;
-        /// <summary>
-        /// The choice will lead to label with the specified name.
-        /// </summary>
-        public string SetExpression => setExpression;
+        public bool AutoPlay => autoPlay;
 
         [SerializeField] private string id;
         [SerializeField] private string summary;
         [SerializeField] private string buttonPath;
         [SerializeField] private Vector2 buttonPosition;
         [SerializeField] private bool overwriteButtonPosition;
-        [SerializeField] private string gotoScript;
-        [SerializeField] private string gotoLabel;
-        [SerializeField] private string setExpression;
+        [SerializeField] private string onSelectScript;
+        [SerializeField] private bool autoPlay;
 
-        public ChoiceState (string summary = null, string buttonPath = null, Vector2? buttonPosition = null,
-            string gotoScript = null, string gotoLabel = null, string setExpression = null)
+        public ChoiceState (string summary = null, string buttonPath = null, Vector2? buttonPosition = null, 
+            string onSelectScript = null, bool autoPlay = false)
         {
             this.id = Guid.NewGuid().ToString();
             this.summary = summary;
             this.buttonPath = buttonPath;
             this.buttonPosition = buttonPosition ?? default;
             this.overwriteButtonPosition = buttonPosition.HasValue;
-            this.gotoScript = gotoScript;
-            this.gotoLabel = gotoLabel;
-            this.setExpression = setExpression;
+            this.onSelectScript = onSelectScript;
+            this.autoPlay = autoPlay;
         }
-
+        
         public override bool Equals (object obj) => obj is ChoiceState state && Equals(state);
 
         public bool Equals (ChoiceState other) => id == other.id;
 
-        public override int GetHashCode () => 1877310944 + EqualityComparer<string>.Default.GetHashCode(id);
+        public override int GetHashCode () => 1877310944 + EqualityComparer<string>.Default.GetHashCode(Id);
 
         public static bool operator == (ChoiceState left, ChoiceState right) => left.Equals(right);
 

@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 Shader "Naninovel/TransitionalUI"
 {
@@ -109,7 +109,8 @@ Shader "Naninovel/TransitionalUI"
             fixed4 ComputeFragment(VertexOutput vertexOutput) : SV_Target
             {
                 half4 mainColor = (tex2D(_MainTex, vertexOutput.MainTexCoord) + _TextureSampleAdd) * vertexOutput.Color;
-                half4 transitionColor = (tex2D(_TransitionTex, vertexOutput.TransitionTexCoord) + _TextureSampleAdd) * vertexOutput.Color;
+                // Using main tex UVs here, as TMPro force-enables additional shader channels on canvas (and all the geometry inside it), which breaks transition texture UVs.
+                half4 transitionColor = (tex2D(_TransitionTex, vertexOutput.MainTexCoord/*TransitionTexCoord*/) + _TextureSampleAdd) * vertexOutput.Color;
 
                 half4 color = lerp(mainColor, transitionColor, _TransitionProgress);
 

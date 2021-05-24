@@ -1,6 +1,6 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
-using System.Threading;
+using System;
 using UniRx.Async;
 using UnityEngine;
 
@@ -9,23 +9,7 @@ namespace Naninovel.Commands
     /// <summary>
     /// Holds script execution until the specified wait condition.
     /// </summary>
-    /// <example>
-    /// ; "ThunderSound" SFX will play 0.5 seconds after the shake background effect finishes.
-    /// @fx ShakeBackground
-    /// @wait 0.5
-    /// @sfx ThunderSound
-    /// 
-    /// ; Print first two words, then wait for user input before printing the remaining phrase.
-    /// Lorem ipsum[wait i] dolor sit amet.
-    /// ; You can also use the following shortcut (@i command) for this wait mode.
-    /// Lorem ipsum[i] dolor sit amet.
-    /// 
-    /// ; Start an SFX, print a message and wait for a skippable 5 seconds delay, then stop the SFX.
-    /// @sfx Noise loop:true
-    /// Jeez, what a disgusting noise. Shut it down![wait i5][skipInput]
-    /// @stopSfx Noise
-    /// </example>
-    public class Wait : Command, Command.IForceWait
+    public class Wait : Command
     {
         /// <summary>
         /// Literal used to indicate "wait-for-input" mode.
@@ -36,17 +20,24 @@ namespace Naninovel.Commands
         /// Wait conditions:<br/>
         ///  - `i` user press continue or skip input key;<br/>
         ///  - `0.0` timer (seconds);<br/>
-        ///  - `i0.0` timer, that is skippable by continue or skip input keys.
+        ///  - `i0.0` timer, that is skip-able by continue or skip input keys.
         /// </summary>
         [ParameterAlias(NamelessParameterAlias), RequiredParameter]
         public StringParameter WaitMode;
-
-        private static IInputManager inputManager => Engine.GetService<IInputManager>();
-        private static IScriptPlayer scriptPlayer => Engine.GetService<IScriptPlayer>();
+        /// <summary>
+        /// Script commands to execute when the wait is over.
+        /// Escape commas inside list values to prevent them being treated as delimiters.
+        /// </summary>
+        [ParameterAlias("do")]
+        public StringListParameter OnFinished;
 
         public override async UniTask ExecuteAsync (CancellationToken cancellationToken = default)
         {
             // Don't just return here if skip is enabled; state snapshot is marked as allowed for player rollback when setting waiting for input.
+
+            // Always wait for at least a frame; otherwise skip-able timer (eg, @wait i3) may not behave correctly
+            // when used before/after a generic text line: https://forum.naninovel.com/viewtopic.php?p=156#p156
+            await AsyncUtils.WaitEndOfFrame;
 
             if (!Assigned(WaitMode))
             {
@@ -54,48 +45,52 @@ namespace Naninovel.Commands
                 return;
             }
 
-            // Waiting for player input.
-            if (WaitMode.Value.EqualsFastIgnoreCase(InputLiteral))
+            var waitMode = WaitMode.Value;
+            if (waitMode.EqualsFastIgnoreCase(InputLiteral))
+                await WaitForInputAsync(cancellationToken);
+            else if (waitMode.StartsWithFast(InputLiteral) && ParseUtils.TryInvariantFloat(waitMode.GetAfterFirst(InputLiteral), out var waitTime))
+                await WaitForTimerAsync(waitTime, cancellationToken);
+            else if (ParseUtils.TryInvariantFloat(waitMode, out waitTime))
+                await WaitForTimerAsync(waitTime, cancellationToken.ASAPToken);
+            else LogWarningWithPosition($"Failed to resolve value of the `{nameof(WaitMode)}` parameter for the wait command. Check the API reference for list of supported values.");
+
+            if (cancellationToken.CancelASAP) return;
+            
+            if (Assigned(OnFinished))
+                await ExecuteOnFinishedAsync(OnFinished, cancellationToken);
+        }
+
+        private static async UniTask WaitForInputAsync (CancellationToken cancellationToken)
+        {
+            var player = Engine.GetService<IScriptPlayer>();
+            player.SetWaitingForInputEnabled(true);
+            while (Application.isPlaying && !cancellationToken.CancellationRequested)
             {
-                scriptPlayer.SetWaitingForInputEnabled(true);
-                return;
+                await AsyncUtils.WaitEndOfFrame;
+                if (!player.WaitingForInput || player.AutoPlayActive) break;
             }
+        }
 
-            // Waiting for timer or input.
-            if (WaitMode.Value.StartsWithFast(InputLiteral) && ParseUtils.TryInvariantFloat(WaitMode.Value.GetAfterFirst(InputLiteral), out var skippableWaitTime))
+        private static async UniTask WaitForTimerAsync (float waitTime, CancellationToken cancellationToken)
+        {
+            var player = Engine.GetService<IScriptPlayer>();
+            if (player.SkipActive) return;
+
+            var startTime = Time.time;
+            while (Application.isPlaying)
             {
-                scriptPlayer.SetWaitingForInputEnabled(true);
-                if (scriptPlayer.SkipActive) return;
-
-                var startTime = Time.time;
-                while (Application.isPlaying)
-                {
-                    await AsyncUtils.WaitEndOfFrame;
-                    if (cancellationToken.IsCancellationRequested) return;
-                    var waitedEnough = (Time.time - startTime) >= skippableWaitTime;
-                    var inputActivated = (inputManager.GetContinue()?.StartedDuringFrame ?? false) || (inputManager.GetSkip()?.StartedDuringFrame ?? false);
-                    if (waitedEnough || inputActivated) break;
-                }
-                scriptPlayer.SetWaitingForInputEnabled(false);
-                return;
+                await AsyncUtils.WaitEndOfFrame;
+                var waitedEnough = Time.time - startTime >= waitTime;
+                if (cancellationToken.CancellationRequested || waitedEnough) break;
             }
+        }
 
-            // Waiting for timer.
-            if (ParseUtils.TryInvariantFloat(WaitMode, out var waitTime))
-            {
-                if (scriptPlayer.SkipActive) return;
-
-                var startTime = Time.time;
-                while (Application.isPlaying)
-                {
-                    await AsyncUtils.WaitEndOfFrame;
-                    var waitedEnough = (Time.time - startTime) >= waitTime;
-                    if (cancellationToken.IsCancellationRequested || waitedEnough) break;
-                }
-                return;
-            }
-
-            LogWarningWithPosition($"Failed to resolve value of the `{nameof(WaitMode)}` parameter for the wait command. Check the API reference for list of supported values.");
+        private static async UniTask ExecuteOnFinishedAsync (string[] scriptLines, CancellationToken cancellationToken)
+        {
+            var scriptText = string.Join(Environment.NewLine, scriptLines);
+            var script = Script.FromScriptText("On wait finished script", scriptText);
+            var playlist = new ScriptPlaylist(script);
+            await playlist.ExecuteAsync(cancellationToken);
         }
     } 
 }

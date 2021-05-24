@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -11,7 +11,7 @@ namespace Naninovel
         /// <summary>
         /// Checks whether any provider in the list is loading resources.
         /// </summary>
-        public static bool AnyIsLoading (this List<IResourceProvider> providers)
+        public static bool AnyIsLoading (this IList<IResourceProvider> providers)
         {
             foreach (var provider in providers)
                 if (provider.IsLoading) return true;
@@ -21,16 +21,16 @@ namespace Naninovel
         /// <summary>
         /// Returns all the resources loaded by all the providers in the list.
         /// </summary>
-        public static IEnumerable<Resource> GetLoadedResources (this List<IResourceProvider> providers)
+        public static IReadOnlyCollection<Resource> GetLoadedResources (this IList<IResourceProvider> providers)
         {
-            return providers.SelectMany(p => p.LoadedResources);
+            return providers.SelectMany(p => p.LoadedResources).ToArray();
         }
 
         /// <summary>
         /// Attempts to retrieve a loaded resource with the provided path; returns null if the resource is not loaded by any of the provider in the list.
         /// When resources with equal paths are loaded by multiple providers, will get the one from the higher-priority provider.
         /// </summary>
-        public static Resource<T> GetLoadedResourceOrNull<T> (this List<IResourceProvider> providers, string path) where T : UnityEngine.Object
+        public static Resource<T> GetLoadedResourceOrNull<T> (this IList<IResourceProvider> providers, string path) where T : UnityEngine.Object
         {
             foreach (var provider in providers)
                 if (provider.ResourceLoaded(path))
@@ -42,7 +42,7 @@ namespace Naninovel
         /// Loads a resource at the provided path.
         /// When resources with equal paths are available in multiple providers, will load the one from the higher-priority provider.
         /// </summary>
-        public static async UniTask<Resource<T>> LoadResourceAsync<T> (this List<IResourceProvider> providers, string path) where T : UnityEngine.Object
+        public static async UniTask<Resource<T>> LoadResourceAsync<T> (this IList<IResourceProvider> providers, string path) where T : UnityEngine.Object
         {
             if (providers.Count == 1)
                 return await providers[0].LoadResourceAsync<T>(path);
@@ -54,14 +54,14 @@ namespace Naninovel
                     return await provider.LoadResourceAsync<T>(path);
                 }
             }
-            return new Resource<T>(path, null, null);
+            return Resource<T>.Invalid;
         }
 
         /// <summary>
         /// Loads all the resources at the provided path from all the providers.
         /// When a resource is available in multiple providers, will only load the one from the higher-priority provider.
         /// </summary>
-        public static async UniTask<IEnumerable<Resource<T>>> LoadResourcesAsync<T> (this List<IResourceProvider> providers, string path) where T : UnityEngine.Object
+        public static async UniTask<IReadOnlyCollection<Resource<T>>> LoadResourcesAsync<T> (this IList<IResourceProvider> providers, string path) where T : UnityEngine.Object
         {
             var resources = new List<Resource<T>>();
             if (providers.Count == 1)
@@ -83,7 +83,7 @@ namespace Naninovel
         /// Locates all the resources at the provided path from all the providers.
         /// When a resource is available in multiple providers, will only get the one from the higher-priority provider.
         /// </summary>
-        public static async UniTask<IEnumerable<string>> LocateResourcesAsync<T> (this List<IResourceProvider> providers, string path) where T : UnityEngine.Object
+        public static async UniTask<IReadOnlyCollection<string>> LocateResourcesAsync<T> (this IList<IResourceProvider> providers, string path) where T : UnityEngine.Object
         {
             var result = new List<string>();
             foreach (var provider in providers)
@@ -100,7 +100,7 @@ namespace Naninovel
         /// Locates all the folders at the provided path from all the providers.
         /// When a folder is available in multiple providers, will only get the one from the higher-priority provider.
         /// </summary>
-        public static async UniTask<IEnumerable<Folder>> LocateFoldersAsync (this List<IResourceProvider> providers, string path)
+        public static async UniTask<IReadOnlyCollection<Folder>> LocateFoldersAsync (this IList<IResourceProvider> providers, string path)
         {
             var result = new List<Folder>();
             foreach (var provider in providers)
@@ -116,7 +116,7 @@ namespace Naninovel
         /// <summary>
         /// Checks whether a resource at the provided path exists in any of the providers.
         /// </summary>
-        public static async UniTask<bool> ResourceExistsAsync<T> (this List<IResourceProvider> providers, string path) where T : UnityEngine.Object
+        public static async UniTask<bool> ResourceExistsAsync<T> (this IList<IResourceProvider> providers, string path) where T : UnityEngine.Object
         {
             foreach (var provider in providers)
                 if (await provider.ResourceExistsAsync<T>(path)) return true;
@@ -128,7 +128,7 @@ namespace Naninovel
         /// </summary>
         /// <param name="providers">Providers list.</param>
         /// <param name="path">Path to the resource location.</param>
-        public static void UnloadResource (this List<IResourceProvider> providers, string path)
+        public static void UnloadResource (this IList<IResourceProvider> providers, string path)
         {
             foreach (var provider in providers)
                  provider.UnloadResource(path);
@@ -137,7 +137,7 @@ namespace Naninovel
         /// <summary>
         /// Unloads all loaded resources from all the providers in the list.
         /// </summary>
-        public static void UnloadResources (this List<IResourceProvider> providers)
+        public static void UnloadResources (this IList<IResourceProvider> providers)
         {
             foreach (var provider in providers)
                  provider.UnloadResources();
@@ -146,7 +146,7 @@ namespace Naninovel
         /// <summary>
         /// Checks whether resource with the provided path is loaded by any of the providers in the list.
         /// </summary>
-        public static bool ResourceLoaded (this List<IResourceProvider> providers, string path)
+        public static bool ResourceLoaded (this IList<IResourceProvider> providers, string path)
         {
             foreach (var provider in providers)
                 if (provider.ResourceLoaded(path)) return true;
@@ -156,7 +156,7 @@ namespace Naninovel
         /// <summary>
         /// Checks whether resource with the provided path is currently being loaded by any of the providers in the list.
         /// </summary>
-        public static bool ResourceLoading (this List<IResourceProvider> providers, string path)
+        public static bool ResourceLoading (this IList<IResourceProvider> providers, string path)
         {
             foreach (var provider in providers)
                 if (provider.ResourceLoading(path)) return true;

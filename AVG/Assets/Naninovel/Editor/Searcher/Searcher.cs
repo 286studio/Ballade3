@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -49,8 +49,6 @@ namespace Naninovel.Searcher
 
         public IEnumerable<SearcherItem> Search(string query)
         {
-            // TODO: Fix properly!
-            // See: https://gitlab.internal.unity3d.com/upm-packages/editor/com.unity.searcher/issues/22
             query = query.ToLower();
 
             var results = new List<SearcherItem>();

@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using UnityEngine;
 
@@ -86,6 +86,22 @@ namespace Naninovel
             texture2d.ReadPixels(new Rect(0, 0, renderTexture.width, renderTexture.height), 0, 0);
             texture2d.Apply();
             return texture2d;
+        }
+
+        /// <summary>
+        /// Clears the depth and color contents of the render texture with transparent color.
+        /// </summary>
+        public static void Clear (this RenderTexture renderTexture) => Clear(renderTexture, true, true, Color.clear);
+        
+        /// <summary>
+        /// Clears the contents of the render texture with the specified color.
+        /// </summary>
+        public static void Clear (this RenderTexture renderTexture, bool clearDepth, bool clearColor, Color backgroundColor)
+        {
+            var activeTexture = RenderTexture.active;
+            RenderTexture.active = renderTexture;
+            GL.Clear(clearDepth, clearColor, backgroundColor);
+            RenderTexture.active = activeTexture;
         }
     }
 }

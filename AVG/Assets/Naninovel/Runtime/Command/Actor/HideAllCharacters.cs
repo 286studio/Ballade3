@@ -1,7 +1,5 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
-using System.Linq;
-using System.Threading;
 using UniRx.Async;
 
 namespace Naninovel.Commands
@@ -9,16 +7,13 @@ namespace Naninovel.Commands
     /// <summary>
     /// Hides (removes) all the visible characters on scene.
     /// </summary>
-    /// <example>
-    /// @hideChars
-    /// </example>
     [CommandAlias("hideChars")]
     public class HideAllCharacters : Command
     {
         /// <summary>
         /// Duration (in seconds) of the fade animation. Default value: 0.35 seconds.
         /// </summary>
-        [ParameterAlias("time")]
+        [ParameterAlias("time"), ParameterDefaultValue("0.35")]
         public DecimalParameter Duration = .35f;
 
         public override async UniTask ExecuteAsync (CancellationToken cancellationToken = default)

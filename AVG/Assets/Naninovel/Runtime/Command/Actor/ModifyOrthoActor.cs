@@ -1,7 +1,6 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System.Linq;
-using System.Threading;
 using UniRx.Async;
 using UnityEngine;
 
@@ -15,8 +14,8 @@ namespace Naninovel.Commands
         where TManager : class, IActorManager<TActor, TState, TMeta, TConfig>
     {
         /// <summary>
-        /// Position (relative to the screen borders, in percents) to set for the modified actor.
-        /// Position is described as follows: `0,0` is the bottom left, `50,50` is the center and `100,100` is the top right corner of the screen.
+        /// Position (relative to the scene borders, in percents) to set for the modified actor.
+        /// Position is described as follows: `0,0` is the bottom left, `50,50` is the center and `100,100` is the top right corner of the scene.
         /// Use Z-component (third member, eg `,,10`) to move (sort) by depth while in ortho mode.
         /// </summary>
         [ParameterAlias("pos")]
@@ -31,14 +30,6 @@ namespace Naninovel.Commands
         private float?[] worldPosition = new float?[3];
         private float?[] uniformScale = new float?[3];
 
-        public override void OnAfterDeserialize ()
-        {
-            base.OnAfterDeserialize();
-
-            worldPosition = new float?[3];
-            uniformScale = new float?[3];
-        }
-
         protected override UniTask ApplyPositionModificationAsync (TActor actor, EasingType easingType, float duration, CancellationToken cancellationToken)
         {
             // In ortho mode, there is no point in animating z position.
@@ -50,7 +41,7 @@ namespace Naninovel.Commands
 
         private float?[] AttemptScenePosition ()
         {
-            if (!Assigned(ScenePosition) && Pose is null) 
+            if (!Assigned(ScenePosition) && PosedPosition is null) 
                 return base.AssignedPosition;
 
             if (Assigned(ScenePosition))
@@ -59,12 +50,7 @@ namespace Naninovel.Commands
                 worldPosition[1] = ScenePosition.ElementAtOrNull(1) != null ? CameraManager.Configuration.SceneToWorldSpace(new Vector2(0, ScenePosition[1] / 100f)).y : default(float?);
                 worldPosition[2] = ScenePosition.ElementAtOrNull(2);
             }
-            else
-            {
-                worldPosition[0] = CameraManager.Configuration.SceneToWorldSpace(new Vector2(Pose.Position.x / 100f, 0)).x;
-                worldPosition[1] = CameraManager.Configuration.SceneToWorldSpace(new Vector2(0, Pose.Position.y / 100f)).y;
-                worldPosition[2] = Pose.Position.z;
-            }
+            else worldPosition = PosedPosition;
 
             return worldPosition;
         }

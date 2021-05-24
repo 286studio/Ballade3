@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using UnityEngine.UI;
@@ -25,8 +25,7 @@ namespace Naninovel
 
         private void InvokeOnSliderValueChanged (float value)
         {
-            if (OnSliderValueChanged != null)
-                OnSliderValueChanged.Invoke(value);
+            OnSliderValueChanged?.Invoke(value);
         }
     }
 }

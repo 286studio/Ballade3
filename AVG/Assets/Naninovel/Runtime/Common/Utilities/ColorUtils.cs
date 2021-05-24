@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using UnityEngine;
 
@@ -9,8 +9,6 @@ namespace Naninovel
         /// <summary>
         /// Solid white color with zero alpha.
         /// </summary>
-        public static Color ClearWhite { get { return clearWhite; } }
-
-        private static Color clearWhite = new Color(1, 1, 1, 0);
+        public static Color ClearWhite { get; } = new Color(1, 1, 1, 0);
     }
 }

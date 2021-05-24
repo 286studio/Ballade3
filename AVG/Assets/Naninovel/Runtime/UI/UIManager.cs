@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using Naninovel.UI;
 using System;
@@ -20,41 +20,20 @@ namespace Naninovel
             public int FontSize = -1;
         }
 
-        private readonly struct ManagedUI
-        {
-            public readonly string Id;
-            public readonly string PrefabName;
-            public readonly GameObject GameObject;
-            public readonly IManagedUI UIComponent;
-            public readonly Type ComponentType;
+        public virtual UIConfiguration Configuration { get; }
+        public virtual string FontName { get => fontName; set => SetFontName(value); }
+        public virtual int FontSize { get => fontSize; set => SetFontSize(value); }
 
-            public ManagedUI (string prefabName, GameObject gameObject, IManagedUI uiComponent)
-            {
-                PrefabName = prefabName;
-                GameObject = gameObject;
-                UIComponent = uiComponent;
-                ComponentType = UIComponent?.GetType();
-                Id = $"{PrefabName}<{ComponentType.FullName}>";
-            }
-        }
-
-        public UIConfiguration Configuration { get; }
-        public string Font { get => ObjectUtils.IsValid(customFont) ? customFont.name : null; set => SetFont(value); }
-        public int? FontSize { get => customFontSize; set => SetFontSize(value); }
-
-        private const int defaultFontSize = 32;
-
-        private readonly List<ManagedUI> managedUI = new List<ManagedUI>();
+        private readonly List<ManagedUI> managedUIs = new List<ManagedUI>();
         private readonly Dictionary<Type, IManagedUI> cachedGetUIResults = new Dictionary<Type, IManagedUI>();
         private readonly Dictionary<IManagedUI, bool> modalState = new Dictionary<IManagedUI, bool>();
         private readonly ICameraManager cameraManager;
         private readonly IInputManager inputManager;
         private readonly IResourceProviderManager providersManager;
         private ResourceLoader<GameObject> loader;
-        private Camera customCamera;
         private IInputSampler toggleUIInput;
-        private Font customFont;
-        private int? customFontSize;
+        private string fontName;
+        private int fontSize = -1;
 
         public UIManager (UIConfiguration config, IResourceProviderManager providersManager, ICameraManager cameraManager, IInputManager inputManager)
         {
@@ -63,11 +42,11 @@ namespace Naninovel
             this.cameraManager = cameraManager;
             this.inputManager = inputManager;
 
-            // Instatiating the UIs after the engine itialization so that UIs can use Engine API in Awake() and OnEnable() methods.
+            // Instantiating the UIs after the engine initialization so that UIs can use Engine API in Awake() and OnEnable() methods.
             Engine.AddPostInitializationTask(InstantiateUIsAsync);
         }
 
-        public UniTask InitializeServiceAsync ()
+        public virtual UniTask InitializeServiceAsync ()
         {
             loader = Configuration.Loader.CreateFor<GameObject>(providersManager);
 
@@ -78,80 +57,63 @@ namespace Naninovel
             return UniTask.CompletedTask;
         }
 
-        public void ResetService () { }
+        public virtual void ResetService () { }
 
-        public void DestroyService ()
+        public virtual void DestroyService ()
         {
             if (toggleUIInput != null)
                 toggleUIInput.OnStart -= ToggleUI;
 
-            foreach (var managedUI in managedUI)
-            {
-                if (!ObjectUtils.IsValid(managedUI.GameObject)) continue;
-                if (Application.isPlaying) UnityEngine.Object.Destroy(managedUI.GameObject);
-                else UnityEngine.Object.DestroyImmediate(managedUI.GameObject);
-            }
-            managedUI.Clear();
+            foreach (var ui in managedUIs)
+                ObjectUtils.DestroyOrImmediate(ui.GameObject);
+            managedUIs.Clear();
             cachedGetUIResults.Clear();
 
-            loader.UnloadAll();
+            loader?.ReleaseAll(this);
 
             Engine.RemovePostInitializationTask(InstantiateUIsAsync);
         }
 
-        public void SaveServiceState (SettingsStateMap stateMap)
+        public virtual void SaveServiceState (SettingsStateMap stateMap)
         {
             var settings = new Settings {
-                FontName = Font,
-                FontSize = customFontSize ?? -1
+                FontName = FontName,
+                FontSize = FontSize
             };
             stateMap.SetState(settings);
         }
 
-        public UniTask LoadServiceStateAsync (SettingsStateMap stateMap)
+        public virtual UniTask LoadServiceStateAsync (SettingsStateMap stateMap)
         {
-            var settings = stateMap.GetState<Settings>() ?? new Settings();
-            Font = string.IsNullOrEmpty(settings.FontName) ? null : settings.FontName;
-            FontSize = settings.FontSize <= 0 ? null : (int?)settings.FontSize;
+            var settings = stateMap.GetState<Settings>() ?? new Settings {
+                FontName = Configuration.DefaultFont
+            };
+            FontName = settings.FontName;
+            FontSize = settings.FontSize;
 
             return UniTask.CompletedTask;
         }
 
-        public async UniTask<IManagedUI> InstantiatePrefabAsync (GameObject prefab)
+        public virtual async UniTask<IManagedUI> AddUIAsync (GameObject prefab, string name = default)
         {
-            var gameObject = Engine.Instantiate(prefab, prefab.name, Configuration.ObjectsLayer);
-
-            if (!gameObject.TryGetComponent<IManagedUI>(out var uiComponent))
-            {
-                Debug.LogError($"Failed to instatiate `{prefab.name}` UI prefab: the prefab doesn't contain a `CustomUI` or `IManagedUI` component on the root object.");
-                return null;
-            }
-
-            uiComponent.SortingOrder += Configuration.SortingOffset;
-            uiComponent.RenderMode = Configuration.RenderMode;
-            uiComponent.RenderCamera = ObjectUtils.IsValid(customCamera) ? customCamera : ObjectUtils.IsValid(cameraManager.UICamera) ? cameraManager.UICamera : cameraManager.Camera;
-
-            if (ObjectUtils.IsValid(customFont))
-                uiComponent.SetFont(customFont);
-            if (customFontSize.HasValue)
-                uiComponent.SetFontSize(customFontSize.Value);
-
-            var managedUI = new ManagedUI(prefab.name, gameObject, uiComponent);
-            this.managedUI.Add(managedUI);
-
+            var uiComponent = InstantiatePrefab(prefab, name);
             await uiComponent.InitializeAsync();
-
             return uiComponent;
         }
 
-        public T GetUI<T> () where T : class, IManagedUI => GetUI(typeof(T)) as T;
+        public virtual IReadOnlyCollection<IManagedUI> GetManagedUIs ()
+        {
+            return managedUIs.Select(u => u.UIComponent).ToArray();
+        }
 
-        public IManagedUI GetUI (Type type)
+        public virtual T GetUI<T> () where T : class, IManagedUI => GetUI(typeof(T)) as T;
+
+        public virtual IManagedUI GetUI (Type type)
         {
             if (cachedGetUIResults.TryGetValue(type, out var cachedResult))
                 return cachedResult;
 
-            foreach (var managedUI in managedUI)
+            foreach (var managedUI in managedUIs)
                 if (type.IsAssignableFrom(managedUI.ComponentType))
                 {
                     var result = managedUI.UIComponent;
@@ -162,41 +124,49 @@ namespace Naninovel
             return null;
         }
 
-        public IManagedUI GetUI (string prefabName)
+        public virtual IManagedUI GetUI (string name)
         {
-            foreach (var managedUI in managedUI)
-                if (managedUI.PrefabName == prefabName)
+            foreach (var managedUI in managedUIs)
+                if (managedUI.Name == name)
                     return managedUI.UIComponent;
             return null;
         }
 
-        public void SetRenderMode (RenderMode renderMode, Camera renderCamera)
+        public virtual bool RemoveUI (IManagedUI managedUI)
         {
-            customCamera = renderCamera;
-            foreach (var managedUI in managedUI)
+            if (!this.managedUIs.Any(u => u.UIComponent == managedUI))
+                return false;
+
+            var ui = this.managedUIs.FirstOrDefault(u => u.UIComponent == managedUI);
+            this.managedUIs.Remove(ui);
+            foreach (var kv in cachedGetUIResults.ToList())
             {
-                managedUI.UIComponent.RenderMode = renderMode;
-                managedUI.UIComponent.RenderCamera = renderCamera;
+                if (kv.Value == managedUI)
+                    cachedGetUIResults.Remove(kv.Key);
             }
+
+            ObjectUtils.DestroyOrImmediate(ui.GameObject);
+
+            return true;
         }
 
-        public void SetUIVisibleWithToggle (bool visible, bool allowToggle = true)
+        public virtual void SetUIVisibleWithToggle (bool visible, bool allowToggle = true)
         {
             cameraManager.RenderUI = visible;
 
             var clickThroughPanel = GetUI<ClickThroughPanel>();
-            if (ObjectUtils.IsValid(clickThroughPanel))
+            if (clickThroughPanel)
             {
                 if (visible) clickThroughPanel.Hide();
                 else
                 {
-                    if (allowToggle) clickThroughPanel.Show(true, ToggleUI, InputConfiguration.SubmitName, InputConfiguration.ToggleUIName, InputConfiguration.RollbackName);
-                    else clickThroughPanel.Show(false, null, InputConfiguration.RollbackName);
+                    if (allowToggle) clickThroughPanel.Show(true, ToggleUI, InputConfiguration.SubmitName, InputConfiguration.ToggleUIName);
+                    else clickThroughPanel.Show(false, null);
                 }
             }
         }
 
-        public void SetModalUI (IManagedUI modalUI)
+        public virtual void SetModalUI (IManagedUI modalUI)
         {
             if (modalState.Count > 0) // Restore previous state.
             {
@@ -207,7 +177,7 @@ namespace Naninovel
 
             if (modalUI is null) return;
 
-            foreach (var ui in managedUI)
+            foreach (var ui in managedUIs)
             {
                 modalState[ui.UIComponent] = ui.UIComponent.Interactable;
                 ui.UIComponent.Interactable = false;
@@ -216,44 +186,65 @@ namespace Naninovel
             modalUI.Interactable = true;
         }
 
-        private void SetFont (string fontName)
+        protected virtual IManagedUI InstantiatePrefab (GameObject prefab, string name = default)
         {
-            if ((string.IsNullOrEmpty(fontName) && !ObjectUtils.IsValid(customFont)) || Font == fontName) return;
+            var gameObject = Engine.Instantiate(prefab, prefab.name, Configuration.OverrideObjectsLayer ? (int?)Configuration.ObjectsLayer : null);
+
+            if (!gameObject.TryGetComponent<IManagedUI>(out var uiComponent))
+                throw new Exception($"Failed to instantiate `{prefab.name}` UI prefab: the prefab doesn't contain a `{nameof(CustomUI)}` or `{nameof(IManagedUI)}` component on the root object.");
+
+            if (!uiComponent.RenderCamera)
+                uiComponent.RenderCamera = cameraManager.UICamera ? cameraManager.UICamera : cameraManager.Camera;
+
+            if (!string.IsNullOrEmpty(FontName) && Configuration.GetFontOption(FontName) is UIConfiguration.FontOption fontOption)
+                uiComponent.SetFont(fontOption.Font, fontOption.TMPFont);
+            if (FontSize > 0)
+                uiComponent.SetFontSize(FontSize);
+
+            var managedUI = new ManagedUI(name ?? prefab.name, gameObject, uiComponent);
+            this.managedUIs.Add(managedUI);
+
+            return uiComponent;
+        }
+
+        protected virtual void SetFontName (string fontName)
+        {
+            if (FontName == fontName) return;
+
+            this.fontName = fontName;
 
             if (string.IsNullOrEmpty(fontName))
             {
-                customFont = null;
+                foreach (var ui in managedUIs)
+                    ui.UIComponent.SetFont(null, null);
                 return;
             }
 
-            customFont = UnityEngine.Font.CreateDynamicFontFromOSFont(fontName, defaultFontSize);
-            if (!ObjectUtils.IsValid(customFont))
-            {
-                Debug.LogError($"Failed to create `{fontName}` font.");
-                return;
-            }
+            var fontOption = Configuration.GetFontOption(fontName);
+            if (fontOption is null) throw new Exception($"Failed to set `{fontName}` font: Font option with the name is not assigned in the UI configuration.");
 
-            foreach (var ui in managedUI)
-                ui.UIComponent.SetFont(customFont);
+            foreach (var ui in managedUIs)
+                ui.UIComponent.SetFont(fontOption.Font, fontOption.TMPFont);
         }
 
-        private void SetFontSize (int? size)
+        protected virtual void SetFontSize (int size)
         {
-            if (customFontSize == size) return;
+            if (fontSize == size) return;
 
-            customFontSize = size;
+            fontSize = size;
 
-            if (size.HasValue)
-                foreach (var ui in managedUI)
-                    ui.UIComponent.SetFontSize(size.Value);
+            foreach (var ui in managedUIs)
+                ui.UIComponent.SetFontSize(size);
         }
 
-        private void ToggleUI () => SetUIVisibleWithToggle(!cameraManager.RenderUI);
+        protected virtual void ToggleUI () => SetUIVisibleWithToggle(!cameraManager.RenderUI);
 
-        private async UniTask InstantiateUIsAsync ()
+        protected virtual async UniTask InstantiateUIsAsync ()
         {
-            var resources = await loader.LoadAllAsync();
-            var tasks = resources.Select(r => InstantiatePrefabAsync(r));
+            var resources = await loader.LoadAndHoldAllAsync(this);
+            foreach (var resource in resources)
+                InstantiatePrefab(resource, loader.GetLocalPath(resource));
+            var tasks = managedUIs.Select(u => u.UIComponent.InitializeAsync());
             await UniTask.WhenAll(tasks);
         }
     }

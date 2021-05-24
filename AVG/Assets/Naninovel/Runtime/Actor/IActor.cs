@@ -1,6 +1,5 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
-using System.Threading;
 using UniRx.Async;
 using UnityEngine;
 
@@ -73,12 +72,14 @@ namespace Naninovel
         UniTask ChangeTintColorAsync (Color tintColor, float duration, EasingType easingType = default, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Loads (if not loaded) and invokes <see cref="Resource.Hold(object)"/> upon all resources required for the specified actor's appearance.
+        /// Registers provided object as a holder of the resources associated with the specified actor appearance.
+        /// The resources won't be unloaded by <see cref="ReleaseResources"/> while they're held by at least one object.
         /// </summary>
-        UniTask HoldResourcesAsync (object holder, string appearance);
+        UniTask HoldResourcesAsync (string appearance, object holder);
         /// <summary>
-        /// Invokes <see cref="Resource.Release(object, bool)"/> upon all resources required for the specified actor's appearance.
+        /// Removes the provided object from the holders list of the resources associated with the specified actor appearance.
+        /// Will unload the resources after the release in case no other objects are holding it.
         /// </summary>
-        void ReleaseResources (object holder, string appearance);
+        void ReleaseResources (string appearance, object holder);
     }
 }

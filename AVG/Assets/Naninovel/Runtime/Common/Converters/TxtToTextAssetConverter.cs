@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System.Text;
 using UniRx.Async;
@@ -8,9 +8,9 @@ namespace Naninovel
 {
     public class TxtToTextAssetConverter : IRawConverter<TextAsset>
     {
-        public RawDataRepresentation[] Representations { get { return new RawDataRepresentation[] {
+        public RawDataRepresentation[] Representations { get; } = {
             new RawDataRepresentation(".txt", "text/plain")
-        }; } }
+        };
 
         public TextAsset Convert (byte[] obj, string name) 
         {

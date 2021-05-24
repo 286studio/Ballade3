@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -10,10 +10,14 @@ namespace Naninovel
     public class LocalizationSettings : ConfigurationSettings<LocalizationConfiguration>
     {
         protected override string HelpUri => "guide/localization.html";
-        protected override Dictionary<string, Action<SerializedProperty>> OverrideConfigurationDrawers => new Dictionary<string, Action<SerializedProperty>> {
-            [nameof(LocalizationConfiguration.SourceLocale)] = property => LocalesPopupDrawer.Draw(property),
-            [nameof(LocalizationConfiguration.DefaultLocale)] = property => LocalesPopupDrawer.Draw(property, true)
-        };
+
+        protected override Dictionary<string, Action<SerializedProperty>> OverrideConfigurationDrawers ()
+        {
+            var drawers = base.OverrideConfigurationDrawers();
+            drawers[nameof(LocalizationConfiguration.SourceLocale)] = p => LocalesPopupDrawer.Draw(p);
+            drawers[nameof(LocalizationConfiguration.DefaultLocale)] = p => LocalesPopupDrawer.Draw(p, true);
+            return drawers;
+        }
 
         protected override void DrawConfigurationEditor ()
         {

@@ -1,8 +1,7 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using UniRx.Async;
 using UnityEngine;
 using UnityEngine.UI;
@@ -15,86 +14,71 @@ namespace Naninovel.UI
     public class ChatPrinterPanel : UITextPrinterPanel
     {
         [System.Serializable]
-        public class GameState
+        public new class GameState
         {
-            public List<ChatMessage.State> Messages;
-            public string LastMesssageText;
+            public List<ChatMessageState> Messages;
+            public string LastMessageText;
         }
 
         public override string PrintedText { get => printedText; set => SetPrintedText(value); }
         public override string AuthorNameText { get; set; }
-        public override float RevealProgress 
-        { 
-            get => revealProgress; 
-            set 
-            { 
-                if (value == 0) DestroyAllMessages(); 
-                else if (messageStack?.Count > 0 && messageStack.Peek() is ChatMessage message && message) 
-                    message.MessageText = lastMesssageText;
-            } 
+        public override float RevealProgress
+        {
+            get => revealProgress;
+            set
+            {
+                if (value == 0) DestroyAllMessages();
+                else if (messageStack?.Count > 0 && messageStack.Peek() is ChatMessage message && message)
+                    message.MessageText = lastMessageText;
+            }
         }
-        public override string Apperance { get; set; }
+        public override string Appearance { get; set; }
 
-        protected ScrollRect ScrollRect => scrollRect;
-        protected RectTransform MessagesContainer => messagesContainer;
-        protected ChatMessage MessagePrototype => messagePrototype;
-        protected ScriptableUIBehaviour InputIndicator => inputIndicator;
-        protected float RevealDelayModifier => revealDelayModifier;
-        protected float PrintDotDelay => printDotDelay;
+        protected virtual ScrollRect ScrollRect => scrollRect;
+        protected virtual RectTransform MessagesContainer => messagesContainer;
+        protected virtual ChatMessage MessagePrototype => messagePrototype;
+        protected virtual ScriptableUIBehaviour InputIndicator => inputIndicator;
+        protected virtual float RevealDelayModifier => revealDelayModifier;
 
         [SerializeField] private ScrollRect scrollRect = default;
         [SerializeField] private RectTransform messagesContainer = default;
         [SerializeField] private ChatMessage messagePrototype = default;
         [SerializeField] private ScriptableUIBehaviour inputIndicator = default;
         [SerializeField] private float revealDelayModifier = 3f;
-        [SerializeField] private float printDotDelay = .5f;
 
         private Stack<ChatMessage> messageStack = new Stack<ChatMessage>();
         private ICharacterManager characterManager;
-        private IStateManager stateManager;
         private string lastAuthorId;
         private string printedText;
-        private string lastMesssageText;
+        private string lastMessageText;
         private float revealProgress = .1f;
 
         public override async UniTask RevealPrintedTextOverTimeAsync (float revealDelay, CancellationToken cancellationToken)
         {
-            var message = AddMessage(string.Empty, lastAuthorId);
-
+            var message = AddMessage(lastMessageText, lastAuthorId);
+            message.SetIsTyping(true);
             revealProgress = .1f;
 
-            if (revealDelay > 0 && lastMesssageText != null)
+            if (revealDelay > 0 && lastMessageText != null)
             {
                 await AsyncUtils.WaitEndOfFrame;
-                if (cancellationToken.IsCancellationRequested) return;
+                if (cancellationToken.CancelASAP) return;
                 ScrollToBottom(); // Wait before scrolling, otherwise it's not scrolled.
-
-                var revealDuration = lastMesssageText.Count(c => char.IsLetterOrDigit(c)) * revealDelay * revealDelayModifier;
+                var revealDuration = lastMessageText.Count(char.IsLetterOrDigit) * revealDelay * revealDelayModifier;
                 var revealStartTime = Time.time;
                 var revealFinishTime = revealStartTime + revealDuration;
-                var lastPrintDotTime = 0f;
                 while (revealFinishTime > Time.time && messageStack.Count > 0 && messageStack.Peek() == message)
                 {
-                    // Print dots while waiting.
-                    if (Time.time >= lastPrintDotTime + printDotDelay)
-                    {
-                        lastPrintDotTime = Time.time;
-                        message.MessageText = message.MessageText.Length >= 9 ? string.Empty : message.MessageText + " . ";
-                    }
-
                     revealProgress = (Time.time - revealStartTime) / revealDuration;
-
                     await AsyncUtils.WaitEndOfFrame;
-                    if (cancellationToken.IsCancellationRequested) return;
+                    if (cancellationToken.CancelASAP) return;
+                    else if (cancellationToken.CancelLazy) break;
                 }
             }
 
-            if (messageStack.Contains(message))
-                message.MessageText = lastMesssageText;
-
             ScrollToBottom();
-
             revealProgress = 1f;
+            message.SetIsTyping(false);
         }
 
         public override void SetWaitForInputIndicatorVisible (bool isVisible)
@@ -114,42 +98,24 @@ namespace Naninovel.UI
             this.AssertRequiredObjects(scrollRect, messagesContainer, messagePrototype, inputIndicator);
 
             characterManager = Engine.GetService<ICharacterManager>();
-            stateManager = Engine.GetService<IStateManager>();
-        }
-
-        protected override void OnEnable ()
-        {
-            base.OnEnable();
-
-            stateManager.AddOnGameSerializeTask(SerializeState);
-            stateManager.AddOnGameDeserializeTask(DeserializeState);
-        }
-
-        protected override void OnDisable ()
-        {
-            base.OnDisable();
-
-            stateManager.RemoveOnGameSerializeTask(SerializeState);
-            stateManager.RemoveOnGameDeserializeTask(DeserializeState);
         }
 
         protected virtual void SetPrintedText (string value)
         {
             printedText = value;
 
-            if (messageStack.Count == 0 || string.IsNullOrEmpty(lastMesssageText))
-                lastMesssageText = value;
+            if (messageStack.Count == 0 || string.IsNullOrEmpty(lastMessageText))
+                lastMessageText = value;
             else
             {
                 var previousText = string.Join(string.Empty, messageStack.Select(m => m.MessageText).Reverse());
-                lastMesssageText = value.GetAfterFirst(previousText);
+                lastMessageText = value.GetAfterFirst(previousText);
             }
         }
 
         protected virtual ChatMessage AddMessage (string messageText, string authorId = null, bool instant = false)
         {
-            var message = Instantiate(messagePrototype);
-            message.transform.SetParent(messagesContainer, false);
+            var message = Instantiate(messagePrototype, messagesContainer, false);
             message.MessageText = messageText;
             message.AuthorId = authorId;
 
@@ -187,6 +153,36 @@ namespace Naninovel.UI
             }
         }
 
+        protected override void SerializeState (GameStateMap stateMap)
+        {
+            base.SerializeState(stateMap);
+
+            var state = new GameState {
+                Messages = messageStack.Select(m => m.GetState()).Reverse().ToList(),
+                LastMessageText = lastMessageText
+            };
+            stateMap.SetState(state);
+        }
+
+        protected override async UniTask DeserializeState (GameStateMap stateMap)
+        {
+            await base.DeserializeState(stateMap);
+
+            DestroyAllMessages();
+            lastMessageText = null;
+
+            var state = stateMap.GetState<GameState>();
+            if (state is null) return;
+
+            if (state.Messages?.Count > 0)
+                foreach (var message in state.Messages)
+                    AddMessage(message.PrintedText, message.AuthorId, true);
+
+            lastMessageText = state.LastMessageText;
+
+            ScrollToBottom();
+        }
+
         private async void ScrollToBottom ()
         {
             // Wait a frame and force rebuild layout before setting scroll position,
@@ -195,33 +191,5 @@ namespace Naninovel.UI
             LayoutRebuilder.ForceRebuildLayoutImmediate(scrollRect.content);
             scrollRect.verticalNormalizedPosition = 0;
         }
-
-        private void SerializeState (GameStateMap stateMap)
-        {
-            var state = new GameState() {
-                Messages = messageStack.Select(m => m.GetState()).Reverse().ToList(),
-                LastMesssageText = lastMesssageText
-            };
-            stateMap.SetState(state);
-        }
-
-        private UniTask DeserializeState (GameStateMap stateMap)
-        {
-            DestroyAllMessages();
-            lastMesssageText = null;
-
-            var state = stateMap.GetState<GameState>();
-            if (state is null) return UniTask.CompletedTask;
-
-            if (state.Messages?.Count > 0)
-                foreach (var message in state.Messages)
-                    AddMessage(message.PrintedText, message.AuthorId, true);
-
-            lastMesssageText = state.LastMesssageText;
-
-            ScrollToBottom();
-
-            return UniTask.CompletedTask;
-        }
-    } 
+    }
 }

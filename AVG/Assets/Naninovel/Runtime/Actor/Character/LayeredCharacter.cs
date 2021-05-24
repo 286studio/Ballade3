@@ -1,6 +1,5 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
-using System.Threading;
 using UniRx.Async;
 
 namespace Naninovel
@@ -8,49 +7,41 @@ namespace Naninovel
     /// <summary>
     /// A <see cref="ICharacterActor"/> implementation using <see cref="LayeredActorBehaviour"/> to represent the actor.
     /// </summary>
-    public class LayeredCharacter : LayeredActor, ICharacterActor
+    [ActorResources(typeof(LayeredCharacterBehaviour), false)]
+    public class LayeredCharacter : LayeredActor<LayeredCharacterBehaviour, CharacterMetadata>, ICharacterActor, Commands.LipSync.IReceiver
     {
-        public CharacterLookDirection LookDirection { get => GetLookDirection(); set => SetLookDirection(value); }
+        public CharacterLookDirection LookDirection
+        {
+            get => TransitionalRenderer.GetLookDirection(ActorMetadata.BakedLookDirection);
+            set => TransitionalRenderer.SetLookDirection(value, ActorMetadata.BakedLookDirection);
+        }
 
-        private readonly CharacterMetadata metadata;
+        private CharacterLipSyncer lipSyncer;
 
         public LayeredCharacter (string id, CharacterMetadata metadata)
-            : base(id, metadata)
+            : base(id, metadata) { }
+
+        public override async UniTask InitializeAsync ()
         {
-            this.metadata = metadata;
-        }
-      
-        public UniTask ChangeLookDirectionAsync (CharacterLookDirection lookDirection, float duration, EasingType easingType = default, CancellationToken cancellationToken = default)
-        {
-            SetLookDirection(lookDirection);
-            return UniTask.CompletedTask;
+            await base.InitializeAsync();
+
+            lipSyncer = new CharacterLipSyncer(Id, Behaviour.NotifyIsSpeakingChanged);
         }
 
-        protected virtual void SetLookDirection (CharacterLookDirection lookDirection)
+        public UniTask ChangeLookDirectionAsync (CharacterLookDirection lookDirection, float duration,
+            EasingType easingType = default, CancellationToken cancellationToken = default)
         {
-            if (metadata.BakedLookDirection == CharacterLookDirection.Center) return;
-            if (lookDirection == CharacterLookDirection.Center)
-            {
-                SpriteRenderer.FlipX = false;
-                return;
-            }
-            if (lookDirection != LookDirection)
-                SpriteRenderer.FlipX = !SpriteRenderer.FlipX;
+            return TransitionalRenderer.ChangeLookDirectionAsync(lookDirection,
+                ActorMetadata.BakedLookDirection, duration, easingType, cancellationToken);
         }
 
-        protected virtual CharacterLookDirection GetLookDirection ()
+        public override void Dispose ()
         {
-            switch (metadata.BakedLookDirection)
-            {
-                case CharacterLookDirection.Center:
-                    return CharacterLookDirection.Center;
-                case CharacterLookDirection.Left:
-                    return SpriteRenderer.FlipX ? CharacterLookDirection.Right : CharacterLookDirection.Left;
-                case CharacterLookDirection.Right:
-                    return SpriteRenderer.FlipX ? CharacterLookDirection.Left : CharacterLookDirection.Right;
-                default:
-                    return default;
-            }
+            base.Dispose();
+
+            lipSyncer?.Dispose();
         }
+
+        public void AllowLipSync (bool active) => lipSyncer.SyncAllowed = active;
     }
 }

@@ -1,6 +1,5 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
-using System.Threading;
 using UniRx.Async;
 using UnityEngine;
 
@@ -11,23 +10,13 @@ namespace Naninovel.Commands
     /// (eg, by moving a mouse or using gamepad analog stick).
     /// Check [this video](https://youtu.be/rC6C9mA7Szw) for a quick demonstration of the command.
     /// </summary>
-    /// <example>
-    /// ; Activate camera look mode with default parameters
-    /// @look
-    /// 
-    /// ; Activate camera look mode with custom parameters
-    /// @look zone:6.5,4 speed:3,2.5 gravity:true
-    /// 
-    /// ; Disable camera look mode and reset camera offset
-    /// @look enabled:false
-    /// @camera offset:0,0
-    /// </example>
     [CommandAlias("look")]
     public class CameraLook : Command
     {
         /// <summary>
         /// Whether to enable or disable the camera look mode. Default: true.
         /// </summary>
+        [ParameterAlias(NamelessParameterAlias), ParameterDefaultValue("true")]
         public BooleanParameter Enable = true;
         /// <summary>
         /// A bound box with X,Y sizes in units from the initial camera position, 
@@ -44,13 +33,18 @@ namespace Naninovel.Commands
         /// Whether to automatically move camera to the initial position when the look input is not active 
         /// (eg, mouse is not moving or analog stick is in default position). Default: false.
         /// </summary>
+        [ParameterDefaultValue("false")]
         public BooleanParameter Gravity = false;
+
+        private static readonly Vector2 defaultZone = new Vector2(5, 3);
+        private static readonly Vector2 defaultSpeed = new Vector2(1.5f, 1);
 
         public override UniTask ExecuteAsync (CancellationToken cancellationToken = default)
         {
-            var cameraMngr = Engine.GetService<ICameraManager>();
-
-            cameraMngr.SetLookMode(Enable, ArrayUtils.ToVector2(LookZone, new Vector2(5, 3)), ArrayUtils.ToVector2(LookSpeed, new Vector2(1.5f, 1f)), Gravity);
+            var zone = ArrayUtils.ToVector2(LookZone, defaultZone);
+            var speed = ArrayUtils.ToVector2(LookSpeed, defaultSpeed);
+            var cameraManager = Engine.GetService<ICameraManager>();
+            cameraManager.SetLookMode(Enable, zone, speed, Gravity);
 
             return UniTask.CompletedTask;
         }

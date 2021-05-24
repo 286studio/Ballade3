@@ -1,7 +1,6 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
-using System.Threading;
 using UniRx.Async;
 using UnityEngine;
 
@@ -11,14 +10,14 @@ namespace Naninovel
     [InitializeAtRuntime]
     public class TextPrinterManager : OrthoActorManager<ITextPrinterActor, TextPrinterState, TextPrinterMetadata, TextPrintersConfiguration>, IStatefulService<SettingsStateMap>, ITextPrinterManager
     {
-        [System.Serializable]
+        [Serializable]
         public class Settings
         {
             public float BaseRevealSpeed = .5f;
             public float BaseAutoDelay = .5f;
         }
 
-        [System.Serializable]
+        [Serializable]
         public new class GameState
         {
             public string DefaultPrinterId = null;
@@ -27,9 +26,9 @@ namespace Naninovel
         public event Action<PrintTextArgs> OnPrintTextStarted;
         public event Action<PrintTextArgs> OnPrintTextFinished;
 
-        public string DefaultPrinterId { get; set; }
-        public float BaseRevealSpeed { get; set; }
-        public float BaseAutoDelay { get; set; }
+        public virtual string DefaultPrinterId { get; set; }
+        public virtual float BaseRevealSpeed { get; set; }
+        public virtual float BaseAutoDelay { get; set; }
 
         private readonly IScriptPlayer scriptPlayer;
 
@@ -37,7 +36,13 @@ namespace Naninovel
             : base(config, cameraConfig)
         {
             this.scriptPlayer = scriptPlayer;
-            DefaultPrinterId = config.DefaultPrinterId;
+        }
+
+        public override async UniTask InitializeServiceAsync ()
+        {
+            await base.InitializeServiceAsync();
+            
+            DefaultPrinterId = Configuration.DefaultPrinterId;
         }
 
         public override void ResetService ()
@@ -46,7 +51,7 @@ namespace Naninovel
             DefaultPrinterId = Configuration.DefaultPrinterId;
         }
 
-        public void SaveServiceState (SettingsStateMap stateMap)
+        public virtual void SaveServiceState (SettingsStateMap stateMap)
         {
             var settings = new Settings {
                 BaseRevealSpeed = BaseRevealSpeed,
@@ -55,9 +60,17 @@ namespace Naninovel
             stateMap.SetState(settings);
         }
 
-        public UniTask LoadServiceStateAsync (SettingsStateMap stateMap)
+        public virtual UniTask LoadServiceStateAsync (SettingsStateMap stateMap)
         {
-            var settings = stateMap.GetState<Settings>() ?? new Settings();
+            var settings = stateMap.GetState<Settings>();
+            
+            if (settings is null) // Apply default settings.
+            {
+                BaseRevealSpeed = Configuration.DefaultBaseRevealSpeed;
+                BaseAutoDelay = Configuration.DefaultBaseAutoDelay;
+                return UniTask.CompletedTask;
+            }
+            
             BaseRevealSpeed = settings.BaseRevealSpeed;
             BaseAutoDelay = settings.BaseAutoDelay;
             return UniTask.CompletedTask;
@@ -67,7 +80,7 @@ namespace Naninovel
         {
             base.SaveServiceState(stateMap);
 
-            var gameState = new GameState() {
+            var gameState = new GameState {
                 DefaultPrinterId = DefaultPrinterId ?? Configuration.DefaultPrinterId
             };
             stateMap.SetState(gameState);
@@ -81,10 +94,10 @@ namespace Naninovel
             DefaultPrinterId = state.DefaultPrinterId ?? Configuration.DefaultPrinterId;
         }
 
-        public async UniTask PrintTextAsync (string printerId, string text, string authorId = default, float speed = 1, CancellationToken cancellationToken = default)
+        public virtual async UniTask PrintTextAsync (string printerId, string text, string authorId = default, float speed = 1, CancellationToken cancellationToken = default)
         {
             var printer = await GetOrAddActorAsync(printerId);
-            if (cancellationToken.IsCancellationRequested) return;
+            if (cancellationToken.CancelASAP) return;
 
             OnPrintTextStarted?.Invoke(new PrintTextArgs(printer, text, authorId, speed));
 
@@ -93,7 +106,7 @@ namespace Naninovel
 
             var revealDelay = scriptPlayer.SkipActive ? 0 : Mathf.Lerp(Configuration.MaxRevealDelay, 0, BaseRevealSpeed * speed);
             await printer.RevealTextAsync(revealDelay, cancellationToken);
-            if (cancellationToken.IsCancellationRequested) return;
+            if (cancellationToken.CancelASAP) return;
 
             OnPrintTextFinished?.Invoke(new PrintTextArgs(printer, text, authorId, speed));
         }

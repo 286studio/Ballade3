@@ -1,90 +1,91 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using UnityEditor;
-using Naninovel;
-using System.Linq;
-using System.Reflection;
 using System;
 using System.IO;
+using System.Linq;
 using System.Text;
+using UnityEditor;
+using UnityEngine;
 
 namespace Naninovel
 {
     public static class Upgrader
     {
-        //[MenuItem("Naninovel/Upgrade/v1.9.5-beta to v1.9.6-beta", true)]
-        //private static bool ValidateUpgrade195To196 () => EngineVersion.LoadFromResources().Version == "v1.9.6-beta";
-        [MenuItem("Naninovel/Upgrade/v1.9.5-beta to v1.9.6-beta")]
-        private static void Upgrade195To196 ()
+        [MenuItem("Naninovel/Upgrade/v1.12 to v1.13")]
+        private static void Upgrade112To113 ()
         {
-            if (!EditorUtility.DisplayDialog("Perform upgrade?", 
-                "Are you sure you want to perform v1.9.5-v1.9.6 upgrade? Configuration assets will be modified. Make sure to perform a backup before confirming.", 
+            if (!EditorUtility.DisplayDialog("Perform upgrade?",
+                "Are you sure you want to perform v1.12-v1.13 upgrade? Configuration assets will be modified. Make sure to perform a backup before confirming.",
                 "Upgrade", "Cancel")) return;
-
-            // Remove `Naninovel/` path prefixes from config and metadata.
-            var configTypes = ReflectionUtils.ExportedDomainTypes
-                .Where(type => typeof(Configuration).IsAssignableFrom(type) && type.IsClass && !type.IsAbstract);
-            foreach (var configType in configTypes)
+            
+            // Handle LayeredActorBehaviour replaced with LayeredBackgroundBehaviour and LayeredCharacterBehaviour.  
+            try
             {
-                var configAsset = ProjectConfigurationProvider.LoadOrDefault(configType);
-
-                // Root loaders.
-                var rootLoadersInfo = configAsset.GetType().GetFields()
-                    .Where(f => f.FieldType == typeof(ResourceLoaderConfiguration)).ToList();
-                foreach (var rootLoaderInfo in rootLoadersInfo)
-                    ProcessLoader(rootLoaderInfo, rootLoaderInfo.GetValue(configAsset));
-
-                // Default metadata.
-                var defaultMatadataPropertyInfo = configAsset.GetType().GetProperties(BindingFlags.NonPublic | BindingFlags.Instance)
-                    .Where(p => p.Name == "DefaultActorMetadata").FirstOrDefault();
-                if (defaultMatadataPropertyInfo != null)
+                const string layeredBehaviourComponentGuid = "0ed8eaa5eef74e849a7f97276a748279";
+                const string layeredCharacterComponentGuid = "3645880df9c1965479dfe05f712a1711";
+                const string layeredBackgroundComponentGuid = "5fd416f37425423409b956ac79ed74bc";
+                var editorResources = EditorResources.LoadOrDefault();
+                var records = editorResources.GetAllRecords().ToArray();
+                for (int i = 0; i < records.Length; i++)
                 {
-                    var meta = defaultMatadataPropertyInfo.GetValue(configAsset) as ActorMetadata;
-                    var loaderFieldInfo = meta.GetType().GetField(nameof(ActorMetadata.Loader));
-                    ProcessLoader(loaderFieldInfo, meta.Loader);
+                    var resourcePath = records[i].Key;
+                    var resourceGuid = records[i].Value;
+                    var assetPath = AssetDatabase.GUIDToAssetPath(resourceGuid);
+                    if (string.IsNullOrEmpty(assetPath) || !File.Exists(assetPath)) continue;
+                    if (AssetDatabase.GetMainAssetTypeAtPath(assetPath) != typeof(GameObject)) continue;
+                    EditorUtility.DisplayProgressBar("Upgrading project to Naninovel v1.13", $"Processing `{assetPath}`", i / (float)records.Length);
+                    var assetText = File.ReadAllText(assetPath);
+                    if (!assetText.Contains(layeredBehaviourComponentGuid)) continue;
+                    var isCharacter = resourcePath.Contains(CharactersConfiguration.DefaultPathPrefix);
+                    var isBackground = resourcePath.Contains(BackgroundsConfiguration.DefaultPathPrefix);
+                    if (!isCharacter && !isBackground) continue;
+                    assetText = assetText.Replace(layeredBehaviourComponentGuid, isCharacter ? layeredCharacterComponentGuid : layeredBackgroundComponentGuid);
+                    File.WriteAllText(assetPath, assetText);
+                    Debug.Log($"Upgrader: Replaced `LayeredActorBehaviour` component on `{assetPath}`.");
                 }
-
-                // Actor metadata.
-                var actorMatadataMapPropertyInfo = configAsset.GetType().GetProperties(BindingFlags.NonPublic | BindingFlags.Instance)
-                    .Where(p => p.Name == "ActorMetadataMap").FirstOrDefault();
-                if (actorMatadataMapPropertyInfo != null)
-                {
-                    var actorMatadataMap = actorMatadataMapPropertyInfo.GetValue(configAsset);
-                    var metasFieldInfo = actorMatadataMap.GetType().GetFieldWithInheritence("metas", BindingFlags.NonPublic | BindingFlags.Instance);
-                    var metas = metasFieldInfo.GetValue(actorMatadataMap) as Array;
-                    for (int i = 0; i < metas.Length; i++)
-                    {
-                        var meta = metas.GetValue(i) as ActorMetadata;
-                        var loaderFieldInfo = meta.GetType().GetField(nameof(ActorMetadata.Loader));
-                        ProcessLoader(loaderFieldInfo, meta.Loader);
-                    }
-                }
-
-                void ProcessLoader (FieldInfo loaderFieldInfo, object loaderObject)
-                {
-                    var prefixFieldInfo = loaderFieldInfo.FieldType.GetField(nameof(ResourceLoaderConfiguration.PathPrefix));
-                    var currentValue = prefixFieldInfo.GetValue(loaderObject) as string;
-                    if (!currentValue.Contains("Naninovel/")) return;
-                    var newValue = currentValue.GetAfter("Naninovel/");
-                    prefixFieldInfo.SetValue(loaderObject, newValue);
-                }
-
-                EditorUtility.SetDirty(configAsset);
             }
-
-            // Remove `Naninovel/` path prefixes from editor resources.
-            var editorResources = EditorResources.LoadOrDefault();
-            var editorResourcesPath = AssetDatabase.GetAssetPath(editorResources);
-            var editorResourcesText = File.ReadAllText(editorResourcesPath, Encoding.UTF8);
-            editorResourcesText = editorResourcesText.Replace("Naninovel/", string.Empty);
-            File.WriteAllText(editorResourcesPath, editorResourcesText, Encoding.UTF8);
-            AssetDatabase.ImportAsset(editorResourcesPath, ImportAssetOptions.ForceUpdate);
+            finally { EditorUtility.ClearProgressBar(); }
 
             AssetDatabase.Refresh();
             AssetDatabase.SaveAssets();
+        }
+        
+        [MenuItem("Naninovel/Upgrade/UniTask v1 to v2")]
+        private static void UpgradeUniTaskv1Tov2 ()
+        {
+            if (!EditorUtility.DisplayDialog("Perform upgrade?",
+               "Are you sure you want to modify this Unity project to migrate from UniTask v1 to v2?\n\nAll the C# script files in the project containing 'UniRx.Async' will be modified and 'ThirdParty/UniTask' folder inside Naninovel package will be removed. The effect of the upgrade is permanent and can't be undone, so make sure to backup the project before confirming.\n\nAfter the upgrade is complete, install UniTask v2 via UPM (other installation scenarios are not supported).", "Upgrade", "Cancel")) return;
+
+            const string title = "Upgrading to UniTask v2";
+            const string v1Using = "UniRx.Async";
+            const string v2Using = "Cysharp.Threading.Tasks";
+
+            try
+            {
+                var uniTaskPath = PathUtils.Combine(PackagePath.PackageRootPath, "ThirdParty/UniTask");
+                if (Directory.Exists(uniTaskPath))
+                {
+                    EditorUtility.DisplayProgressBar(title, $"Deleting `{PathUtils.AbsoluteToAssetPath(uniTaskPath)}`...", 0f);
+                    AssetDatabase.DeleteAsset(PathUtils.AbsoluteToAssetPath(uniTaskPath));
+                }
+
+                var scriptPaths = AssetDatabase.GetAllAssetPaths().Where(p => Path.GetExtension(p) == ".cs").ToArray();
+                for (int i = 0; i < scriptPaths.Length; i++)
+                {
+                    var path = scriptPaths[i];
+                    if (path.EndsWithFast("Upgrader.cs") || !File.Exists(path)) continue;
+                    var scriptText = File.ReadAllText(path);
+                    if (!scriptText.Contains(v1Using)) continue;
+                    EditorUtility.DisplayProgressBar(title, $"Modifying `{PathUtils.AbsoluteToAssetPath(path)}`...", i / (float)scriptPaths.Length);
+                    scriptText = scriptText.Replace(v1Using, v2Using);
+                    File.WriteAllText(path, scriptText);
+                }
+
+                AssetDatabase.Refresh();
+                AssetDatabase.SaveAssets();
+            }
+            catch (Exception e) { UnityEngine.Debug.LogError($"Failed upgrading to UniTask v2: {e.Message}"); }
+            finally { EditorUtility.ClearProgressBar(); }
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System.Text;
 using UniRx.Async;
@@ -7,9 +7,9 @@ namespace Naninovel
 {
     public class NaniToScriptAssetConverter : IRawConverter<Script>
     {
-        public RawDataRepresentation[] Representations { get { return new RawDataRepresentation[] {
+        public RawDataRepresentation[] Representations { get; } = {
             new RawDataRepresentation(".nani", "text/plain")
-        }; } }
+        };
 
         public Script Convert (byte[] obj, string name) => Script.FromScriptText(name, Encoding.UTF8.GetString(obj));
 

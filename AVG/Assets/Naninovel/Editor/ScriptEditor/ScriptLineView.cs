@@ -1,6 +1,7 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System.Linq;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -22,7 +23,7 @@ namespace Naninovel
         {
             public static bool Active { get; private set; }
 
-            private const float displacementPadding = 2f; // No idea how it works...
+            private const float displacementPadding = 2f;
             private readonly VisualElement container, handle;
             private readonly ScriptLineView body;
 
@@ -83,7 +84,7 @@ namespace Naninovel
                 body.style.right = float.NaN;
                 body.style.bottom = float.NaN;
 
-                // Displace other childs at the drop position.
+                // Displace other children at the drop position.
                 var displacement = body.layout.height / 2f + body.style.marginTop.value.value + body.style.marginBottom.value.value;
                 foreach (var v in container.Children())
                 {
@@ -110,9 +111,9 @@ namespace Naninovel
                 {
                     var dropPosition = container.WorldToLocal(evt.mousePosition);
                     var neighbor = container.Children().Where(v => v != body).OrderBy(v => Vector2.Distance(dropPosition, v.layout.center)).FirstOrDefault();
-                    if (neighbor.layout.center.y > dropPosition.y) body.PlaceBehind(neighbor);
+                    if (neighbor != null && neighbor.layout.center.y > dropPosition.y) body.PlaceBehind(neighbor);
                     else body.PlaceInFront(neighbor);
-                    (container.parent as ScriptView).HandleLineReordered(body);
+                    (container.parent as ScriptView)?.HandleLineReordered(body);
                 }
 
                 body.style.position = Position.Relative;
@@ -134,14 +135,16 @@ namespace Naninovel
             }
         }
 
-        public ScriptLineView (int lineIndex, VisualElement container)
+        protected ScriptLineView (int lineIndex, VisualElement container)
         {
             SetFocused(null); // Otherwise we could transfer it to another script.
 
             this.lineIndex = lineIndex;
 
             styleSheets.Add(ScriptView.StyleSheet);
-            if (ScriptView.CustomStyleSheet != null)
+            if (EditorGUIUtility.isProSkin)
+                styleSheets.Add(ScriptView.DarkStyleSheet);
+            if (ScriptView.CustomStyleSheet)
                 styleSheets.Add(ScriptView.CustomStyleSheet);
 
             lineIndexLabel = new Label();
@@ -180,7 +183,7 @@ namespace Naninovel
             Content.style.height = StyleKeyword.Auto;
             Content.style.minHeight = contentHeight;
             Content.style.flexWrap = Wrap.Wrap;
-            ColorUtility.TryParseHtmlString("#948a69", out var borderColor);
+            ColorUtility.TryParseHtmlString(EditorGUIUtility.isProSkin ? "#3a79bb" : "#948a69", out var borderColor);
             Content.style.borderBottomColor = borderColor;
             Content.style.borderLeftColor = borderColor;
             Content.style.borderRightColor = borderColor;

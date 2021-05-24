@@ -1,57 +1,30 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
-using System.Threading;
 using UniRx.Async;
+using UnityEngine;
 
 namespace Naninovel
 {
     /// <summary>
-    /// A <see cref="ICharacterActor"/> implementation using <see cref="SpriteActor"/> to represent the actor.
+    /// A <see cref="ICharacterActor"/> implementation using <see cref="SpriteActor{TMeta}"/> to represent the actor.
     /// </summary>
-    public class SpriteCharacter : SpriteActor, ICharacterActor
+    [ActorResources(typeof(Texture2D), true)]
+    public class SpriteCharacter : SpriteActor<CharacterMetadata>, ICharacterActor
     {
-        public CharacterLookDirection LookDirection { get => GetLookDirection(); set => SetLookDirection(value); }
-
-        private readonly CharacterLookDirection bakedLookDirection;
+        public CharacterLookDirection LookDirection
+        {
+            get => TransitionalRenderer.GetLookDirection(ActorMetadata.BakedLookDirection);
+            set => TransitionalRenderer.SetLookDirection(value, ActorMetadata.BakedLookDirection);
+        }
 
         public SpriteCharacter (string id, CharacterMetadata metadata)
-            : base(id, metadata)
-        {
-            bakedLookDirection = metadata.BakedLookDirection;
-        }
+            : base(id, metadata) { }
 
-        public UniTask ChangeLookDirectionAsync (CharacterLookDirection lookDirection, float duration, 
+        public UniTask ChangeLookDirectionAsync (CharacterLookDirection lookDirection, float duration,
             EasingType easingType = default, CancellationToken cancellationToken = default)
         {
-            SetLookDirection(lookDirection);
-            return UniTask.CompletedTask;
+            return TransitionalRenderer.ChangeLookDirectionAsync(lookDirection,
+                ActorMetadata.BakedLookDirection, duration, easingType, cancellationToken);
         }
-
-        protected virtual void SetLookDirection (CharacterLookDirection lookDirection)
-        {
-            if (bakedLookDirection == CharacterLookDirection.Center) return;
-            if (lookDirection == CharacterLookDirection.Center)
-            {
-                SpriteRenderer.FlipX = false;
-                return;
-            }
-            if (lookDirection != LookDirection)
-                SpriteRenderer.FlipX = !SpriteRenderer.FlipX;
-        }
-
-        protected virtual CharacterLookDirection GetLookDirection ()
-        {
-            switch (bakedLookDirection)
-            {
-                case CharacterLookDirection.Center:
-                    return CharacterLookDirection.Center;
-                case CharacterLookDirection.Left:
-                    return SpriteRenderer.FlipX ? CharacterLookDirection.Right : CharacterLookDirection.Left;
-                case CharacterLookDirection.Right:
-                    return SpriteRenderer.FlipX ? CharacterLookDirection.Left : CharacterLookDirection.Right;
-                default:
-                    return default;
-            }
-        }
-    } 
+    }
 }

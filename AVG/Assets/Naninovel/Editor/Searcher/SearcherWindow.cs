@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -35,7 +35,7 @@ namespace Naninovel.Searcher
 
         static readonly float k_SearcherDefaultWidth = 250;
         static readonly float k_DefaultHeight = 300;
-        static readonly Vector2 k_MinSize = new Vector2(300, 150);
+        static readonly Vector2 k_MinSize = new Vector2(250, 300);
 
         static Vector2 s_Size = Vector2.zero;
         static IEnumerable<SearcherItem> s_Items;

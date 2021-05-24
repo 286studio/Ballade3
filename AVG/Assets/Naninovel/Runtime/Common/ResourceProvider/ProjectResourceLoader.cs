@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using UniRx.Async;
@@ -32,10 +32,10 @@ namespace Naninovel
             var assetName = System.IO.Path.GetFileNameWithoutExtension(Path);
             var obj = redirector is null ? asset as TResource : await redirector.ToSourceAsync<TResource>(asset, assetName);
 
-            var result = new Resource<TResource>(Path, obj, Provider);
+            var result = new Resource<TResource>(Path, obj);
             SetResult(result);
 
-            logAction?.Invoke($"Resource '{Path}' loaded over {Time.time - startTime:0.###} seconds.");
+            logAction?.Invoke($"Resource `{Path}` loaded over {Time.time - startTime:0.###} seconds.");
         }
     }
 }

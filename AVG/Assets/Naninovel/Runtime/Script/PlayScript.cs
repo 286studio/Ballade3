@@ -1,5 +1,6 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
+using System;
 using UnityEngine;
 
 namespace Naninovel
@@ -10,7 +11,7 @@ namespace Naninovel
     public class PlayScript : MonoBehaviour
     {
         [Tooltip("The script asset to play.")]
-        [ResourcesPopup(ScriptsConfiguration.DefaultScriptsPathPrefix, ScriptsConfiguration.DefaultScriptsPathPrefix, "None (disabled)")]
+        [ResourcePopup(ScriptsConfiguration.DefaultPathPrefix, ScriptsConfiguration.DefaultPathPrefix, "None (disabled)")]
         [SerializeField] private string scriptName = default;
         [TextArea(3, 10), Tooltip("The naninovel script text (commands) to execute; has no effect when `Script Name` is specified. Argument of the event (if any) can be referenced in the script text via `{arg}` expression. Conditional block commands (if, else, etc) are not supported.")]
         [SerializeField] private string scriptText = default;
@@ -52,11 +53,7 @@ namespace Naninovel
             if (!string.IsNullOrEmpty(scriptName))
             {
                 var player = Engine.GetService<IScriptPlayer>();
-                if (player is null)
-                {
-                    Debug.LogError($"Failed to play a script via `{nameof(PlayScript)}` component attached to `{gameObject.name}` game object: script player service is not available.");
-                    return;
-                }
+                if (player is null) throw new Exception($"Failed to play a script via `{nameof(PlayScript)}` component attached to `{gameObject.name}` game object: script player service is not available.");
                 await player.PreloadAndPlayAsync(scriptName);
                 return;
             }
@@ -66,9 +63,7 @@ namespace Naninovel
                 var text = string.IsNullOrEmpty(argument) ? scriptText : scriptText.Replace("{arg}", argument);
                 var script = Script.FromScriptText($"`{name}` generated script", text);
                 var playlist = new ScriptPlaylist(script);
-                foreach (var command in playlist)
-                    if (command.ShouldExecute)
-                        await command.ExecuteAsync();
+                await playlist.ExecuteAsync();
             }
         }
     }

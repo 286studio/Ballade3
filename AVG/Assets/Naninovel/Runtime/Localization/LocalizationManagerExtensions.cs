@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 
 namespace Naninovel
@@ -11,6 +11,6 @@ namespace Naninovel
         /// <summary>
         /// Whether <see cref="LocalizationConfiguration.SourceLocale"/> is currently selected.
         /// </summary>
-        public static bool SourceLocaleSelected (this ILocalizationManager mngr) => mngr.SelectedLocale == mngr.Configuration.SourceLocale;
+        public static bool IsSourceLocaleSelected (this ILocalizationManager manager) => manager.SelectedLocale == manager.Configuration.SourceLocale;
     }
 }

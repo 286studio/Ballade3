@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -40,7 +40,7 @@ namespace Naninovel
 
         static ResourceLoaderConfigurationDrawer ()
         {
-            var types = ReflectionUtils.ExportedDomainTypes
+            var types = Engine.Types
                 .Where(t => !t.IsAbstract && t.GetInterfaces().Contains(typeof(IResourceProvider)) && t != typeof(EditorResourceProvider) && t != typeof(VirtualResourceProvider))
                 .Select(t => t.AssemblyQualifiedName).ToList();
             if (!types.Contains(ResourceProviderConfiguration.AddressableTypeName))
@@ -160,10 +160,10 @@ namespace Naninovel
                 // We handle this case here, by creating a SerializedObject for each object.
                 foreach (var targetObject in providerListProperty.serializedObject.targetObjects)
                 {
-                    var temSerialziedObject = new SerializedObject(targetObject);
-                    var listenerArrayProperty = temSerialziedObject.FindProperty(providerListProperty.propertyPath);
+                    var tempSerializedObject = new SerializedObject(targetObject);
+                    var listenerArrayProperty = tempSerializedObject.FindProperty(providerListProperty.propertyPath);
                     listenerArrayProperty.arraySize += 1;
-                    temSerialziedObject.ApplyModifiedProperties();
+                    tempSerializedObject.ApplyModifiedProperties();
                 }
                 providerListProperty.serializedObject.SetIsDifferentCacheDirty();
                 providerListProperty.serializedObject.Update();

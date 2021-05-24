@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 #if !defined(KERNEL_SMALL) && !defined(KERNEL_MEDIUM) && \
     !defined(KERNEL_LARGE) && !defined(KERNEL_VERYLARGE)

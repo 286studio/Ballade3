@@ -1,7 +1,8 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace Naninovel
 {
@@ -48,5 +49,11 @@ namespace Naninovel
         {
             return preprocessors.Remove(preprocessor);
         }
+
+        /// <summary>
+        /// Removes all the added preprocessors from the preprocessors list.
+        /// </summary>
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        public static void ResetPreprocessor () => preprocessors.Clear();
     }
 }

@@ -1,50 +1,71 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
+using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace Naninovel
 {
     public class ProjectResources : ScriptableObject
     {
-        public List<string> ResourcePaths => resourcePaths;
-
-        [SerializeField] List<string> resourcePaths = new List<string>();
-
-        private void Awake ()
+        #pragma warning disable 0649
+        [Serializable]
+        private struct ProjectResource
         {
-            LocateAllResources();
+            public string Path, Type;
         }
+        #pragma warning restore 0649
+
+        public const string ResourcePath = "UnityCommon/ProjectResources";
+
+        [SerializeField] private List<ProjectResource> resourcePaths = new List<ProjectResource>();
 
         public static ProjectResources Get ()
         {
-            return Application.isEditor ? CreateInstance<ProjectResources>() : Resources.Load<ProjectResources>(nameof(ProjectResources));
+            var asset = Application.isEditor
+                ? CreateInstance<ProjectResources>()
+                : Resources.Load<ProjectResources>(ResourcePath);
+            if (Application.isEditor) asset.LocateAllResources();
+            return asset;
         }
 
-        public void LocateAllResources ()
+        public IReadOnlyDictionary<string, Type> GetAllResources (string prefixFilter = null)
+        {
+            var resources = new Dictionary<string, Type>();
+            foreach (var resource in resourcePaths)
+                AddResource(resource);
+            return resources;
+
+            void AddResource (ProjectResource resource)
+            {
+                if (prefixFilter != null && !resource.Path.StartsWithFast(prefixFilter)) return;
+                var type = Type.GetType(resource.Type, false);
+                if (type is null) return;
+                var path = prefixFilter != null
+                    ? resource.Path.GetAfterFirst(prefixFilter)
+                    : resource.Path;
+                resources[path] = type;
+            }
+        }
+
+        private void LocateAllResources ()
         {
             #if UNITY_EDITOR
             resourcePaths.Clear();
-            var dataDir = new System.IO.DirectoryInfo(Application.dataPath);
-            var resourcesDirs = dataDir.GetDirectories("*Resources", System.IO.SearchOption.AllDirectories)
-                .Where(d => d.FullName.EndsWithFast($"{System.IO.Path.DirectorySeparatorChar}Resources")).ToList();
-            foreach (var dir in resourcesDirs)
-                WalkResourcesDirectory(dir, resourcePaths);
+            foreach (var path in UnityEditor.AssetDatabase.GetAllAssetPaths())
+            {
+                if (!path.Contains("/Resources/")) continue;
+                var type = UnityEditor.AssetDatabase.GetMainAssetTypeAtPath(path);
+                if (type is null) continue;
+                resourcePaths.Add(new ProjectResource { Path = GetPath(path), Type = type.AssemblyQualifiedName });
+            }
+
+            string GetPath (string path)
+            {
+                path = path.GetAfterFirst("/Resources/");
+                return path.Contains(".") ? path.GetBeforeLast(".") : path;
+            }
             #endif
         }
-
-        #if UNITY_EDITOR
-        private static void WalkResourcesDirectory (System.IO.DirectoryInfo directory, List<string> outPaths)
-        {
-            var paths = directory.GetFiles().Where(p => !p.FullName.EndsWithFast(".meta"))
-                .Select(p => p.FullName.Replace("\\", "/").GetAfterFirst("/Resources/").GetBeforeLast("."));
-            outPaths.AddRange(paths);
-
-            var subDirs = directory.GetDirectories();
-            foreach (var dirInfo in subDirs)
-                WalkResourcesDirectory(dirInfo, outPaths);
-        }
-        #endif
     }
 }

@@ -1,8 +1,7 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using Naninovel.Commands;
 using System.Linq;
-using System.Threading;
 using UniRx.Async;
 using UnityEngine;
 
@@ -19,9 +18,12 @@ namespace Naninovel.FX
         [SerializeField] private float defaultFadeInTime = 3f;
         [SerializeField] private float defaultFadeOutTime = 3f;
 
-        private readonly Tweener<ColorTween> intensityTweener = new Tweener<ColorTween>();
+        private static readonly int tintColorId = Shader.PropertyToID("_TintColor");
+
+        private readonly Tweener<FloatTween> intensityTweener = new Tweener<FloatTween>();
         private ParticleSystem particles;
-        private ParticleSystem.MainModule module;
+        private Material particlesMaterial;
+        private Color tintColor;
 
         public virtual void SetSpawnParameters (string[] parameters)
         {
@@ -34,7 +36,8 @@ namespace Naninovel.FX
             if (intensityTweener.Running)
                 intensityTweener.CompleteInstantly();
 
-            var tween = new ColorTween(module.startColor.color, new Color(0, 0, 0, Intensity), ColorTweenMode.Alpha, FadeInTime, SetIntensity, target: particles);
+            var time = cancellationToken.CancelLazy ? 0 : FadeInTime;
+            var tween = new FloatTween(0, Intensity, time, SetIntensity, target: particles);
             await intensityTweener.RunAsync(tween, cancellationToken);
         }
 
@@ -48,14 +51,16 @@ namespace Naninovel.FX
             if (intensityTweener.Running)
                 intensityTweener.CompleteInstantly();
 
-            var tween = new ColorTween(module.startColor.color, Color.clear, ColorTweenMode.Alpha, FadeOutTime, SetIntensity, target: particles);
+            var time = cancellationToken.CancelLazy ? 0 : FadeOutTime;
+            var tween = new FloatTween(Intensity, 0, time, SetIntensity, target: particles);
             await intensityTweener.RunAsync(tween, cancellationToken);
         }
 
         private void Awake ()
         {
             particles = GetComponent<ParticleSystem>();
-            module = particles.main;
+            particlesMaterial = GetComponent<ParticleSystemRenderer>().material;
+            tintColor = particlesMaterial.GetColor(tintColorId);
         }
 
         private void Start ()
@@ -64,9 +69,11 @@ namespace Naninovel.FX
             transform.position = new Vector3(0, 0, Engine.GetConfiguration<BackgroundsConfiguration>().ZOffset - 1);
         }
 
-        private void SetIntensity (Color value)
+        private void SetIntensity (float value)
         {
-            module.startColor = value;
+            var color = tintColor;
+            color.a *= value;
+            particlesMaterial.SetColor(tintColorId, color);
         }
     }
 }

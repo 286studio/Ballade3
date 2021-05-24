@@ -1,6 +1,5 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
-using System.Threading;
 using UniRx.Async;
 
 namespace Naninovel.Commands
@@ -14,33 +13,39 @@ namespace Naninovel.Commands
         /// <summary>
         /// Path to the voice clip to play.
         /// </summary>
-        [ParameterAlias(NamelessParameterAlias), RequiredParameter]
+        [ParameterAlias(NamelessParameterAlias), RequiredParameter, IDEResource(AudioConfiguration.DefaultVoicePathPrefix)]
         public StringParameter VoicePath;
         /// <summary>
         /// Volume of the playback.
         /// </summary>
+        [ParameterDefaultValue("1")]
         public DecimalParameter Volume = 1f;
         /// <summary>
         /// Audio mixer [group path](https://docs.unity3d.com/ScriptReference/Audio.AudioMixer.FindMatchingGroups) that should be used when playing the audio.
         /// </summary>
         [ParameterAlias("group")]
         public StringParameter GroupPath;
+        /// <summary>
+        /// ID of the character actor this voice belongs to.
+        /// When provided and [per-author volume](/guide/voicing.md#author-volume) is used, volume will be adjusted accordingly.
+        /// </summary>
+        public StringParameter AuthorId;
 
-        public async UniTask HoldResourcesAsync ()
+        public async UniTask PreloadResourcesAsync ()
         {
             if (!Assigned(VoicePath) || VoicePath.DynamicValue) return;
-            await AudioManager.HoldVoiceResourcesAsync(this, VoicePath);
+            await AudioManager.VoiceLoader.LoadAndHoldAsync(VoicePath, this);
         }
 
-        public void ReleaseResources ()
+        public void ReleasePreloadedResources ()
         {
             if (!Assigned(VoicePath) || VoicePath.DynamicValue) return;
-            AudioManager.ReleaseVoiceResources(this, VoicePath);
+            AudioManager?.VoiceLoader?.Release(VoicePath, this);
         }
 
         public override async UniTask ExecuteAsync (CancellationToken cancellationToken = default)
         {
-            await AudioManager.PlayVoiceAsync(VoicePath, Volume, GroupPath);
+            await AudioManager.PlayVoiceAsync(VoicePath, Volume, GroupPath, AuthorId);
         }
-    } 
+    }
 }

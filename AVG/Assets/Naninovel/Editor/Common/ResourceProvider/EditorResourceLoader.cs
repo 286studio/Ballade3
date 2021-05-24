@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -25,33 +25,22 @@ namespace Naninovel
             var startTime = Time.time;
             var obj = LoadEditorResource<TResource>(Path, pathToGuidMap);
             if (ObjectUtils.IsValid(obj))
-                logAction?.Invoke($"Resource '{Path}' loaded over {Time.time - startTime:0.###} seconds.");
-            var result = new Resource<TResource>(Path, obj, Provider);
+                logAction?.Invoke($"Resource `{Path}` loaded over {Time.time - startTime:0.###} seconds.");
+            var result = new Resource<TResource>(Path, obj);
             SetResult(result);
             return UniTask.CompletedTask;
         }
 
         public static T LoadEditorResource<T> (string path, Dictionary<string, string> pathToGuidMap) where T : UnityEngine.Object
         {
-            #if UNITY_EDITOR
             if (string.IsNullOrEmpty(path) || !pathToGuidMap.TryGetValue(path, out var resourceGuid) || string.IsNullOrEmpty(resourceGuid))
-            {
-                Debug.LogError($"Resource '{path}' failed to load: resource path is invalid or wasn't mapped to an editor asset GUID.");
-                return null;
-            }
+                throw new Exception($"Resource `{path}` failed to load: resource path is invalid or wasn't mapped to an editor asset GUID.");
 
             var assetPath = UnityEditor.AssetDatabase.GUIDToAssetPath(resourceGuid);
             if (string.IsNullOrEmpty(assetPath))
-            {
-                Debug.LogError($"Resource '{path}' failed to load: AssetDatabase failed to find asset path by the mapped editor asset GUID ({resourceGuid}).");
-                return null;
-            }
+                throw new Exception($"Resource `{path}` failed to load: AssetDatabase failed to find asset path by the mapped editor asset GUID ({resourceGuid}).");
 
             return UnityEditor.AssetDatabase.LoadAssetAtPath<T>(assetPath);
-            #else 
-            Debug.LogError($"Editor resource provider can't be used outside of the Unity editor.");
-            return null;
-            #endif
         }
     }
 }

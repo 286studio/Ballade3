@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -12,43 +12,41 @@ namespace Naninovel
         /// <summary>
         /// Cached domain exported types from the non-dynamic assemblies.
         /// </summary>
-        public static HashSet<Type> ExportedDomainTypes => cachedDomainTypes ?? (cachedDomainTypes = GetExportedDomainTypes());
+        public static IReadOnlyCollection<Type> ExportedDomainTypes => cachedDomainTypes ?? (cachedDomainTypes = GetExportedDomainTypes());
+        /// <summary>
+        /// Cached domain exported types from the non-dynamic assemblies, excluding system and Unity assemblies.
+        /// </summary>
+        public static IReadOnlyCollection<Type> ExportedCustomTypes => cachedCustomTypes ?? (cachedCustomTypes = GetExportedDomainTypes(true, true, true));
 
-        private static HashSet<Type> cachedDomainTypes;
+        private static IReadOnlyCollection<Type> cachedDomainTypes;
+        private static IReadOnlyCollection<Type> cachedCustomTypes;
 
-        public static bool IsDynamicAssembly (Assembly assembly)
+        public static IReadOnlyCollection<Assembly> GetDomainAssemblies (bool excludeDynamic = true, bool excludeSystem = false, bool excludeUnity = false)
         {
-            #if NET_4_6 || NET_STANDARD_2_0
-            return assembly.IsDynamic;
-            #else
-            return assembly is System.Reflection.Emit.AssemblyBuilder;
-            #endif
+            return AppDomain.CurrentDomain.GetAssemblies().Where(a => 
+                (!excludeDynamic || !a.IsDynamic) && 
+                (!excludeSystem || !a.GlobalAssemblyCache && !a.FullName.StartsWithFast("System") && !a.FullName.StartsWithFast("mscorlib") && !a.FullName.StartsWithFast("netstandard")) &&
+                (!excludeUnity || !a.FullName.StartsWithFast("UnityEditor") && !a.FullName.StartsWithFast("UnityEngine") && !a.FullName.StartsWithFast("Unity.") &&
+                    !a.FullName.StartsWithFast("nunit.") && !a.FullName.StartsWithFast("ExCSS.") && !a.FullName.StartsWithFast("UniTask.") && 
+                    !a.FullName.StartsWithFast("UniRx.") && !a.FullName.StartsWithFast("JetBrains.") && !a.FullName.StartsWithFast("Newtonsoft."))
+            ).ToArray();
         }
 
-        public static HashSet<Assembly> GetDomainAssemblies (bool excludeDynamic = true)
+        public static IReadOnlyCollection<Type> GetExportedDomainTypes (bool excludeDynamic = true, bool excludeSystem = false, bool excludeUnity = false)
         {
-            var result = new HashSet<Assembly>();
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-            result.UnionWith(excludeDynamic ? assemblies.Where(a => !IsDynamicAssembly(a)) : assemblies);
-            return result;
-        }
-
-        public static HashSet<Type> GetExportedDomainTypes ()
-        {
-            var result = new HashSet<Type>();
-            result.UnionWith(GetDomainAssemblies().SelectMany(a => a.GetExportedTypes()));
-            return result;
+            return GetDomainAssemblies(excludeDynamic, excludeSystem, excludeUnity)
+                .SelectMany(a => a.GetExportedTypes()).ToArray();
         }
 
         /// <summary>
         /// Uses <see cref="Type.GetField(string, BindingFlags)"/>, but also includes private fields from all the base types.
         /// In case multiple fields with equal names exist in different base types, will return only the first most-derived one.
         /// </summary>
-        public static FieldInfo GetFieldWithInheritence (this Type type, string fieldName, BindingFlags flags = BindingFlags.Default)
+        public static FieldInfo GetFieldWithInheritance (this Type type, string fieldName, BindingFlags flags = BindingFlags.Default)
         {
             if (type is null) return null;
             var field = type.GetField(fieldName, flags);
-            return field ?? GetFieldWithInheritence(type.BaseType, fieldName, flags);
+            return field ?? GetFieldWithInheritance(type.BaseType, fieldName, flags);
         }
     }
 }

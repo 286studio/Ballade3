@@ -1,6 +1,5 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
-using System.Threading;
 using UniRx.Async;
 
 namespace Naninovel.Commands
@@ -11,24 +10,17 @@ namespace Naninovel.Commands
     /// <remarks>
     /// When music track name (BgmPath) is not specified, will stop all the currently played tracks.
     /// </remarks>
-    /// <example>
-    /// ; Fades-out the `Promenade` music track over 10 seconds and stops the playback
-    /// @stopBgm Promenade fade:10
-    /// 
-    /// ; Stops all the currently played music tracks
-    /// @stopBgm 
-    /// </example>
     public class StopBgm : AudioCommand
     {
         /// <summary>
         /// Path to the music track to stop.
         /// </summary>
-        [ParameterAlias(NamelessParameterAlias)]
+        [ParameterAlias(NamelessParameterAlias), IDEResource(AudioConfiguration.DefaultAudioPathPrefix)]
         public StringParameter BgmPath;
         /// <summary>
         /// Duration of the volume fade-out before stopping playback, in seconds (0.35 by default).
         /// </summary>
-        [ParameterAlias("fade")]
+        [ParameterAlias("fade"), ParameterDefaultValue("0.35")]
         public DecimalParameter FadeOutDuration = 0.35f;
 
         public override async UniTask ExecuteAsync (CancellationToken cancellationToken = default)

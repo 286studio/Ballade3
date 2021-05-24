@@ -1,6 +1,5 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
-using System.Threading;
 using UniRx.Async;
 
 namespace Naninovel.Commands
@@ -14,7 +13,7 @@ namespace Naninovel.Commands
         /// <summary>
         /// When specified, will reset the engine services state before returning to the initial script 
         /// from which the gosub was entered (in case it's not the currently played script).
-        /// Specify `*` to reset all the services (except variable manager), or specify service names to exclude from reset.
+        /// Specify `*` to reset all the services, or specify service names to exclude from reset.
         /// By default, the state does not reset.
         /// </summary>
         [ParameterAlias("reset")]
@@ -44,7 +43,6 @@ namespace Naninovel.Commands
             if (Assigned(ResetState) && ResetState.Length == 1 && ResetState[0] == "*")
             {
                 await stateManager.ResetStateAsync(
-                    new[] { nameof(ICustomVariableManager) }, // Preserve local vars.
                     () => player.PreloadAndPlayAsync(spot.ScriptName, spot.LineIndex));
                 return;
             }

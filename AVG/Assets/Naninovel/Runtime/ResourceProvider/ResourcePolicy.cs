@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 
 namespace Naninovel
@@ -16,7 +16,7 @@ namespace Naninovel
         /// <summary>
         /// Only the resources required for the next <see cref="ResourceProviderConfiguration.DynamicPolicySteps"/> commands
         /// are pre-loaded during the script execution and all the unused resources are unloaded immediately. 
-        /// Use this mode when targetting platforms with strict memory limitations and it's impossible to properly orginize naninovel scripts.
+        /// Use this mode when targeting platforms with strict memory limitations and it's impossible to properly organize naninovel scripts.
         /// </summary>
         Dynamic
     }

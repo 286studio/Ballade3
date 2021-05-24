@@ -1,5 +1,6 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
+using System;
 using UnityEditor;
 using UnityEngine;
 
@@ -35,7 +36,7 @@ namespace Naninovel
         private static GUIStyle GetStyle (string styleName)
         {
             var style = GUI.skin.FindStyle(styleName) ?? EditorGUIUtility.GetBuiltinSkin(EditorSkin.Inspector).FindStyle(styleName);
-            if (style is null) Debug.LogError($"Missing built-in guistyle `{styleName}`.");
+            if (style is null) throw new Exception($"Missing built-in gui style `{styleName}`.");
             return style;
         }
     }

@@ -1,7 +1,6 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
-using System.Threading;
 using UniRx.Async;
 using UnityEngine;
 
@@ -45,10 +44,10 @@ namespace Naninovel
         /// <summary>
         /// Preloads the resources required to play a movie with the provided path.
         /// </summary>
-        UniTask HoldResourcesAsync (object holder, string movieName);
+        UniTask HoldResourcesAsync (string movieName, object holder);
         /// <summary>
         /// Unloads the resources required to play a movie with the provided path.
         /// </summary>
-        void ReleaseResources (object holder, string movieName);
+        void ReleaseResources (string movieName, object holder);
     }
 }

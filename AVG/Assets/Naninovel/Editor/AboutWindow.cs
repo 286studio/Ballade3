@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System.IO;
 using UnityEditor;
@@ -11,13 +11,16 @@ namespace Naninovel
         public static string InstalledVersion { get => PlayerPrefs.GetString(installedVersionKey); set => PlayerPrefs.SetString(installedVersionKey, value); }
 
         private const string installedVersionKey = "Naninovel." + nameof(AboutWindow) + "." + nameof(InstalledVersion);
-        private const string releaseNotesUri = "https://github.com/Elringus/NaninovelWeb/releases";
-        private const string faqUri = "https://naninovel.com/faq/";
+        private const string releaseNotesUri = "https://github.com/Naninovel/Documentation/releases";
         private const string guideUri = "https://naninovel.com/guide/getting-started.html";
         private const string commandsUri = "https://naninovel.com/api/";
+        private const string forumUri = "https://forum.naninovel.com";
         private const string discordUri = "https://discord.gg/BfkNqem";
         private const string supportUri = "https://naninovel.com/support/";
         private const string reviewUri = "https://assetstore.unity.com/packages/templates/systems/naninovel-visual-novel-engine-135453#reviews";
+
+        private const int windowWidth = 365;
+        private const int windowHeight = 480;
 
         private EngineVersion engineVersion;
         private GUIContent logoContent;
@@ -32,50 +35,51 @@ namespace Naninovel
 
         public void OnGUI ()
         {
-            GUILayout.Space(5);
+            var rect = new Rect(5, 10, windowWidth - 10, windowHeight);
+            GUILayout.BeginArea(rect);
 
             GUILayout.BeginHorizontal();
-            GUILayout.Space(80);
+            GUILayout.Space(75);
             GUILayout.BeginVertical();
-            GUILayout.FlexibleSpace();
 
             var currentColor = GUI.contentColor;
             GUI.contentColor = EditorGUIUtility.isProSkin ? Color.white : Color.black;
             GUILayout.Label(logoContent, GUIStyle.none);
             GUI.contentColor = currentColor;
 
-            GUILayout.Space(5);
+            GUILayout.Space(3);
             GUILayout.EndVertical();
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
-            GUILayout.Space(100);
+            GUILayout.Space(110);
             EditorGUILayout.SelectableLabel($"{engineVersion.Version} build {engineVersion.Build}");
             GUILayout.EndHorizontal();
 
             EditorGUILayout.LabelField("Release Notes", EditorStyles.boldLabel);
-            EditorGUILayout.LabelField("For the complete list of additions, changes and fixes associated with this Naninovel release, check the release page on GitHub.", EditorStyles.wordWrappedLabel);
-            if (GUILayout.Button($"{engineVersion.Version} Release Notes")) Application.OpenURL(releaseNotesUri + $"/tag/{engineVersion.Version}");
+            EditorGUILayout.LabelField("For the list of additions, changes and fixes associated with this release, see the notes on GitHub.", EditorStyles.wordWrappedLabel);
+            if (GUILayout.Button("Release Notes")) Application.OpenURL(releaseNotesUri + $"/tag/{engineVersion.Version}");
 
-            GUILayout.Space(5);
+            GUILayout.Space(7);
 
             EditorGUILayout.LabelField("Online Resources", EditorStyles.boldLabel);
-            EditorGUILayout.LabelField("Check our online resources for the quick start guides and tutorials. Command reference will help you navigate through the script commands and the ways to use them. For the available support options see the support page. Any questions and suggestions are always welcome at our discord server.", EditorStyles.wordWrappedLabel);
+            EditorGUILayout.LabelField("Please read getting started guide before using the engine. Command reference will navigate you through the available script commands. Chat with other users on our forum and discord server. To contact developer see the support page.", EditorStyles.wordWrappedLabel);
             EditorGUILayout.BeginHorizontal();
-            if (GUILayout.Button("FAQ")) Application.OpenURL(faqUri);
+           
             if (GUILayout.Button("Guide")) Application.OpenURL(guideUri);
             if (GUILayout.Button("Commands")) Application.OpenURL(commandsUri);
-            if (GUILayout.Button("Support")) Application.OpenURL(supportUri);
+            if (GUILayout.Button("Forum")) Application.OpenURL(forumUri);
             if (GUILayout.Button("Discord")) Application.OpenURL(discordUri);
+            if (GUILayout.Button("Support")) Application.OpenURL(supportUri);
             EditorGUILayout.EndHorizontal();
 
-            GUILayout.Space(5);
+            GUILayout.Space(7);
 
             EditorGUILayout.LabelField("Rate Naninovel", EditorStyles.boldLabel);
             EditorGUILayout.LabelField("We really hope you like Naninovel! If you feel like it, please leave a review on the Asset Store, that helps us out a lot.", EditorStyles.wordWrappedLabel);
-            if (GUILayout.Button("Review On Asset Store")) Application.OpenURL(reviewUri);
+            if (GUILayout.Button("Review on Asset Store")) Application.OpenURL(reviewUri);
 
-            GUILayout.Space(5);
+            GUILayout.EndArea();
         }
 
         [InitializeOnLoadMethod]
@@ -102,7 +106,7 @@ namespace Naninovel
         [MenuItem("Naninovel/About", priority = 1)]
         private static void OpenWindow ()
         {
-            var position = new Rect(100, 100, 375, 490);
+            var position = new Rect(100, 100, windowWidth, windowHeight);
             GetWindowWithRect<AboutWindow>(position, true, "About Naninovel", true);
         }
     }

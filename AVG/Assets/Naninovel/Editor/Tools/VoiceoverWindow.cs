@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using Naninovel.Commands;
 using System;
@@ -40,10 +40,10 @@ namespace Naninovel
             if (!Engine.Initialized)
             {
                 isWorking = true;
-                Engine.OnInitializationFinished += InializeEditor;
+                Engine.OnInitializationFinished += InitializeEditor;
                 EditorInitializer.InitializeAsync().Forget();
             }
-            else InializeEditor();
+            else InitializeEditor();
         }
 
         private void OnDisable ()
@@ -51,9 +51,9 @@ namespace Naninovel
             Engine.Destroy();
         }
 
-        private void InializeEditor ()
+        private void InitializeEditor ()
         {
-            Engine.OnInitializationFinished -= InializeEditor;
+            Engine.OnInitializationFinished -= InitializeEditor;
 
             scriptsManager = Engine.GetService<IScriptManager>();
             localizationManager = Engine.GetService<ILocalizationManager>();
@@ -153,7 +153,7 @@ namespace Naninovel
                 }
 
                 var fileExtension = UseMarkdownFormat ? "md" : "txt";
-                File.WriteAllText($"{OutputPath}/{script.Name}.{fileExtension}", scriptText, Encoding.UTF8);
+                File.WriteAllText($"{OutputPath}/{script.Name}.{fileExtension}", scriptText);
             }
         }
     }

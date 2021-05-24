@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 namespace Naninovel
 {
@@ -17,6 +17,6 @@ namespace Naninovel
             Loader = new ResourceLoaderConfiguration { PathPrefix = ChoiceHandlersConfiguration.DefaultPathPrefix };
         }
 
-        public override TState GetPoseOrNull<TState> (string poseName) => null;
+        public override ActorPose<TState> GetPoseOrNull<TState> (string poseName) => null;
     }
 }

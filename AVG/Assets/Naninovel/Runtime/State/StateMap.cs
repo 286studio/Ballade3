@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -15,18 +15,6 @@ namespace Naninovel
         protected readonly Dictionary<string, object> ObjectMap = new Dictionary<string, object>(StringComparer.Ordinal);
 
         [SerializeField] private SerializableLiteralStringMap objectJsonMap = new SerializableLiteralStringMap();
-
-        public StateMap () { }
-
-        /// <summary>
-        /// Creates a new instance deep-copying another provided instance.
-        /// </summary>
-        public StateMap (StateMap stateMap)
-        {
-            stateMap.OnBeforeSerialize();
-            objectJsonMap = new SerializableLiteralStringMap(stateMap.objectJsonMap);
-            OnAfterDeserialize();
-        }
 
         public virtual void OnBeforeSerialize ()
         {

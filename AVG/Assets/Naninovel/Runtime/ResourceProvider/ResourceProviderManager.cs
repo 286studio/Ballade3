@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -14,9 +14,10 @@ namespace Naninovel
     {
         public event Action<string> OnProviderMessage;
 
-        public ResourceProviderConfiguration Configuration { get; }
+        public virtual ResourceProviderConfiguration Configuration { get; }
 
-        private readonly Dictionary<string, IResourceProvider> providers = new Dictionary<string, IResourceProvider>();
+        private readonly Dictionary<string, IResourceProvider> providersMap = new Dictionary<string, IResourceProvider>();
+        private readonly Dictionary<UnityEngine.Object, HashSet<object>> holdersMap = new Dictionary<UnityEngine.Object, HashSet<object>>();
 
         public ResourceProviderManager (ResourceProviderConfiguration config)
         {
@@ -26,41 +27,41 @@ namespace Naninovel
                 Application.backgroundLoadingPriority = ThreadPriority.Low;
         }
 
-        public UniTask InitializeServiceAsync ()
+        public virtual UniTask InitializeServiceAsync ()
         {
-            if (ResourceProviderConfiguration.EditorProvider != null)
-                ResourceProviderConfiguration.EditorProvider.OnMessage += (message) => HandleProviderMessage(ResourceProviderConfiguration.EditorProvider, message);
+            if (Configuration.MasterProvider != null)
+                Configuration.MasterProvider.OnMessage += message => HandleProviderMessage(Configuration.MasterProvider, message);
 
             Application.lowMemory += HandleLowMemoryAsync;
             return UniTask.CompletedTask;
         }
 
-        public void ResetService () { }
+        public virtual void ResetService () { }
 
-        public void DestroyService ()
+        public virtual void DestroyService ()
         {
             Application.lowMemory -= HandleLowMemoryAsync;
-            foreach (var provider in providers.Values)
+            foreach (var provider in providersMap.Values)
                 provider?.UnloadResources();
-            ResourceProviderConfiguration.EditorProvider?.UnloadResources();
+            Configuration.MasterProvider?.UnloadResources();
         }
 
-        public bool ProviderInitialized (string providerType) => providers.ContainsKey(providerType);
+        public virtual bool IsProviderInitialized (string providerType) => providersMap.ContainsKey(providerType);
 
-        public IResourceProvider GetProvider (string providerType)
+        public virtual IResourceProvider GetProvider (string providerType)
         {
-            if (!providers.ContainsKey(providerType))
-                providers[providerType] = InitializeProvider(providerType);
-            return providers[providerType];
+            if (!providersMap.ContainsKey(providerType))
+                providersMap[providerType] = InitializeProvider(providerType);
+            return providersMap[providerType];
         }
 
-        public List<IResourceProvider> GetProviders (List<string> providerTypes)
+        public virtual List<IResourceProvider> GetProviders (List<string> providerTypes)
         {
             var result = new List<IResourceProvider>();
 
             // Include editor provider if assigned.
-            if (ResourceProviderConfiguration.EditorProvider != null)
-                result.Add(ResourceProviderConfiguration.EditorProvider);
+            if (Configuration.MasterProvider != null)
+                result.Add(Configuration.MasterProvider);
 
             // Include requested providers in order.
             foreach (var providerType in providerTypes.Distinct())
@@ -70,6 +71,25 @@ namespace Naninovel
             }
 
             return result;
+        }
+
+        public int Hold (UnityEngine.Object obj, object holder)
+        {
+            var holders = GetHolders(obj);
+            holders.Add(holder);
+            return holders.Count;
+        }
+
+        public int Release (UnityEngine.Object obj, object holder)
+        {
+            var holders = GetHolders(obj);
+            holders.Remove(holder);
+            return holders.Count;
+        }
+
+        public int CountHolders (UnityEngine.Object obj)
+        {
+            return GetHolders(obj).Count;
         }
 
         private IResourceProvider InitializeProjectProvider ()
@@ -101,10 +121,10 @@ namespace Naninovel
             return localProvider;
         }
 
-        private IResourceProvider InitializeAddresableProvider ()
+        private IResourceProvider InitializeAddressableProvider ()
         {
             #if ADDRESSABLES_AVAILABLE
-            if (Application.isEditor) return null; // Otherwise could be issues with addressables added on previous build, but renamed after.
+            if (Application.isEditor && !Configuration.AllowAddressableInEditor) return null; // Otherwise could be issues with addressables added on previous build, but renamed after.
             var extraLabels = Configuration.ExtraLabels != null && Configuration.ExtraLabels.Length > 0 ? Configuration.ExtraLabels : null;
             return new AddressableResourceProvider(ResourceProviderConfiguration.AddressableId, extraLabels);
             #else
@@ -122,7 +142,7 @@ namespace Naninovel
                     provider = InitializeProjectProvider();
                     break;
                 case ResourceProviderConfiguration.AddressableTypeName:
-                    provider = InitializeAddresableProvider();
+                    provider = InitializeAddressableProvider();
                     break;
                 case ResourceProviderConfiguration.LocalTypeName:
                     provider = InitializeLocalProvider();
@@ -132,18 +152,14 @@ namespace Naninovel
                     break;
                 default:
                     var customType = Type.GetType(providerType);
-                    if (customType is null)
-                    {
-                        Debug.LogError($"Failed to initialize '{providerType}' resource provider. Make sure provider types are set correctly in `Loader` properties of the Naninovel configuration menus.");
-                        return null;
-                    }
+                    if (customType is null) throw new Exception($"Failed to initialize '{providerType}' resource provider. Make sure provider types are set correctly in `Loader` properties of the Naninovel configuration menus.");
                     provider = (IResourceProvider)Activator.CreateInstance(customType);
-                    if (provider is null) Debug.LogError($"Failed to initialize '{providerType}' custom resource provider. Make sure the implementation has a parameterless constructor.");
+                    if (provider is null) throw new Exception($"Failed to initialize '{providerType}' custom resource provider. Make sure the implementation has a parameterless constructor.");
                     return provider;
             }
 
             if (provider != null)
-                provider.OnMessage += (message) => HandleProviderMessage(provider, message);
+                provider.OnMessage += message => HandleProviderMessage(provider, message);
 
             return provider;
         }
@@ -158,5 +174,13 @@ namespace Naninovel
             Debug.LogWarning("Forcing resource unloading due to out of memory.");
             await Resources.UnloadUnusedAssets();
         }
-    } 
+
+        private HashSet<object> GetHolders (UnityEngine.Object obj)
+        {
+            if (holdersMap.TryGetValue(obj, out var holders)) return holders;
+            holders = new HashSet<object>();
+            holdersMap[obj] = holders;
+            return holders;
+        }
+    }
 }

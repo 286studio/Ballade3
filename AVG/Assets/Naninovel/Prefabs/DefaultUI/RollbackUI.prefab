@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 225354704567141220}
   - component: {fileID: 3547560797739261617}
   m_Layer: 5
-  m_Name: IRollbackUI
+  m_Name: RollbackUI
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -49,7 +49,7 @@ Canvas:
   m_GameObject: {fileID: 1785700845218806}
   m_Enabled: 1
   serializedVersion: 3
-  m_RenderMode: 0
+  m_RenderMode: 1
   m_Camera: {fileID: 0}
   m_PlaneDistance: 100
   m_PixelPerfect: 0
@@ -75,11 +75,23 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   disableInteraction: 1
   visibleOnAwake: 0
+  controlOpacity: 1
   fadeTime: 0.3
+  ignoreTimeScale: 1
   focusObject: {fileID: 0}
-  onVisibilityChanged:
+  focusMode: 0
+  onShow:
     m_PersistentCalls:
       m_Calls: []
+  onHide:
+    m_PersistentCalls:
+      m_Calls: []
+  hideOnLoad: 1
+  saveVisibilityState: 0
+  blockInputWhenVisible: 0
+  allowedSamplers: []
+  modalUI: 0
+  fontChangeConfiguration: []
   hideTime: 0.5
 --- !u!225 &225354704567141220
 CanvasGroup:
@@ -175,6 +187,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []

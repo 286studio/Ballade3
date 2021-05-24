@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using UniRx.Async;
 using UnityEngine;
@@ -17,30 +17,30 @@ namespace Naninovel
         /// <summary>
         /// Scene origin point position in world space.
         /// </summary>
-        protected Vector2 GlobalSceneOrigin => CameraConfiguration.SceneToWorldSpace(Configuration.SceneOrigin);
+        protected virtual Vector2 GlobalSceneOrigin => CameraConfiguration.SceneToWorldSpace(Configuration.SceneOrigin);
         /// <summary>
         /// Initial Z-axis offset distance (depth) from actors to the camera to set when the actors are created.
         /// </summary>
-        protected float ZOffset => Configuration.ZOffset;
+        protected virtual float ZOffset => Configuration.ZOffset;
         /// <summary>
         /// Z-position of the actor closest to the camera.
         /// </summary>
-        protected float TopmostZPosition => ZOffset - ManagedActors.Count * Configuration.ZStep;
-        protected CameraConfiguration CameraConfiguration { get; private set; }
+        protected virtual float TopmostZPosition => ZOffset - ManagedActors.Count * Configuration.ZStep;
+        protected virtual CameraConfiguration CameraConfiguration { get; }
 
-        public OrthoActorManager (TConfig config, CameraConfiguration cameraConfig)
+        protected OrthoActorManager (TConfig config, CameraConfiguration cameraConfig)
             : base(config)
         {
             CameraConfiguration = cameraConfig;
         }
 
         /// <summary>
-        /// Changes provided actor y position so that it's bottom edge is alligned with the bottom of the screen.
+        /// Changes provided actor y position so that it's bottom edge is aligned with the bottom of the scene.
         /// </summary>
-        protected void MoveActorToBottom (TActor actor)
+        protected virtual void MoveActorToBottom (TActor actor)
         {
             var metadata = Configuration.GetMetadataOrDefault(actor.Id);
-            var bottomY = (metadata.Pivot.y * actor.Scale.y) / metadata.PixelsPerUnit - CameraConfiguration.MaxOrthoSize;
+            var bottomY = (metadata.Pivot.y * actor.Scale.y) / metadata.PixelsPerUnit - CameraConfiguration.SceneRect.height;
             actor.ChangePositionY(bottomY);
         }
 

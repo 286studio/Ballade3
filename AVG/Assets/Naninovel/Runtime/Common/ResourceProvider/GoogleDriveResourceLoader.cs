@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 #if UNITY_GOOGLE_DRIVE_AVAILABLE
 
@@ -18,7 +18,7 @@ namespace Naninovel
     {
         public readonly string RootPath;
 
-        private static readonly Type[] nativeRequestTypes = new[] { typeof(AudioClip), typeof(Texture2D) };
+        private static readonly Type[] nativeRequestTypes = { typeof(AudioClip), typeof(Texture2D) };
 
         private TResource loadedObject;
         private bool useNativeRequests;
@@ -43,7 +43,6 @@ namespace Naninovel
             #endif
 
             this.converter = converter;
-            usedRepresentation = new RawDataRepresentation();
         }
 
         public override async UniTask RunAsync ()
@@ -60,12 +59,7 @@ namespace Naninovel
                 // 4. Load file metadata from Google Drive.
                 var filePath = string.IsNullOrEmpty(RootPath) ? Path : string.Concat(RootPath, '/', Path);
                 var fileMeta = await GetFileMetaAsync(filePath);
-                if (fileMeta is null)
-                {
-                    Debug.LogError($"Failed to resolve '{filePath}' Google Drive metadata.");
-                    SetResult(new Resource<TResource>(Path, null, Provider));
-                    return;
-                }
+                if (fileMeta is null) throw new Exception($"Failed to resolve '{filePath}' Google Drive metadata.");
 
                 if (converter is IGoogleDriveConverter<TResource>) rawData = await ExportFileAsync(fileMeta);
                 else rawData = await DownloadFileAsync(fileMeta);
@@ -79,13 +73,12 @@ namespace Naninovel
             if (!ObjectUtils.IsValid(loadedObject))
                 loadedObject = await converter.ConvertAsync(rawData, System.IO.Path.GetFileNameWithoutExtension(Path));
 
-            var result = new Resource<TResource>(Path, loadedObject, Provider);
+            var result = new Resource<TResource>(Path, loadedObject);
             SetResult(result);
 
-            logAction?.Invoke($"Resource '{Path}' loaded {StringUtils.FormatFileSize(rawData.Length)} over {Time.time - startTime:0.###} seconds from " + (usedCache ? "cache." : "Google Drive."));
+            logAction?.Invoke($"Resource `{Path}` loaded {StringUtils.FormatFileSize(rawData.Length)} over {Time.time - startTime:0.###} seconds from " + (usedCache ? "cache." : "Google Drive."));
 
-            if (downloadRequest != null)
-                downloadRequest.Dispose();
+            downloadRequest?.Dispose();
         }
 
         public override void Cancel ()
@@ -109,8 +102,7 @@ namespace Naninovel
                 if (files.Count > 0) { usedRepresentation = representation; return files[0]; }
             }
 
-            Debug.LogError($"Failed to retrieve '{Path}' resource from Google Drive.");
-            return null;
+            throw new Exception($"Failed to retrieve '{Path}' resource from Google Drive.");
         }
 
         private async UniTask<byte[]> DownloadFileAsync (UnityGoogleDrive.Data.File fileMeta)
@@ -124,10 +116,7 @@ namespace Naninovel
 
             await downloadRequest.SendNonGeneric();
             if (downloadRequest.IsError || downloadRequest.GetResponseData<UnityGoogleDrive.Data.File>().Content == null)
-            {
-                Debug.LogError($"Failed to download {Path}{usedRepresentation.Extension} resource from Google Drive.");
-                return null;
-            }
+                throw new Exception($"Failed to download {Path}{usedRepresentation.Extension} resource from Google Drive.");
 
             if (useNativeRequests)
             {
@@ -144,13 +133,10 @@ namespace Naninovel
 
             var gDriveConverter = converter as IGoogleDriveConverter<TResource>;
 
-            downloadRequest = new GoogleDriveFiles.ExportRequest(fileMeta.Id, gDriveConverter.ExportMimeType);
+            downloadRequest = new GoogleDriveFiles.ExportRequest(fileMeta.Id, gDriveConverter?.ExportMimeType);
             await downloadRequest.SendNonGeneric();
             if (downloadRequest.IsError || downloadRequest.GetResponseData<UnityGoogleDrive.Data.File>().Content == null)
-            {
-                Debug.LogError($"Failed to export '{Path}' resource from Google Drive.");
-                return null;
-            }
+                throw new Exception($"Failed to export '{Path}' resource from Google Drive.");
             return downloadRequest.GetResponseData<UnityGoogleDrive.Data.File>().Content;
         }
 
@@ -167,7 +153,7 @@ namespace Naninovel
                 // Web requests over IndexedDB are not supported; we should either use raw converters or disable caching.
                 if (Application.platform == RuntimePlatform.WebGLPlayer)
                 {
-                    // Binary convertion of the audio is fucked on WebGL (can't use buffers), so disable caching here.
+                    // Binary conversion of the audio is fucked on WebGL (can't use buffers), so disable caching here.
                     if (typeof(TResource) == typeof(AudioClip)) return null;
                     // Use raw converters for other native types.
                     return await IOUtils.ReadFileAsync(filePath);
@@ -176,6 +162,7 @@ namespace Naninovel
                 UnityWebRequest request = null;
                 if (typeof(TResource) == typeof(AudioClip)) request = UnityWebRequestMultimedia.GetAudioClip(filePath, WebUtils.EvaluateAudioTypeFromMime(converter.Representations[0].MimeType));
                 else if (typeof(TResource) == typeof(Texture2D)) request = UnityWebRequestTexture.GetTexture(filePath, true);
+                else return null;
                 using (request)
                 {
                     await request.SendWebRequest();

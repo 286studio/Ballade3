@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System.IO;
 using UniRx.Async;
@@ -67,7 +67,7 @@ namespace Naninovel
         }
 
         /// <summary>
-        /// Deletes file at the provided path. Will insure for correct IO on specific plaforms.
+        /// Deletes file at the provided path. Will insure for correct IO on specific platforms.
         /// </summary>
         public static void DeleteFile (string filePath)
         {
@@ -87,7 +87,7 @@ namespace Naninovel
         }
 
         /// <summary>
-        /// Creates a new directory at the provided path. Will insure for correct IO on specific plaforms.
+        /// Creates a new directory at the provided path. Will insure for correct IO on specific platforms.
         /// </summary>
         public static void CreateDirectory (string path)
         {
@@ -96,7 +96,7 @@ namespace Naninovel
         }
 
         /// <summary>
-        /// Deletes directory at the provided path. Will insure for correct IO on specific plaforms.
+        /// Deletes directory at the provided path. Will insure for correct IO on specific platforms.
         /// </summary>
         public static void DeleteDirectory (string path, bool recursive)
         {

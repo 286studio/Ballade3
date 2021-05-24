@@ -1,114 +1,180 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
+using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 
 namespace Naninovel
 {
+    [Serializable]
+    public class OnGridPageChangedEvent : UnityEvent<string> { }
+
     [RequireComponent(typeof(GridLayoutGroup))]
-    public abstract class ScriptableGrid<TSlot> : ScriptableUIComponent<GridLayoutGroup> where TSlot : ScriptableGridSlot
+    public abstract class ScriptableGrid<TSlot> : ScriptableUIComponent<GridLayoutGroup>
+        where TSlot : ScriptableGridSlot
     {
-        public TSlot SlotPrototype => slotPrototype;
-        public int SlotCount => SlotsMap.Count;
-        public int PageCount => Mathf.CeilToInt(transform.childCount / (float)slotsPerPage);
+        /// <summary>
+        /// Total items contained in the grid.
+        /// </summary>
+        public virtual int ItemsCount { get; private set; }
+        /// <summary>
+        /// Items displayed per page.
+        /// </summary>
+        public virtual int ItemsPerPage => itemsPerPage;
+        /// <summary>
+        /// Currently selected page number (starts from 1).
+        /// </summary>
+        public virtual int CurrentPage { get; private set; }
+        /// <summary>
+        /// Total number of pages.
+        /// </summary>
+        public virtual int PageCount => Mathf.Max(Mathf.CeilToInt(ItemsCount / (float)ItemsPerPage), 1);
+        /// <summary>
+        /// Slots instantiated under the grid representing currently displayed items.
+        /// </summary>
+        public virtual IReadOnlyList<TSlot> Slots { get; private set; }
 
-        protected Dictionary<string, TSlot> SlotsMap { get; private set; } = new Dictionary<string, TSlot>();
-        protected int CurrentPage { get; private set; } = 1;
+        protected virtual TSlot SlotPrototype => slotPrototype;
+        protected virtual GameObject PaginationPanel => paginationPanel;
+        protected virtual Button PreviousPageButton => previousPageButton;
+        protected virtual Button NextPageButton => nextPageButton;
 
+        [Tooltip("Prefab representing grid slot.")]
         [SerializeField] private TSlot slotPrototype = null;
-
-        [Header("Pagination")]
-        [SerializeField] private int slotsPerPage = 9;
+        [Tooltip("How many slots should be visible per page."), Range(1, 99)]
+        [SerializeField] private int itemsPerPage = 9;
+        [Tooltip("Container for the page number controls (optional). Will be disabled when grid has only one page.")]
         [SerializeField] private GameObject paginationPanel = null;
-        [SerializeField] private Text pageNumberText = null;
-        [SerializeField] private ScriptableButton previousPageButton = null;
-        [SerializeField] private ScriptableButton nextPageButton = null;
+        [Tooltip("Button inside pagination panel to select next grid page.")]
+        [SerializeField] private Button previousPageButton = null;
+        [Tooltip("Button inside pagination panel to select previous grid page.")]
+        [SerializeField] private Button nextPageButton = null;
+        [Tooltip("Event invoked when grid page number changes.")]
+        [SerializeField] private OnGridPageChangedEvent onPageChanged = default;
 
-        public virtual void AddSlot (TSlot slot)
+        /// <summary>
+        /// Instantiates displayed items (slots) and makes the grid
+        /// ready for interaction.
+        /// </summary>
+        /// <param name="itemsCount">Total items contained in the grid.</param>
+        public virtual void Initialize (int itemsCount)
         {
-            if (SlotExists(slot.Id)) return;
+            ItemsCount = itemsCount;
+            Slots = CreateSlots();
+            FocusOnNavigation = Slots[Slots.Count - 1].gameObject;
+            SelectPage(1);
+            if (PaginationPanel)
+                PaginationPanel.SetActive(PageCount > 1);
+        }
 
-            slot.RectTransform.SetParent(transform, false);
-            SlotsMap.Add(slot.Id, slot);
-
+        /// <summary>
+        /// Attempts to select grid page with the specified number (starting with 1).
+        /// </summary>
+        public virtual void SelectPage (int pageNumber)
+        {
+            if (CurrentPage == pageNumber) return;
+            if (pageNumber < 1 || pageNumber > PageCount)
+                throw new ArgumentOutOfRangeException(nameof(pageNumber), $"Page number should be between 1 and {PageCount}.");
+            CurrentPage = pageNumber;
             Paginate();
+            onPageChanged?.Invoke(pageNumber.ToString());
         }
 
-        public virtual void RemoveSlot (string slotId)
+        /// <summary>
+        /// Attempts to select next grid page; no effect when last page is selected.
+        /// </summary>
+        public virtual void SelectNextPage ()
         {
-            if (!SlotExists(slotId)) return;
-
-            var slot = SlotsMap[slotId];
-            ObjectUtils.DestroyOrImmediate(slot.gameObject);
-            SlotsMap.Remove(slotId);
-
-            Paginate();
+            if (CurrentPage == PageCount) return;
+            SelectPage(CurrentPage + 1);
         }
 
-        public virtual void RemoveAllSlots ()
+        /// <summary>
+        /// Attempts to select previous grid page; no effect when first page is selected.
+        /// </summary>
+        public virtual void SelectPreviousPage ()
         {
-            var slotIds = SlotsMap.Values.Select(slot => slot.Id).ToList();
-            foreach (var slotId in slotIds)
-                RemoveSlot(slotId);
+            if (CurrentPage == 1) return;
+            SelectPage(CurrentPage - 1);
         }
-
-        public virtual TSlot GetSlot (string slotId) => SlotsMap.TryGetValue(slotId, out var slot) ? slot : null;
-
-        public virtual List<TSlot> GetAllSlots () => SlotsMap.Values.ToList();
-
-        public virtual bool SlotExists (string slotId) => SlotsMap.ContainsKey(slotId);
 
         protected override void Awake ()
         {
             base.Awake();
-
-            this.AssertRequiredObjects(slotPrototype, paginationPanel, pageNumberText, previousPageButton, nextPageButton);
-
-            pageNumberText.text = "1";
-            previousPageButton.OnButtonClicked += SelectPreviousPage;
-            nextPageButton.OnButtonClicked += SelectNextPage;
-
-            Paginate();
+            this.AssertRequiredObjects(SlotPrototype);
         }
 
+        protected override void OnEnable ()
+        {
+            base.OnEnable();
+
+            if (PreviousPageButton)
+                PreviousPageButton.onClick.AddListener(SelectPreviousPage);
+            if (NextPageButton)
+                NextPageButton.onClick.AddListener(SelectNextPage);
+        }
+
+        protected override void OnDisable ()
+        {
+            base.OnDisable();
+
+            if (PreviousPageButton)
+                PreviousPageButton.onClick.RemoveListener(SelectPreviousPage);
+            if (NextPageButton)
+                NextPageButton.onClick.RemoveListener(SelectNextPage);
+        }
+
+        /// <summary>
+        /// Makes the slot ready for usage. Invoked on grid initialization.
+        /// </summary>
+        protected virtual void InitializeSlot (TSlot slot) { }
+
+        /// <summary>
+        /// Binds the slot to the specified item index.
+        /// Invoked on pagination to re-use instantiated slot objects.
+        /// </summary>
+        protected abstract void BindSlot (TSlot slot, int itemIndex);
+
+        /// <summary>
+        /// Updates displayed items and pagination controls
+        /// in correspondence with the currently selected page.
+        /// </summary>
         protected virtual void Paginate ()
         {
-            if (PageCount < 2) { paginationPanel.SetActive(false); return; }
-
-            paginationPanel.SetActive(true);
-
-            var endIndex = CurrentPage * slotsPerPage;
-            var startIndex = endIndex - slotsPerPage + 1;
-            foreach (var slot in SlotsMap.Values)
-            {
-                var isActive = slot.NumberInGrid.IsWithin(startIndex, endIndex);
-                slot.gameObject.SetActive(isActive);
-            }
-
-            previousPageButton.SetInteractable(CurrentPage > 1);
-            nextPageButton.SetInteractable(CurrentPage < PageCount);
-
-            FocusOnNavigation = SlotsMap.Values.FirstOrDefault(s => s.gameObject.activeSelf)?.gameObject;
+            if (Slots is null) throw new Exception("The grid is not initialized.");
+            for (int i = 0; i < Slots.Count; i++)
+                PaginateSlot(i);
+            if (PreviousPageButton)
+                PreviousPageButton.interactable = CurrentPage > 1;
+            if (NextPageButton)
+                NextPageButton.interactable = CurrentPage < PageCount;
         }
 
-        protected virtual void SelectPreviousPage ()
+        private void PaginateSlot (int slotIndex)
         {
-            if (CurrentPage == 1) return;
-
-            CurrentPage--;
-            pageNumberText.text = CurrentPage.ToString();
-            Paginate();
+            var itemIndex = (CurrentPage - 1) * ItemsPerPage + slotIndex;
+            var slot = Slots[slotIndex];
+            var inBounds = itemIndex < ItemsCount;
+            if (inBounds != slot.gameObject.activeSelf)
+                slot.gameObject.SetActive(inBounds);
+            if (inBounds) BindSlot(slot, itemIndex);
         }
 
-        protected virtual void SelectNextPage ()
+        private TSlot[] CreateSlots ()
         {
-            if (CurrentPage == PageCount) return;
+            var slots = new TSlot[ItemsPerPage];
+            for (int i = 0; i < ItemsPerPage; i++)
+                slots[i] = CreateSlot();
+            return slots;
+        }
 
-            CurrentPage++;
-            pageNumberText.text = CurrentPage.ToString();
-            Paginate();
+        private TSlot CreateSlot ()
+        {
+            var slot = Instantiate<TSlot>(SlotPrototype, transform, false);
+            InitializeSlot(slot);
+            return slot;
         }
     }
 }

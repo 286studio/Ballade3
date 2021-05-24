@@ -1,7 +1,6 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
-using System.Collections.Generic;
-using System.Reflection;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -14,28 +13,32 @@ namespace Naninovel
 
         private void OnEnable ()
         {
-            EditorApplication.contextualPropertyMenu += HanlePropertyContextMenu;
+            EditorApplication.contextualPropertyMenu += HandlePropertyContextMenu;
         }
 
         private void OnDisable ()
         {
-            EditorApplication.contextualPropertyMenu -= HanlePropertyContextMenu;
+            EditorApplication.contextualPropertyMenu -= HandlePropertyContextMenu;
         }
 
-        void HanlePropertyContextMenu (GenericMenu menu, SerializedProperty property)
+        private void HandlePropertyContextMenu (GenericMenu menu, SerializedProperty property)
         {
-            if (property.propertyType != SerializedPropertyType.Generic || 
-                property.serializedObject.targetObject.GetType() != typeof(LayeredActorBehaviour) ||
+            if (property.propertyType != SerializedPropertyType.Generic ||
                 !property.propertyPath.Contains($"{mapFieldName}.Array.data[")) return;
 
             var propertyCopy = property.Copy();
             menu.AddItem(new GUIContent("Preview Composition"), false, () =>
             {
                 var targetObj = propertyCopy.serializedObject.targetObject as LayeredActorBehaviour;
-                var map = targetObj.GetType().GetField(mapFieldName, BindingFlags.NonPublic | BindingFlags.Instance).GetValue(targetObj) as List<LayeredActorBehaviour.CompositionMapItem>;
+                if (targetObj == null) return;
                 var index = propertyCopy.propertyPath.GetAfterFirst($"{mapFieldName}.Array.data[").GetBefore("]").AsInvariantInt();
-                var mapItem = map[index.Value];
-                targetObj.ApplyComposition(mapItem.Composition);
+                if (index != null)
+                {
+                    targetObj.RebuildLayers();
+                    var composition = targetObj.GetCompositionMap().Values.ElementAt(index.Value);
+                    targetObj.ApplyComposition(composition);
+                }
+
                 EditorUtility.SetDirty(propertyCopy.serializedObject.targetObject);
             });
         }

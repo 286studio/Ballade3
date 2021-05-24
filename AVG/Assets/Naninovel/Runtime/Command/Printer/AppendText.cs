@@ -1,6 +1,5 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
-using System.Threading;
 using UniRx.Async;
 
 namespace Naninovel.Commands
@@ -11,29 +10,23 @@ namespace Naninovel.Commands
     /// <remarks>
     /// The entire text will be appended immediately, without triggering reveal effect or any other side-effects.
     /// </remarks>
-    /// <example>
-    /// ; Print first part of the sentence as usual (gradually revealing the message),
-    /// ; then append the end of the sentence at once.
-    /// Lorem ipsum
-    /// @append " dolor sit amet."
-    /// </example>
     [CommandAlias("append")]
     public class AppendText : PrinterCommand, Command.ILocalizable
     {
         /// <summary>
         /// The text to append.
         /// </summary>
-        [ParameterAlias(NamelessParameterAlias), RequiredParameter]
+        [ParameterAlias(NamelessParameterAlias), RequiredParameter, LocalizableParameter]
         public StringParameter Text;
         /// <summary>
         /// ID of the printer actor to use. Will use a a default one when not provided.
         /// </summary>
-        [ParameterAlias("printer")]
+        [ParameterAlias("printer"), IDEActor(TextPrintersConfiguration.DefaultPathPrefix)]
         public StringParameter PrinterId;
         /// <summary>
         /// ID of the actor, which should be associated with the appended text.
         /// </summary>
-        [ParameterAlias("author")]
+        [ParameterAlias("author"), IDEActor(CharactersConfiguration.DefaultPathPrefix)]
         public StringParameter AuthorId;
 
         protected override string AssignedPrinterId => PrinterId;
@@ -43,7 +36,7 @@ namespace Naninovel.Commands
         public override async UniTask ExecuteAsync (CancellationToken cancellationToken = default)
         {
             var printer = await GetOrAddPrinterAsync();
-            if (cancellationToken.IsCancellationRequested) return;
+            if (cancellationToken.CancelASAP) return;
 
             printer.Text += Text;
             printer.RevealProgress = 1f;

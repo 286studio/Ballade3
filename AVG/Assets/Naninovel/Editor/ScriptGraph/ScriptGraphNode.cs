@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using Naninovel.Commands;
 using System.Collections.Generic;
@@ -13,13 +13,11 @@ namespace Naninovel
     /// <summary>
     /// Represents a node of <see cref="ScriptGraphView"/>.
     /// </summary>
-    public class ScriptGraphNode : Node
+    public sealed class ScriptGraphNode : Node
     {
-        public struct OutputPortData { public string ScriptName, Label; public Port Port; }
-
         public readonly Script Script;
         public readonly Dictionary<string, Port> InputPorts = new Dictionary<string, Port>();
-        public readonly List<OutputPortData> OutputPorts = new List<OutputPortData>();
+        public readonly List<ScriptGraphOutputPort> OutputPorts = new List<ScriptGraphOutputPort>();
 
         private const string startLabel = "Start";
 
@@ -38,37 +36,44 @@ namespace Naninovel
             Script = script;
 
             RegisterCallback<MouseDownEvent>(OnNodeMouseDown);
+            
+            // Add synopsis.
+            if (config.ShowSynopsis)
+            {
+                var synopsis = CreateSynopsis(script);
+                mainContainer.Insert(1, synopsis);
+            }
 
+            // Add input port.
             InputPorts[string.Empty] = AddPort(Direction.Input, startLabel);
 
+            // Add out ports.
             foreach (var line in script.Lines)
             {
                 if (line is LabelScriptLine labelLine)
                 {
-                    InputPorts[labelLine.LabelText] = AddPort(Direction.Input, $"{LabelScriptLine.IdentifierLiteral}{labelLine.LabelText}");
+                    InputPorts[labelLine.LabelText] = AddPort(Direction.Input, $"{Lexing.Constants.LabelLineId}{labelLine.LabelText}");
                     continue;
                 }
 
                 if (line is CommandScriptLine commandLine)
                 {
-                    if (commandLine.Command is Goto gotoCommand)
-                        AddOutPort(gotoCommand, gotoCommand.Path.Name ?? line.ScriptName, gotoCommand.Path.NamedValue,
-                            $"goto {gotoCommand.Path}".Replace(".null", string.Empty).Replace("null", string.Empty));
-                    if (commandLine.Command is Gosub gosubCommand)
-                        AddOutPort(gosubCommand, gosubCommand.Path.Name ?? line.ScriptName, gosubCommand.Path.NamedValue,
-                            $"gosub {gosubCommand.Path}".Replace(".null", string.Empty).Replace("null", string.Empty));
+                    if (commandLine.Command is Goto @goto)
+                        AddOutPort(@goto, @goto.Path.Name ?? @goto.PlaybackSpot.ScriptName, @goto.Path.NamedValue, $"goto {@goto.Path}");
+                    if (commandLine.Command is Gosub gosub)
+                        AddOutPort(gosub, gosub.Path.Name ?? gosub.PlaybackSpot.ScriptName, gosub.Path.NamedValue, $"gosub {gosub.Path}");
+                    if (commandLine.Command is AddChoice choice && Command.Assigned(choice.GotoPath))
+                        AddOutPort(choice, choice.GotoPath.Name ?? choice.PlaybackSpot.ScriptName, choice.GotoPath.NamedValue, $"choice goto:{choice.GotoPath}");
                     continue;
                 }
             }
 
             void AddOutPort (Command command, string gotoScript, string gotoLabel, string portLabel)
             {
-                portLabel = $"{CommandScriptLine.IdentifierLiteral}{portLabel}";
-                var portData = new OutputPortData {
-                    ScriptName = gotoScript,
-                    Label = string.IsNullOrEmpty(gotoLabel) ? string.Empty : gotoLabel,
-                    Port = AddPort(Direction.Output, portLabel, command.ConditionalExpression)
-                };
+                portLabel = $"{Lexing.Constants.CommandLineId}{portLabel}";
+                var port = AddPort(Direction.Output, portLabel, command.ConditionalExpression);
+                var label = string.IsNullOrEmpty(gotoLabel) ? string.Empty : gotoLabel;
+                var portData = new ScriptGraphOutputPort(gotoScript, label, port);
                 OutputPorts.Add(portData);
             }
         }
@@ -83,6 +88,32 @@ namespace Naninovel
             result.UnionWith(inputNodes);
             result.UnionWith(outputNodes);
             return result;
+        }
+
+        private static VisualElement CreateSynopsis (Script script)
+        {
+            var synopsisText = string.Empty;
+            foreach (var scriptLine in script.Lines)
+            {
+                if (scriptLine is CommentScriptLine commentLine)
+                {
+                    if (string.IsNullOrWhiteSpace(commentLine.CommentText)) continue;
+                    if (!string.IsNullOrEmpty(synopsisText)) synopsisText += "\n";
+                    synopsisText += commentLine.CommentText;
+                }
+                else break;
+            }
+
+            if (string.IsNullOrEmpty(synopsisText)) 
+                return new VisualElement();
+            
+            var synopsisContainer = new VisualElement { name = "synopsis" };
+            var divider = new VisualElement { name = "divider" };
+            divider.AddToClassList("horizontal");
+            synopsisContainer.Add(divider);
+            var synopsisLabel = new Label(synopsisText);
+            synopsisContainer.Add(synopsisLabel);
+            return synopsisContainer;
         }
 
         private Port AddPort (Direction direction, string label, string tooltip = null)
@@ -120,7 +151,7 @@ namespace Naninovel
             var port = evt.currentTarget as Port;
             if (port is null) return;
 
-            (parent.parent.parent.parent as ScriptGraphView).edges.ForEach(e => { e.selected = false; e.UpdateEdgeControl(); });
+            (parent.parent.parent.parent as ScriptGraphView)?.edges.ForEach(e => { e.selected = false; e.UpdateEdgeControl(); });
             foreach (var edge in port.connections)
             {
                 edge.selected = true;
@@ -139,13 +170,13 @@ namespace Naninovel
             }
             else
             {
-                var scriptName = OutputPorts.FirstOrDefault(d => d.Port == port).ScriptName;
+                var scriptName = OutputPorts.FirstOrDefault(d => d.Port == port)?.ScriptName;
                 var script = availableScripts.FirstOrDefault(s => s.Name == scriptName);
                 gotoScript = script;
-                gotoLabel = OutputPorts.FirstOrDefault(d => d.Port == port).Label;
+                gotoLabel = OutputPorts.FirstOrDefault(d => d.Port == port)?.Label;
             }
 
-            if (ObjectUtils.IsValid(gotoScript))
+            if (gotoScript != null)
             {
                 Selection.activeObject = gotoScript;
                 EditorGUIUtility.PingObject(gotoScript);
@@ -155,11 +186,12 @@ namespace Naninovel
                 EditorApplication.delayCall += ScrollToLineDelayed;
                 void ScrollToLineDelayed ()
                 {
+                    if (gotoScript == null) return;
                     var editors = Resources.FindObjectsOfTypeAll<ScriptImporterEditor>();
                     if (editors.Length == 0) return;
                     var editorView = editors[0].VisualEditor;
-                    var lineView = string.IsNullOrEmpty(gotoLabel) ? editorView.Lines.FirstOrDefault(l => l != null) :
-                        editorView.Lines.FirstOrDefault(l => l?.LineIndex == gotoScript.GetLineIndexForLabel(gotoLabel));
+                    var lineView = string.IsNullOrEmpty(gotoLabel) ? editorView?.Lines.FirstOrDefault(l => l != null) :
+                        editorView?.Lines.FirstOrDefault(l => l?.LineIndex == gotoScript.GetLineIndexForLabel(gotoLabel));
                     if (lineView is null) EditorApplication.delayCall += ScrollToLineDelayed;
                     else editorView.ScrollToLine(lineView);
                 }

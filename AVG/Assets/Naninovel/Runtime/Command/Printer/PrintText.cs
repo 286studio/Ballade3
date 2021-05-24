@@ -1,7 +1,7 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System.Linq;
-using System.Threading;
+using Naninovel.UI;
 using UniRx.Async;
 using UnityEngine;
 
@@ -12,22 +12,11 @@ namespace Naninovel.Commands
     /// </summary>
     /// <remarks>
     /// This command is used under the hood when processing generic text lines, eg generic line `Kohaku: Hello World!` will be 
-    /// automatically tranformed into `@print "Hello World!" author:Kohaku` when parsing the naninovel scripts.<br/>
+    /// automatically transformed into `@print "Hello World!" author:Kohaku` when parsing the naninovel scripts.<br/>
     /// Will reset (clear) the printer before printing the new message by default; set `reset` parameter to *false* or disable `Auto Reset` in the printer actor configuration to prevent that and append the text instead.<br/>
     /// Will make the printer default and hide other printers by default; set `default` parameter to *false* or disable `Auto Default` in the printer actor configuration to prevent that.<br/>
     /// Will wait for user input before finishing the task by default; set `waitInput` parameter to *false* or disable `Auto Wait` in the printer actor configuration to return as soon as the text is fully revealed.<br/>
     /// </remarks>
-    /// <example>
-    /// ; Will print the phrase with a default printer.
-    /// @print "Lorem ipsum dolor sit amet."
-    /// 
-    /// ; To include quotes in the text itself, escape them.
-    /// @print "Saying \"Stop the car\" was a mistake."
-    /// 
-    /// ; Reveal message with half of the normal speed and 
-    /// ; don't wait for user input to continue.
-    /// @print "Lorem ipsum dolor sit amet." speed:0.5 waitInput:false
-    /// </example>
     [CommandAlias("print")]
     public class PrintText : PrinterCommand, Command.IPreloadable, Command.ILocalizable
     {
@@ -36,22 +25,22 @@ namespace Naninovel.Commands
         /// When the text contain spaces, wrap it in double quotes (`"`). 
         /// In case you wish to include the double quotes in the text itself, escape them.
         /// </summary>
-        [ParameterAlias(NamelessParameterAlias), RequiredParameter]
+        [ParameterAlias(NamelessParameterAlias), RequiredParameter, LocalizableParameter]
         public StringParameter Text;
         /// <summary>
         /// ID of the printer actor to use. Will use a default one when not provided.
         /// </summary>
-        [ParameterAlias("printer")]
+        [ParameterAlias("printer"), IDEActor(TextPrintersConfiguration.DefaultPathPrefix)]
         public StringParameter PrinterId;
         /// <summary>
         /// ID of the actor, which should be associated with the printed message.
         /// </summary>
-        [ParameterAlias("author")]
+        [ParameterAlias("author"), IDEActor(CharactersConfiguration.DefaultPathPrefix)]
         public StringParameter AuthorId;
         /// <summary>
         /// Text reveal speed multiplier; should be positive or zero. Setting to one will yield the default speed.
         /// </summary>
-        [ParameterAlias("speed")]
+        [ParameterAlias("speed"), ParameterDefaultValue("1")]
         public DecimalParameter RevealSpeed = 1f;
         /// <summary>
         /// Whether to reset text of the printer before executing the printing task.
@@ -83,115 +72,175 @@ namespace Naninovel.Commands
         /// </summary>
         [ParameterAlias("fadeTime")]
         public DecimalParameter ChangeVisibilityDuration;
+        /// <summary>
+        /// Used by voice map utility to differentiate print commands with equal text within the same script.
+        /// </summary>
+        [ParameterAlias("voiceId")]
+        public StringParameter AutoVoiceId;
 
         protected override string AssignedPrinterId => PrinterId;
         protected override string AssignedAuthorId => AuthorId;
-        protected virtual string AutoVoicePath => AudioConfiguration.GetAutoVoiceClipPath(PlaybackSpot);
-        protected virtual bool PlayAutoVoice => !string.IsNullOrEmpty(PlaybackSpot.ScriptName) && AudioManager.Configuration.EnableAutoVoicing;
+        protected virtual float AssignedRevealSpeed => RevealSpeed;
+        protected virtual bool ShouldPlayAutoVoice { get; private set; }
+        protected virtual string AutoVoicePath { get; private set; }
         protected IAudioManager AudioManager => Engine.GetService<IAudioManager>();
         protected IInputManager InputManager => Engine.GetService<IInputManager>();
         protected IScriptPlayer ScriptPlayer => Engine.GetService<IScriptPlayer>();
-        protected CharacterMetadata AuthorMeta => Engine.GetService<ICharacterManager>().Configuration.GetMetadataOrDefault(AuthorId);
+        protected CharacterMetadata AuthorMeta => Engine.GetService<ICharacterManager>().Configuration.GetMetadataOrDefault(AssignedAuthorId);
 
-        public override async UniTask HoldResourcesAsync ()
+        public override async UniTask PreloadResourcesAsync ()
         {
-            await base.HoldResourcesAsync();
+            await base.PreloadResourcesAsync();
 
-            if (PlayAutoVoice)
-                await AudioManager.HoldVoiceResourcesAsync(this, AutoVoicePath);
+            if (AudioManager.Configuration.EnableAutoVoicing && !string.IsNullOrEmpty(PlaybackSpot.ScriptName))
+            {
+                AutoVoicePath = AudioManager.Configuration.AutoVoiceMode == AutoVoiceMode.ContentHash ? 
+                    AudioConfiguration.GetAutoVoiceClipPath(this) : AudioConfiguration.GetAutoVoiceClipPath(PlaybackSpot);
+                var voice = await AudioManager.VoiceLoader.LoadAndHoldAsync(AutoVoicePath, this);
+                ShouldPlayAutoVoice = voice.Valid;
+            }
+            else ShouldPlayAutoVoice = false;
 
             if (Assigned(AuthorId) && !AuthorId.DynamicValue && !string.IsNullOrEmpty(AuthorMeta.MessageSound))
-                await AudioManager.HoldAudioResourcesAsync(this, AuthorMeta.MessageSound);
+                await AudioManager.AudioLoader.LoadAndHoldAsync(AuthorMeta.MessageSound, this);
         }
 
-        public override void ReleaseResources ()
+        public override void ReleasePreloadedResources ()
         {
-            base.ReleaseResources();
+            base.ReleasePreloadedResources();
 
-            if (PlayAutoVoice)
-                AudioManager.ReleaseVoiceResources(this, AutoVoicePath);
+            if (ShouldPlayAutoVoice)
+                AudioManager?.VoiceLoader?.Release(AutoVoicePath, this);
 
             if (Assigned(AuthorId) && !AuthorId.DynamicValue && !string.IsNullOrEmpty(AuthorMeta.MessageSound))
-                AudioManager.ReleaseAudioResources(this, AuthorMeta.MessageSound);
+                AudioManager?.AudioLoader?.Release(AuthorMeta.MessageSound, this);
         }
 
         public override async UniTask ExecuteAsync (CancellationToken cancellationToken = default)
         {
             var printer = await GetOrAddPrinterAsync();
-            if (cancellationToken.IsCancellationRequested) return;
+            if (cancellationToken.CancelASAP) return;
 
-            var printerMeta = PrinterManager.Configuration.GetMetadataOrDefault(printer.Id);
+            var metadata = PrinterManager.Configuration.GetMetadataOrDefault(printer.Id);
 
             if (!printer.Visible)
+                ShowPrinterAsync(printer, metadata, cancellationToken).Forget();
+
+            if (Assigned(DefaultPrinter) && DefaultPrinter.Value || !Assigned(DefaultPrinter) && metadata.AutoDefault)
+                SetDefaultPrinter(printer, cancellationToken);
+
+            if (metadata.StopVoice) AudioManager.StopVoice();
+
+            if (ShouldPlayAutoVoice)
+                await PlayAutoVoiceAsync(printer, cancellationToken);
+            if (cancellationToken.CancelASAP) return;
+
+            var resetText = Assigned(ResetPrinter) && ResetPrinter.Value || !Assigned(ResetPrinter) && metadata.AutoReset;
+            if (resetText) ResetText(printer);
+
+            // Evaluate whether to append before printing to account prior printer state.
+            var appendBacklog = !metadata.SplitBacklogMessages && !resetText && !string.IsNullOrEmpty(printer.Text) && AssignedAuthorId == printer.AuthorId;
+
+            if (Assigned(LineBreaks) && LineBreaks > 0 || !Assigned(LineBreaks) && metadata.AutoLineBreak > 0 && !string.IsNullOrWhiteSpace(printer.Text))
+                await AppendLineBreakAsync(printer, metadata, cancellationToken);
+            if (cancellationToken.CancelASAP) return;
+
+            var printedText = Text.Value; // Copy to a temp var to prevent multiple evaluations of dynamic values.
+            if (string.IsNullOrEmpty(printedText)) return;
+
+            await PrintTextAsync(printedText, printer, cancellationToken);
+            if (cancellationToken.CancelASAP) return;
+
+            if (metadata.PrintFrameDelay > 0) // Wait at least one frame to make the printed text visible while in skip mode.
+                await UniTask.DelayFrame(metadata.PrintFrameDelay);
+            if (cancellationToken.CancelASAP) return;
+
+            if (!Assigned(WaitForInput) && metadata.AutoWait || Assigned(WaitForInput) && WaitForInput.Value)
+                await WaitForInputAsync(printedText, cancellationToken);
+            if (cancellationToken.CancelASAP) return;
+
+            if (metadata.AddToBacklog)
+                AddBacklog(printedText, appendBacklog);
+        }
+
+        private async UniTask ShowPrinterAsync (ITextPrinterActor printer, TextPrinterMetadata metadata, CancellationToken cancellationToken)
+        {
+            var showDuration = Assigned(ChangeVisibilityDuration) ? ChangeVisibilityDuration.Value : metadata.ChangeVisibilityDuration;
+            await printer.ChangeVisibilityAsync(true, showDuration, cancellationToken: cancellationToken);
+        }
+
+        private void SetDefaultPrinter (ITextPrinterActor defaultPrinter, CancellationToken cancellationToken)
+        {
+            if (PrinterManager.DefaultPrinterId != defaultPrinter.Id)
+                PrinterManager.DefaultPrinterId = defaultPrinter.Id;
+            
+            foreach (var printer in PrinterManager.GetAllActors())
+                if (printer.Id != defaultPrinter.Id && printer.Visible)
+                    HideOtherPrinter(printer);
+
+            void HideOtherPrinter (ITextPrinterActor other)
             {
-                var showDuration = Assigned(ChangeVisibilityDuration) ? ChangeVisibilityDuration.Value : printerMeta.ChangeVisibilityDuration;
-                printer.ChangeVisibilityAsync(true, showDuration).Forget();
-            }
-
-            if ((!Assigned(DefaultPrinter) && printerMeta.AutoDefault) || (Assigned(DefaultPrinter) && DefaultPrinter.Value))
-            {
-                if (PrinterManager.DefaultPrinterId != printer.Id)
-                    PrinterManager.DefaultPrinterId = printer.Id;
-                foreach (var otherPrinter in PrinterManager.GetAllActors())
-                    if (otherPrinter.Id != printer.Id && otherPrinter.Visible)
-                    {
-                        var otherPrinterMeta = PrinterManager.Configuration.GetMetadataOrDefault(otherPrinter.Id);
-                        var otherPrinterHideDuration = Assigned(ChangeVisibilityDuration) ? ChangeVisibilityDuration.Value : otherPrinterMeta.ChangeVisibilityDuration;
-                        otherPrinter.ChangeVisibilityAsync(false, otherPrinterHideDuration).Forget();
-                    }
-            }
-
-            if (PlayAutoVoice)
-            {
-                if (AudioManager.Configuration.VoiceOverlapPolicy == VoiceOverlapPolicy.PreventCharacterOverlap && printer.AuthorId == AuthorId && !string.IsNullOrEmpty(AudioManager.GetPlayedVoicePath()))
-                    AudioManager.StopVoice();
-                AudioManager.PlayVoiceAsync(AutoVoicePath).Forget();
-            }
-
-            var shouldReset = (!Assigned(ResetPrinter) && printerMeta.AutoReset) || (Assigned(ResetPrinter) && ResetPrinter.Value);
-            var shouldAddBacklog = shouldReset || string.IsNullOrEmpty(printer.Text);
-            if (shouldReset)
-            {
-                printer.Text = string.Empty;
-                printer.RevealProgress = 0f;
-            }
-
-            if ((Assigned(LineBreaks) && LineBreaks > 0) || (!Assigned(LineBreaks) && printerMeta.AutoLineBreak > 0 && !string.IsNullOrWhiteSpace(printer.Text)))
-                await new AppendLineBreak { PrinterId = printer.Id, AuthorId = AuthorId, Count = Assigned(LineBreaks) ? LineBreaks.Value : printerMeta.AutoLineBreak }.ExecuteAsync();
-
-            var textToPrint = Text.Value; // Copy to a temp var to prevent multiple evaluations of dynamic values.
-
-            var continueInputCts = InputManager.GetContinue()?.GetInputStartCancellationToken();
-            var skipInputCts = InputManager.GetSkip()?.GetInputStartCancellationToken();
-            using (var printCts = CancellationTokenSource.CreateLinkedTokenSource(continueInputCts ?? default, skipInputCts ?? default, cancellationToken))
-            {
-                await PrinterManager.PrintTextAsync(printer.Id, textToPrint, AuthorId, RevealSpeed, printCts.Token);
-                if (cancellationToken.IsCancellationRequested) return;
-
-                printer.RevealProgress = 1f; // Make sure all the text is always revealed.
-
-                await AsyncUtils.WaitEndOfFrame; // Always wait at least one frame to prevent instant skipping.
-                if (cancellationToken.IsCancellationRequested) return;
-
-                if ((!Assigned(WaitForInput) && printerMeta.AutoWait) || (Assigned(WaitForInput) && WaitForInput.Value))
-                {
-                    if (ScriptPlayer.AutoPlayActive) // Add delay per printed chars when in auto mode.
-                    {
-                        var baseDelay = Configuration.ScaleAutoWait ? PrinterManager.BaseAutoDelay * RevealSpeed : PrinterManager.BaseAutoDelay;
-                        var autoPlayDelay = Mathf.Lerp(0, Configuration.MaxAutoWaitDelay, baseDelay) * textToPrint.Count(char.IsLetterOrDigit);
-                        var waitUntilTime = Time.time + autoPlayDelay;
-                        while (Time.time < waitUntilTime && !printCts.Token.IsCancellationRequested)
-                            await AsyncUtils.WaitEndOfFrame;
-                        if (cancellationToken.IsCancellationRequested) return;
-                    }
-
-                    ScriptPlayer.SetWaitingForInputEnabled(true);
-                }
-
-                var backlog = Engine.GetService<IUIManager>().GetUI<UI.IBacklogUI>();
-                if (shouldAddBacklog) backlog?.AddMessage(textToPrint, AuthorId, PlayAutoVoice ? AutoVoicePath : null);
-                else backlog?.AppendMessage(textToPrint, PlayAutoVoice ? AutoVoicePath : null);
+                var otherMeta = PrinterManager.Configuration.GetMetadataOrDefault(other.Id);
+                var otherHideDuration = Assigned(ChangeVisibilityDuration) ? ChangeVisibilityDuration.Value : otherMeta.ChangeVisibilityDuration;
+                other.ChangeVisibilityAsync(false, otherHideDuration, cancellationToken: cancellationToken).Forget();
             }
         }
-    } 
+
+        private async UniTask PlayAutoVoiceAsync (ITextPrinterActor printer, CancellationToken cancellationToken)
+        {
+            var playedVoicePath = AudioManager.GetPlayedVoicePath();
+            if (AudioManager.Configuration.VoiceOverlapPolicy == VoiceOverlapPolicy.PreventCharacterOverlap && printer.AuthorId == AssignedAuthorId && !string.IsNullOrEmpty(playedVoicePath))
+                AudioManager.StopVoice();
+            await AudioManager.PlayVoiceAsync(AutoVoicePath, authorId: AssignedAuthorId, cancellationToken: cancellationToken);
+        }
+
+        private void ResetText (ITextPrinterActor printer)
+        {
+            printer.Text = string.Empty;
+            printer.RevealProgress = 0f;
+        }
+
+        private async UniTask AppendLineBreakAsync (ITextPrinterActor printer, TextPrinterMetadata metadata, CancellationToken cancellationToken)
+        {
+            var appendCommand = new AppendLineBreak {
+                PrinterId = printer.Id,
+                AuthorId = AssignedAuthorId,
+                Count = Assigned(LineBreaks) ? LineBreaks.Value : metadata.AutoLineBreak
+            };
+            await appendCommand.ExecuteAsync(cancellationToken);
+        }
+
+        private async UniTask PrintTextAsync (string text, ITextPrinterActor printer, CancellationToken cancellationToken)
+        {
+            await PrinterManager.PrintTextAsync(printer.Id, text, AssignedAuthorId, AssignedRevealSpeed, cancellationToken);
+            if (cancellationToken.CancelASAP) return;
+            printer.RevealProgress = 1f; // Make sure all the text is always revealed.
+        }
+
+        private async UniTask WaitForInputAsync (string text, CancellationToken cancellationToken)
+        {
+            if (ScriptPlayer.AutoPlayActive) // Add delay per printed chars when in auto mode.
+            {
+                var baseDelay = Configuration.ScaleAutoWait ? PrinterManager.BaseAutoDelay * AssignedRevealSpeed : PrinterManager.BaseAutoDelay;
+                var autoPlayDelay = Mathf.Lerp(0, Configuration.MaxAutoWaitDelay, baseDelay) * text.Count(char.IsLetterOrDigit);
+                var waitUntilTime = Time.time + autoPlayDelay;
+                while ((Time.time < waitUntilTime || PlayingVoice()) && !cancellationToken.CancellationRequested)
+                    await UniTask.DelayFrame(1);
+                if (cancellationToken.CancelASAP) return;
+            }
+
+            ScriptPlayer.SetWaitingForInputEnabled(true);
+            
+            bool PlayingVoice () => ShouldPlayAutoVoice && AudioManager.GetPlayedVoicePath() == AutoVoicePath;
+        }
+
+        private void AddBacklog (string message, bool append)
+        {
+            var backlogUI = Engine.GetService<IUIManager>().GetUI<IBacklogUI>();
+            if (backlogUI is null) return;
+            var voiceClipName = ShouldPlayAutoVoice ? AutoVoicePath : null;
+            if (append) backlogUI.AppendMessage(message, voiceClipName, PlaybackSpot);
+            else backlogUI.AddMessage(message, AssignedAuthorId, voiceClipName, PlaybackSpot);
+        }
+    }
 }

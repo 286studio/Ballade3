@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using UnityEngine;
 
@@ -9,10 +9,10 @@ namespace Naninovel.FX
     /// </summary>
     public class ShakePrinter : ShakeTransform
     {
-        protected override Transform GetShakedTransform ()
+        protected override Transform GetShakenTransform ()
         {
-            var mngr = Engine.GetService<ITextPrinterManager>();
-            var id = string.IsNullOrEmpty(ObjectName) ? mngr.DefaultPrinterId : ObjectName;
+            var manager = Engine.GetService<ITextPrinterManager>();
+            var id = string.IsNullOrEmpty(ObjectName) ? manager.DefaultPrinterId : ObjectName;
             var uiRoot = GameObject.Find(id);
             if (!ObjectUtils.IsValid(uiRoot)) return null;
             // Changing transform of the UI root won't work; use the content instead.

@@ -1,7 +1,6 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
-using System.Threading;
 using UniRx.Async;
 using UnityEngine;
 
@@ -10,7 +9,22 @@ namespace Naninovel
     /// <summary>
     /// Allows tweening a <see cref="ITweenValue"/> using coroutine.
     /// </summary>
-    public class Tweener<TTweenValue> 
+    public interface ITweener<TTweenValue>
+        where TTweenValue : struct, ITweenValue
+    {
+        TTweenValue TweenValue { get; }
+        bool Running { get; }
+
+        void Run (in TTweenValue tweenValue, in CancellationToken cancellationToken = default);
+        void Run (in CancellationToken cancellationToken = default);
+        UniTask RunAsync (in TTweenValue tweenValue, in CancellationToken cancellationToken = default);
+        UniTask RunAsync (in CancellationToken cancellationToken = default);
+        void Stop ();
+        void CompleteInstantly ();
+    }
+
+    /// <inheritdoc cref="ITweener{TTweenValue}"/>
+    public class Tweener<TTweenValue> : ITweener<TTweenValue>
         where TTweenValue : struct, ITweenValue
     {
         public TTweenValue TweenValue { get; private set; }
@@ -25,27 +39,27 @@ namespace Naninovel
             this.onCompleted = onCompleted;
         }
 
-        public Tweener (TTweenValue tweenValue, Action onCompleted = null)
+        public Tweener (in TTweenValue tweenValue, Action onCompleted = null)
             : this(onCompleted)
         {
             TweenValue = tweenValue;
         }
 
-        public void Run (TTweenValue tweenValue, CancellationToken cancellationToken = default)
+        public void Run (in TTweenValue tweenValue, in CancellationToken cancellationToken = default)
         {
             TweenValue = tweenValue;
             Run(cancellationToken);
         }
 
-        public void Run (CancellationToken cancellationToken = default) => TweenAsyncAndForget(cancellationToken).Forget();
+        public void Run (in CancellationToken cancellationToken = default) => TweenAsyncAndForget(cancellationToken).Forget();
 
-        public UniTask RunAsync (TTweenValue tweenValue, CancellationToken cancellationToken = default)
+        public UniTask RunAsync (in TTweenValue tweenValue, in CancellationToken cancellationToken = default)
         {
             TweenValue = tweenValue;
             return RunAsync(cancellationToken);
         }
 
-        public UniTask RunAsync (CancellationToken cancellationToken = default) => TweenAsync(cancellationToken);
+        public UniTask RunAsync (in CancellationToken cancellationToken = default) => TweenAsync(cancellationToken);
 
         public void Stop ()
         {
@@ -66,13 +80,16 @@ namespace Naninovel
             if (TweenValue.TweenDuration <= 0f) { CompleteInstantly(); return; }
 
             var currentRunGuid = lastRunGuid;
-            while (!cancellationToken.IsCancellationRequested && TweenValue.TargetValid && elapsedTime <= TweenValue.TweenDuration)
+            while (!cancellationToken.CancellationRequested && TweenValue.TargetValid && elapsedTime <= TweenValue.TweenDuration)
             {
-                PeformTween();
+                PerformTween();
                 await AsyncUtils.WaitEndOfFrame;
                 if (lastRunGuid != currentRunGuid) return; // The tweener was completed instantly or stopped.
             }
-            FinishTween();
+
+            if (cancellationToken.CancelASAP) return;
+            if (cancellationToken.CancelLazy) CompleteInstantly();
+            else FinishTween();
         }
 
         // Required to prevent garbage when await is not required (fire and forget).
@@ -83,13 +100,16 @@ namespace Naninovel
             if (TweenValue.TweenDuration <= 0f) { CompleteInstantly(); return; }
 
             var currentRunGuid = lastRunGuid;
-            while (!cancellationToken.IsCancellationRequested && TweenValue.TargetValid && elapsedTime <= TweenValue.TweenDuration)
+            while (!cancellationToken.CancellationRequested && TweenValue.TargetValid && elapsedTime <= TweenValue.TweenDuration)
             {
-                PeformTween();
+                PerformTween();
                 await AsyncUtils.WaitEndOfFrame;
                 if (lastRunGuid != currentRunGuid) return; // The tweener was completed instantly or stopped.
             }
-            FinishTween();
+
+            if (cancellationToken.CancelASAP) return;
+            if (cancellationToken.CancelLazy) CompleteInstantly();
+            else FinishTween();
         }
 
         private void PrepareTween ()
@@ -101,7 +121,7 @@ namespace Naninovel
             lastRunGuid = Guid.NewGuid();
         }
 
-        private void PeformTween ()
+        private void PerformTween ()
         {
             elapsedTime += TweenValue.TimeScaleIgnored ? Time.unscaledDeltaTime : Time.deltaTime;
             var tweenPercent = Mathf.Clamp01(elapsedTime / TweenValue.TweenDuration);

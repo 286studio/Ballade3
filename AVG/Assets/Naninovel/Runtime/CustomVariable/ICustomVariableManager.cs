@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -20,18 +20,18 @@ namespace Naninovel
         /// </summary>
         bool VariableExists (string name);
         /// <summary>
-        /// Attempts to retrive value of a variable with the provided name. Variable names are case-insensitive. 
+        /// Attempts to retrieve value of a variable with the provided name. Variable names are case-insensitive. 
         /// When no variables of the provided name are found will return null.
         /// </summary>
         string GetVariableValue (string name);
         /// <summary>
         /// Retrieves all the managed custom variables.
         /// </summary>
-        IEnumerable<CustomVariable> GetAllVariables ();
+        IReadOnlyCollection<CustomVariable> GetAllVariables ();
         /// <summary>
         /// Sets value of a variable with the provided name. Variable names are case-insensitive. 
         /// When no variables of the provided name are found, will add a new one and assign the value.
-        /// In case the name is starting with <see cref="GlobalPrefix"/>, the variable will be added to the global scope.
+        /// In case the name is starting with <see cref="CustomVariablesConfiguration.GlobalPrefix"/>, the variable will be added to the global scope.
         /// </summary>
         void SetVariableValue (string name, string value);
         /// <summary>

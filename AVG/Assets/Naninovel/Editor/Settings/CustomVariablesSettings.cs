@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -10,10 +10,6 @@ namespace Naninovel
 {
     public class CustomVariablesSettings : ConfigurationSettings<CustomVariablesConfiguration>
     {
-        protected override Dictionary<string, Action<SerializedProperty>> OverrideConfigurationDrawers => new Dictionary<string, Action<SerializedProperty>> {
-            [nameof(CustomVariablesConfiguration.PredefinedVariables)] = DrawPredefinedVariablesEditor
-        };
-
         private const float headerLeftMargin = 5;
         private const float paddingWidth = 10;
 
@@ -22,6 +18,13 @@ namespace Naninovel
 
         private ReorderableList predefinedVariablesList;
 
+        protected override Dictionary<string, Action<SerializedProperty>> OverrideConfigurationDrawers ()
+        {
+            var drawers = base.OverrideConfigurationDrawers();
+            drawers[nameof(CustomVariablesConfiguration.PredefinedVariables)] = DrawPredefinedVariablesEditor;
+            return drawers;
+        }
+        
         private void DrawPredefinedVariablesEditor (SerializedProperty property)
         {
             var label = EditorGUI.BeginProperty(Rect.zero, null, property);
@@ -29,14 +32,14 @@ namespace Naninovel
 
             // Always check list's serialized object parity with the inspected object.
             if (predefinedVariablesList is null || predefinedVariablesList.serializedProperty.serializedObject != SerializedObject)
-                InitilizePredefinedVariablesList();
+                InitializePredefinedVariablesList();
 
             predefinedVariablesList.DoLayoutList();
 
             EditorGUI.EndProperty();
         }
 
-        private void InitilizePredefinedVariablesList ()
+        private void InitializePredefinedVariablesList ()
         {
             predefinedVariablesList = new ReorderableList(SerializedObject, SerializedObject.FindProperty(nameof(CustomVariablesConfiguration.PredefinedVariables)), true, true, true, true);
             predefinedVariablesList.drawHeaderCallback = DrawPredefinedVariablesListHeader;

@@ -1,8 +1,7 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using UniRx.Async;
 using UnityEngine;
 
@@ -12,11 +11,6 @@ namespace Naninovel
     [InitializeAtRuntime]
     public class SpawnManager : IStatefulService<GameStateMap>, ISpawnManager
     {
-        /// <summary>
-        /// Used to delimit spawned object ID from its path.
-        /// </summary>
-        public const string IdDelimiter = "#";
-
         [System.Serializable]
         public class GameState 
         { 
@@ -29,7 +23,7 @@ namespace Naninovel
             public SpawnedObjectState State; 
         }
 
-        public SpawnConfiguration Configuration { get; }
+        public virtual SpawnConfiguration Configuration { get; }
 
         private readonly List<SpawnedObject> spawnedObjects = new List<SpawnedObject>();
         private readonly IResourceProviderManager providersManager;
@@ -41,31 +35,31 @@ namespace Naninovel
             this.providersManager = providersManager;
         }
 
-        public UniTask InitializeServiceAsync ()
+        public virtual UniTask InitializeServiceAsync ()
         {
             loader = Configuration.Loader.CreateFor<GameObject>(providersManager);
             return UniTask.CompletedTask;
         }
 
-        public void ResetService ()
+        public virtual void ResetService ()
         {
             DestroyAllSpawnedObjects();
         }
 
-        public void DestroyService ()
+        public virtual void DestroyService ()
         {
             DestroyAllSpawnedObjects();
         }
 
-        public void SaveServiceState (GameStateMap stateMap)
+        public virtual void SaveServiceState (GameStateMap stateMap)
         {
-            var state = new GameState() {
+            var state = new GameState {
                 SpawnedObjects = spawnedObjects.Select(o => o.State).ToList()
             };
             stateMap.SetState(state);
         }
 
-        public UniTask LoadServiceStateAsync (GameStateMap stateMap)
+        public virtual UniTask LoadServiceStateAsync (GameStateMap stateMap)
         {
             var state = stateMap.GetState<GameState>();
             if (state?.SpawnedObjects?.Count > 0)
@@ -77,37 +71,34 @@ namespace Naninovel
 
                 foreach (var objState in state.SpawnedObjects)
                     if (!IsObjectSpawned(objState.Path))
-                        SpawnAsync(objState.Path, default, objState.Params).Forget();
-                    else UpdateSpawnedAsync(objState.Path, default, objState.Params).Forget();
+                        SpawnAsync(objState.Path, CancellationToken.LazyCanceled, objState.Parameters).Forget();
+                    else UpdateSpawnedAsync(objState.Path, CancellationToken.LazyCanceled, objState.Parameters).Forget();
             }
             else if (spawnedObjects.Count > 0) DestroyAllSpawnedObjects();
             return UniTask.CompletedTask;
         }
 
-        public async UniTask HoldResourcesAsync (object holder, string path)
+        public virtual async UniTask HoldResourcesAsync (string path, object holder)
         {
-            var resourcePath = ProcessInputPath(path, out _);
-            var resource = await loader.LoadAsync(resourcePath);
-            if (resource.IsValid)
-                resource.Hold(holder);
+            var resourcePath = SpawnConfiguration.ProcessInputPath(path, out _);
+            await loader.LoadAndHoldAsync(resourcePath, holder);
         }
 
-        public void ReleaseResources (object holder, string path)
+        public virtual void ReleaseResources (string path, object holder)
         {
-            var resourcePath = ProcessInputPath(path, out _);
+            var resourcePath = SpawnConfiguration.ProcessInputPath(path, out _);
             if (!loader.IsLoaded(resourcePath)) return;
 
-            var resource = loader.GetLoadedOrNull(resourcePath);
-            resource.Release(holder, false);
-            if (resource.HoldersCount == 0)
+            loader.Release(resourcePath, holder, false);
+            if (loader.CountHolders(resourcePath) == 0)
             {
                 if (IsObjectSpawned(path))
                     DestroySpawnedObject(path);
-                resource.Provider.UnloadResource(resource.Path);
+                loader.Release(resourcePath, holder);
             }
         }
 
-        public async UniTask SpawnAsync (string path, CancellationToken cancellationToken = default, params string[] parameters)
+        public virtual async UniTask SpawnAsync (string path, CancellationToken cancellationToken = default, params string[] parameters)
         {
             if (IsObjectSpawned(path))
             {
@@ -115,15 +106,14 @@ namespace Naninovel
                 return;
             }
 
-            var resourcePath = ProcessInputPath(path, out _);
-            var prefabResource = await loader.LoadAsync(resourcePath);
-            if (!prefabResource.IsValid)
+            var resourcePath = SpawnConfiguration.ProcessInputPath(path, out _);
+            var prefabResource = await loader.LoadAndHoldAsync(resourcePath, this);
+            if (cancellationToken.CancelASAP) return;
+            if (!prefabResource.Valid)
             {
                 Debug.LogWarning($"Failed to spawn `{resourcePath}`: resource is not valid.");
                 return;
             }
-
-            prefabResource.Hold(this);
 
             var obj = Engine.Instantiate(prefabResource.Object, path);
 
@@ -131,13 +121,13 @@ namespace Naninovel
             spawnedObjects.Add(spawnedObj);
 
             var parameterized = obj.GetComponent<Commands.Spawn.IParameterized>();
-            if (parameterized != null) parameterized.SetSpawnParameters(parameters);
+            parameterized?.SetSpawnParameters(parameters);
 
             var awaitable = obj.GetComponent<Commands.Spawn.IAwaitable>();
             if (awaitable != null) await awaitable.AwaitSpawnAsync(cancellationToken);
         }
 
-        public async UniTask UpdateSpawnedAsync (string path, CancellationToken cancellationToken = default, params string[] parameters)
+        public virtual async UniTask UpdateSpawnedAsync (string path, CancellationToken cancellationToken = default, params string[] parameters)
         {
             if (!IsObjectSpawned(path)) return;
 
@@ -145,13 +135,13 @@ namespace Naninovel
             spawnedData.State = new SpawnedObjectState(path, parameters);
 
             var parameterized = spawnedData.Object.GetComponent<Commands.Spawn.IParameterized>();
-            if (parameterized != null) parameterized.SetSpawnParameters(parameters);
+            parameterized?.SetSpawnParameters(parameters);
 
             var awaitable = spawnedData.Object.GetComponent<Commands.Spawn.IAwaitable>();
             if (awaitable != null) await awaitable.AwaitSpawnAsync(cancellationToken);
         }
 
-        public async UniTask<bool> DestroySpawnedAsync (string path, CancellationToken cancellationToken = default, params string[] parameters)
+        public virtual async UniTask<bool> DestroySpawnedAsync (string path, CancellationToken cancellationToken = default, params string[] parameters)
         {
             var spawnedObj = GetSpawnedObject(path);
             if (spawnedObj is null)
@@ -161,17 +151,16 @@ namespace Naninovel
             }
 
             var parameterized = spawnedObj.Object.GetComponent<Commands.DestroySpawned.IParameterized>();
-            if (parameterized != null) parameterized.SetDestroyParameters(parameters);
+            parameterized?.SetDestroyParameters(parameters);
 
             var awaitable = spawnedObj.Object.GetComponent<Commands.DestroySpawned.IAwaitable>();
             if (awaitable != null) await awaitable.AwaitDestroyAsync(cancellationToken);
-
-            if (cancellationToken.IsCancellationRequested) return false;
+            if (cancellationToken.CancelASAP) return false;
 
             return DestroySpawnedObject(path);
         }
 
-        public bool DestroySpawnedObject (string path)
+        public virtual bool DestroySpawnedObject (string path)
         {
             var spawnedObj = GetSpawnedObject(path);
             if (spawnedObj is null)
@@ -183,22 +172,22 @@ namespace Naninovel
             var removed = spawnedObjects?.Remove(spawnedObj);
             ObjectUtils.DestroyOrImmediate(spawnedObj.Object);
 
-            var resourcePath = ProcessInputPath(path, out _);
-            loader.GetLoadedOrNull(resourcePath)?.Release(this);
+            var resourcePath = SpawnConfiguration.ProcessInputPath(path, out _);
+            loader.Release(resourcePath, this);
 
             return removed ?? false;
         }
 
-        public void DestroyAllSpawnedObjects ()
+        public virtual void DestroyAllSpawnedObjects ()
         {
             foreach (var spawnedObj in spawnedObjects)
                 ObjectUtils.DestroyOrImmediate(spawnedObj.Object);
             spawnedObjects.Clear();
 
-            loader?.GetAllLoaded()?.ForEach(r => r?.Release(this));
+            loader?.ReleaseAll(this);
         }
 
-        public bool IsObjectSpawned (string path)
+        public virtual bool IsObjectSpawned (string path)
         {
             return spawnedObjects?.Exists(o => o.State.Path.EqualsFast(path)) ?? false;
         }
@@ -206,22 +195,6 @@ namespace Naninovel
         private SpawnedObject GetSpawnedObject (string path)
         {
             return spawnedObjects?.FirstOrDefault(o => o.State.Path.EqualsFast(path));
-        }
-
-        /// <summary>
-        /// In case <paramref name="input"/> contains <see cref="IdDelimiter"/>, 
-        /// extracts ID and returns path without the ID and delimiter; otherwise, returns input.
-        /// </summary>
-        private string ProcessInputPath (string input, out string id)
-        {
-            if (input.Contains(IdDelimiter))
-            {
-                id = input.GetAfterFirst(IdDelimiter);
-                return input.GetBefore(IdDelimiter);
-            }
-
-            id = null;
-            return input;
         }
     }
 }

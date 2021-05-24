@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System.Collections.Generic;
 using UniRx.Async;
@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Naninovel.UI
 {
-    public class ScriptNavigatorPanel : ScriptableUIBehaviour
+    public class ScriptNavigatorPanel : CustomUI
     {
         protected Transform ButtonsContainer => buttonsContainer;
         protected GameObject PlayButtonPrototype => playButtonPrototype;
@@ -16,32 +16,22 @@ namespace Naninovel.UI
 
         protected IScriptPlayer Player { get; private set; }
         protected IScriptManager ScriptManager { get; private set; }
-        protected bool LoadedScriptsOnce { get; private set; }
 
-        public override async UniTask ChangeVisibilityAsync (bool visible, float? duration = null)
+        public override async UniTask ChangeVisibilityAsync (bool visible, float? duration = null, CancellationToken cancellationToken = default)
         {
-            await base.ChangeVisibilityAsync(visible, duration);
+            await base.ChangeVisibilityAsync(visible, duration, cancellationToken);
+            if (cancellationToken.CancelASAP) return;
 
-            if (visible && !LoadedScriptsOnce)
-            {
-                LoadedScriptsOnce = true;
-                await LoadScriptsAsync();
-            }
+            if (visible) await LocateScriptsAsync();
         }
 
-        public virtual void GenerateScriptButtons (IEnumerable<Script> scripts)
+        public virtual void DestroyScriptButtons () => ObjectUtils.DestroyAllChildren(buttonsContainer);
+
+        public virtual async UniTask LocateScriptsAsync ()
         {
-            DestroyScriptButtons();
-
-            foreach (var script in scripts)
-            {
-                var scriptButton = Instantiate(playButtonPrototype);
-                scriptButton.transform.SetParent(buttonsContainer, false);
-                scriptButton.GetComponent<NavigatorPlaytButton>().Initialize(this, script, Player);
-            }
+            var scripts = await ScriptManager.LocateScriptsAsync();
+            GenerateScriptButtons(scripts);
         }
-
-        public virtual void DestroyScriptButtons () => ObjectUtils.DestroyAllChilds(buttonsContainer);
 
         protected override void Awake ()
         {
@@ -55,18 +45,31 @@ namespace Naninovel.UI
         {
             base.OnEnable();
 
-            Player.OnPlay += HandlePlayStop;
+            Player.OnPlay += HandlePlay;
         }
 
         protected override void OnDisable ()
         {
             base.OnDisable();
 
-            Player.OnPlay -= HandlePlayStop;
+            Player.OnPlay -= HandlePlay;
         }
 
-        protected virtual async UniTask LoadScriptsAsync () => await ScriptManager.LoadAllScriptsAsync();
+        protected virtual void GenerateScriptButtons (IEnumerable<string> scriptNames)
+        {
+            DestroyScriptButtons();
 
-        private void HandlePlayStop (Script asset) => Hide();
-    } 
+            foreach (var name in scriptNames)
+            {
+                var scriptButton = Instantiate(playButtonPrototype, buttonsContainer, false);
+                scriptButton.GetComponent<NavigatorPlayButton>().Initialize(this, name, Player);
+            }
+        }
+
+        private void HandlePlay (Script script)
+        {
+            if (ScriptManager.Configuration.TitleScript == script.Name) return;
+            Hide();
+        }
+    }
 }

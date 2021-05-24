@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -117,9 +117,11 @@ namespace Naninovel
                 File.Delete(fullPath);
             }
 
-            var resultString = string.Empty;
+            var lines = new List<string>();
             foreach (var record in records)
-                resultString += $"{record.ToDocumentTextLine()}{Environment.NewLine}";
+                lines.Add(record.ToDocumentTextLine());
+            lines = lines.OrderBy(l => l).ToList();
+            var resultString = string.Join(Environment.NewLine, lines);
 
             File.WriteAllText(fullPath, resultString);
         }
@@ -137,17 +139,17 @@ namespace Naninovel
 
         private static HashSet<ManagedTextRecord> GenerateRecords ()
         {
-            var records = ReflectionUtils.ExportedDomainTypes
+            var records = Engine.Types
                 .SelectMany(type => type.GetFields(ManagedTextUtils.ManagedFieldBindings))
                 .Where(field => field.IsDefined(typeof(ManagedTextAttribute)))
-                .Select(field => CreateRecordFromFieldInfo(field)).ToList();
+                .Select(CreateRecordFromFieldInfo).ToList();
 
             // Add display names for the existing character metadata.
             var charConfig = ProjectConfigurationProvider.LoadOrDefault<CharactersConfiguration>();
             foreach (var kv in charConfig.Metadata.ToDictionary())
                 records.Add(new ManagedTextRecord(kv.Key, kv.Value.DisplayName, CharactersConfiguration.DisplayNamesCategory));
 
-            // Add managed text providers from the managed UIs, text pinters and choice handlers.
+            // Add managed text providers from the managed UIs, text printers and choice handlers.
             var providers = new List<ManagedTextProvider>();
             var editorResources = EditorResources.LoadOrDefault();
             void ProcessPrefab (GameObject prefab) 
@@ -167,7 +169,7 @@ namespace Naninovel
             }
             void ProcessActor<TActor>(string id, ActorMetadata meta) where TActor : IActor
             {
-                if (meta.Implementation != typeof(TActor).AssemblyQualifiedName) return;
+                if (!typeof(TActor).IsAssignableFrom(Type.GetType(meta.Implementation))) return;
                 var resourcePath = $"{meta.Loader.PathPrefix}/{id}";
                 var guid = editorResources.GetGuidByPath(resourcePath);
                 if (guid is null) return; // Actor without an assigned resource.
@@ -177,9 +179,9 @@ namespace Naninovel
                 ProcessPrefab(prefab);
             }
             foreach (var kv in ProjectConfigurationProvider.LoadOrDefault<TextPrintersConfiguration>().Metadata.ToDictionary())
-                ProcessActor<UITextPrinter>(kv.Key, kv.Value);
+                ProcessActor<ITextPrinterActor>(kv.Key, kv.Value);
             foreach (var kv in ProjectConfigurationProvider.LoadOrDefault<ChoiceHandlersConfiguration>().Metadata.ToDictionary())
-                ProcessActor<UIChoiceHandler>(kv.Key, kv.Value);
+                ProcessActor<IChoiceHandlerActor>(kv.Key, kv.Value);
 
             return new HashSet<ManagedTextRecord>(records.OrderBy(r => r.Key));
 

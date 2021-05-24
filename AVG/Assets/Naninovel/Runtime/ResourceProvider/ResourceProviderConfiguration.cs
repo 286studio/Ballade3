@@ -1,10 +1,10 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using UnityEngine;
 
 namespace Naninovel
 {
-    [System.Serializable]
+    [EditInProjectSettings]
     public class ResourceProviderConfiguration : Configuration
     {
         /// <summary>
@@ -20,6 +20,10 @@ namespace Naninovel
         /// </summary>
         public const string GoogleDriveTypeName = "Naninovel.GoogleDriveResourceProvider, Elringus.Naninovel.Runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
         /// <summary>
+        /// Assembly-qualified type name of the built-in virtual resource provider.
+        /// </summary>
+        public const string VirtualTypeName = "Naninovel.VirtualResourceProvider, Elringus.Naninovel.Runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
+        /// <summary>
         /// Assembly-qualified type name of the built-in addressable resource provider.
         /// </summary>
         public const string AddressableTypeName = "Naninovel.AddressableResourceProvider, Elringus.Naninovel.Runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
@@ -28,14 +32,19 @@ namespace Naninovel
         /// </summary>
         public const string AddressableId = "Naninovel";
         /// <summary>
-        /// Assigned from the editor assembly via reflection when applicaton is executed under Unity editor.
+        /// Assigned from the editor assembly when the application is running under Unity editor.
         /// </summary>
-        public static readonly IResourceProvider EditorProvider = default;
+        public static IResourceProvider EditorProvider = default;
+
+        /// <summary>
+        /// Used by the <see cref="IResourceProviderManager"/> before all the other providers.
+        /// </summary>
+        public virtual IResourceProvider MasterProvider => EditorProvider;
 
         [Header("Resources Management")]
         [Tooltip("Dictates when the resources are loaded and unloaded during script execution:" +
             "\n • Static — All the resources required for the script execution are pre-loaded when starting the playback (masked with a loading screen) and unloaded only when the script has finished playing. This policy is default and recommended for most cases." +
-            "\n • Dynamic — Only the resources required for the next `Dynamic Policy Steps` commands are pre-loaded during the script execution and all the unused resources are unloaded immediately. Use this mode when targetting platforms with strict memory limitations and it's impossible to properly organize naninovel scripts. Expect hiccups when the resources are loaded in background while the game is progressing.")]
+            "\n • Dynamic — Only the resources required for the next `Dynamic Policy Steps` commands are pre-loaded during the script execution and all the unused resources are unloaded immediately. Use this mode when targeting platforms with strict memory limitations and it's impossible to properly organize naninovel scripts. Expect hiccups when the resources are loaded in background while the game is progressing.")]
         public ResourcePolicy ResourcePolicy = ResourcePolicy.Static;
         [Tooltip("When dynamic resource policy is enabled, defines the number of script commands to pre-load.")]
         public int DynamicPolicySteps = 25;
@@ -53,7 +62,11 @@ namespace Naninovel
         public bool AutoBuildBundles = true;
 
         [Header("Addressable Provider")]
-        [Tooltip("Addressable provider will only work with assets, that have the assigned labels in addition to `Naninovel` label. Can be used to filter assets used by the engine based on custom criterias (eg, HD vs SD textures).")]
+        [Tooltip("Whether to use addressable provider in editor. Enable if you're manually exposing resources via addressable address instead of assigning them with Naninovel's resource managers. Be aware, that enabling this could cause issues when resources are assigned both in resources manager and registered with an addressable address and then renamed or duplicated.")]
+        public bool AllowAddressableInEditor = false;
+        [Tooltip("Whether to create an addressable group per Naninovel resource category: scripts, characters, audio, etc. When disabled, will use a single `Naninovel` group for all the resources.")]
+        public bool GroupByCategory = false;
+        [Tooltip("Addressable provider will only work with assets, that have the assigned labels in addition to `Naninovel` label. Can be used to filter assets used by the engine based on custom criteria (eg, HD vs SD textures).")]
         public string[] ExtraLabels = default;
 
         [Header("Local Provider")]
@@ -63,6 +76,8 @@ namespace Naninovel
             "\n • %STREAM% — `StreamingAssets` folder (UnityEngine.Application.streamingAssetsPath)." +
             "\n • %SPECIAL{F}% — An OS special folder (where F is value from System.Environment.SpecialFolder).")]
         public string LocalRootPath = "%DATA%/Resources";
+        [Tooltip("When streaming videos under WebGL (movies, video backgrounds), specify the extension of the video files.")]
+        public string VideoStreamExtension = ".mp4";
 
         [Header("Project Provider")]
         [Tooltip("Path relative to `Resources` folders, under which the naninovel-specific assets are located.")]

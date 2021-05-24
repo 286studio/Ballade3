@@ -1,6 +1,5 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
-using System.Threading;
 using UniRx.Async;
 
 namespace Naninovel.Commands
@@ -13,15 +12,12 @@ namespace Naninovel.Commands
     /// In case item with the provided ID is not registered in the global state map, 
     /// the corresponding record will automatically be added.
     /// </remarks>
-    /// <example>
-    /// @lock CG/FightScene1
-    /// </example>
     public class Lock : Command, Command.IForceWait
     {
         /// <summary>
         /// ID of the unlockable item. Use `*` to lock all the registered unlockable items. 
         /// </summary>
-        [ParameterAlias(NamelessParameterAlias), RequiredParameter]
+        [ParameterAlias(NamelessParameterAlias), RequiredParameter, IDEResource(UnlockablesConfiguration.DefaultPathPrefix)]
         public StringParameter Id;
 
         public override async UniTask ExecuteAsync (CancellationToken cancellationToken = default)
@@ -31,7 +27,7 @@ namespace Naninovel.Commands
             if (Id.Value.EqualsFastIgnoreCase("*")) unlockableManager.LockAllItems();
             else unlockableManager.LockItem(Id);
 
-            await Engine.GetService<IStateManager>().SaveGlobalStateAsync();
+            await Engine.GetService<IStateManager>().SaveGlobalAsync();
         }
     } 
 }

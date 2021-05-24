@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -20,14 +20,14 @@ namespace Naninovel
 
         public event Action<string> OnLocaleChanged;
 
-        public LocalizationConfiguration Configuration { get; }
-        public string SelectedLocale { get; private set; }
+        public List<IResourceProvider> ProviderList { get; private set; }
+        public virtual LocalizationConfiguration Configuration { get; }
+        public virtual string SelectedLocale { get; private set; }
 
-        protected List<string> AvailableLocales { get; } = new List<string>();
+        protected virtual List<string> AvailableLocales { get; } = new List<string>();
 
         private readonly IResourceProviderManager providersManager;
         private readonly HashSet<Func<UniTask>> changeLocaleTasks = new HashSet<Func<UniTask>>();
-        private List<IResourceProvider> providerList;
 
         public LocalizationManager (LocalizationConfiguration config, IResourceProviderManager providersManager)
         {
@@ -35,36 +35,36 @@ namespace Naninovel
             this.providersManager = providersManager;
         }
 
-        public async UniTask InitializeServiceAsync ()
+        public virtual async UniTask InitializeServiceAsync ()
         {
-            providerList = providersManager.GetProviders(Configuration.Loader.ProviderTypes);
+            ProviderList = providersManager.GetProviders(Configuration.Loader.ProviderTypes);
             await RetrieveAvailableLocalesAsync();
         }
 
-        public void ResetService () { }
+        public virtual void ResetService () { }
 
-        public void DestroyService () { }
+        public virtual void DestroyService () { }
 
-        public void SaveServiceState (SettingsStateMap stateMap)
+        public virtual void SaveServiceState (SettingsStateMap stateMap)
         {
-            var settings = new Settings() {
+            var settings = new Settings {
                 SelectedLocale = SelectedLocale
             };
             stateMap.SetState(settings);
         }
 
-        public async UniTask LoadServiceStateAsync (SettingsStateMap stateMap)
+        public virtual async UniTask LoadServiceStateAsync (SettingsStateMap stateMap)
         {
             var defaultLocale = string.IsNullOrEmpty(Configuration.DefaultLocale) ? Configuration.SourceLocale : Configuration.DefaultLocale;
             var settings = stateMap.GetState<Settings>() ?? new Settings { SelectedLocale = defaultLocale };
             await SelectLocaleAsync(settings.SelectedLocale ?? defaultLocale);
         }
 
-        public IEnumerable<string> GetAvailableLocales () => AvailableLocales.ToArray();
+        public virtual IReadOnlyCollection<string> GetAvailableLocales () => AvailableLocales.ToArray();
 
-        public bool LocaleAvailable (string locale) => AvailableLocales.Contains(locale);
+        public virtual bool LocaleAvailable (string locale) => AvailableLocales.Contains(locale);
 
-        public async UniTask SelectLocaleAsync (string locale)
+        public virtual async UniTask SelectLocaleAsync (string locale)
         {
             if (!LocaleAvailable(locale))
             {
@@ -82,40 +82,9 @@ namespace Naninovel
             OnLocaleChanged?.Invoke(SelectedLocale);
         }
 
-        public void AddChangeLocaleTask (Func<UniTask> taskFunc) => changeLocaleTasks.Add(taskFunc);
+        public virtual void AddChangeLocaleTask (Func<UniTask> taskFunc) => changeLocaleTasks.Add(taskFunc);
 
-        public void RemoveChangeLocaleTask (Func<UniTask> taskFunc) => changeLocaleTasks.Remove(taskFunc);
-
-        public async UniTask<bool> LocalizedResourceAvailableAsync<TResource> (string path) where TResource : UnityEngine.Object
-        {
-            if (SelectedLocale == Configuration.SourceLocale) return false;
-            var localizedResourcePath = BuildLocalizedResourcePath(path);
-            return await providerList.ResourceExistsAsync<TResource>(localizedResourcePath);
-        }
-
-        public async UniTask<Resource<TResource>> LoadLocalizedResourceAsync<TResource> (string path) where TResource : UnityEngine.Object
-        {
-            var localizedResourcePath = BuildLocalizedResourcePath(path);
-            return await providerList.LoadResourceAsync<TResource>(localizedResourcePath);
-        }
-
-        public Resource<TResource> GetLoadedLocalizedResourceOrNull<TResource> (string path) where TResource : UnityEngine.Object
-        {
-            var localizedResourcePath = BuildLocalizedResourcePath(path);
-            return providerList.GetLoadedResourceOrNull<TResource>(localizedResourcePath);
-        }
-
-        public void UnloadLocalizedResource (string path)
-        {
-            var localizedResourcePath = BuildLocalizedResourcePath(path);
-            providerList.UnloadResource(localizedResourcePath);
-        }
-
-        public bool LocalizedResourceLoaded (string path)
-        {
-            var localizedResourcePath = BuildLocalizedResourcePath(path);
-            return providerList.ResourceLoaded(localizedResourcePath);
-        }
+        public virtual void RemoveChangeLocaleTask (Func<UniTask> taskFunc) => changeLocaleTasks.Remove(taskFunc);
 
         /// <summary>
         /// Retrieves available localizations by locating folders inside the localization resources root.
@@ -123,12 +92,10 @@ namespace Naninovel
         /// </summary>
         private async UniTask RetrieveAvailableLocalesAsync ()
         {
-            var resources = await providerList.LocateFoldersAsync(Configuration.Loader.PathPrefix);
+            var resources = await ProviderList.LocateFoldersAsync(Configuration.Loader.PathPrefix);
             AvailableLocales.Clear();
-            AvailableLocales.AddRange(resources.Select(r => r.Name).Where(tag => LanguageTags.ContainsTag(tag)));
+            AvailableLocales.AddRange(resources.Select(r => r.Name).Where(LanguageTags.ContainsTag));
             AvailableLocales.Add(Configuration.SourceLocale);
         }
-
-        private string BuildLocalizedResourcePath (string resourcePath) => $"{Configuration.Loader.PathPrefix}/{SelectedLocale}/{resourcePath}";
     }
 }

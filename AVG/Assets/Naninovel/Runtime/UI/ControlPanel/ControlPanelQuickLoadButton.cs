@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 
 namespace Naninovel.UI
@@ -6,14 +6,12 @@ namespace Naninovel.UI
     public class ControlPanelQuickLoadButton : ScriptableButton
     {
         private IStateManager gameState;
-        private IScriptPlayer player;
 
         protected override void Awake ()
         {
             base.Awake();
 
             gameState = Engine.GetService<IStateManager>();
-            player = Engine.GetService<IScriptPlayer>();
         }
 
         protected override void Start ()
@@ -27,20 +25,20 @@ namespace Naninovel.UI
         {
             base.OnEnable();
 
-            gameState.GameStateSlotManager.OnBeforeLoad += ControlInteractability;
-            gameState.GameStateSlotManager.OnLoaded += ControlInteractability;
-            gameState.GameStateSlotManager.OnBeforeSave += ControlInteractability;
-            gameState.GameStateSlotManager.OnSaved += ControlInteractability;
+            gameState.GameSlotManager.OnBeforeLoad += ControlInteractability;
+            gameState.GameSlotManager.OnLoaded += ControlInteractability;
+            gameState.GameSlotManager.OnBeforeSave += ControlInteractability;
+            gameState.GameSlotManager.OnSaved += ControlInteractability;
         }
 
         protected override void OnDisable ()
         {
             base.OnDisable();
 
-            gameState.GameStateSlotManager.OnBeforeLoad -= ControlInteractability;
-            gameState.GameStateSlotManager.OnLoaded -= ControlInteractability;
-            gameState.GameStateSlotManager.OnBeforeSave -= ControlInteractability;
-            gameState.GameStateSlotManager.OnSaved -= ControlInteractability;
+            gameState.GameSlotManager.OnBeforeLoad -= ControlInteractability;
+            gameState.GameSlotManager.OnLoaded -= ControlInteractability;
+            gameState.GameSlotManager.OnBeforeSave -= ControlInteractability;
+            gameState.GameSlotManager.OnSaved -= ControlInteractability;
         }
 
         protected override void OnButtonClick ()
@@ -56,7 +54,7 @@ namespace Naninovel.UI
 
         private void ControlInteractability ()
         {
-            UIComponent.interactable = gameState.QuickLoadAvailable && !gameState.GameStateSlotManager.Loading && !gameState.GameStateSlotManager.Saving;
+            UIComponent.interactable = gameState.QuickLoadAvailable && !gameState.GameSlotManager.Loading && !gameState.GameSlotManager.Saving;
         }
     } 
 }

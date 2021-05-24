@@ -97,6 +97,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -113,7 +114,26 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Printed text.
+  m_Text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus vitae
+    elementum felis. Nullam et urna at nulla ultrices placerat eu tempus lorem. Ut
+    non sem convallis mi pharetra viverra. Suspendisse consequat nisi vitae sem viverra,
+    eu tincidunt tortor condimentum. Nunc finibus, urna sit amet ornare mollis, nibh
+    leo sagittis lacus, vestibulum venenatis ipsum nisi id massa. Mauris sit amet
+    placerat odio. Donec eu aliquam magna. Orci varius natoque penatibus et magnis
+    dis parturient montes, nascetur ridiculus mus.
+
+
+    Nam sed tincidunt dolor.
+    Pellentesque tristique ante tortor, a dignissim quam accumsan sit amet. Sed vulputate
+    ultricies magna, quis pulvinar ipsum aliquam eget. Mauris ultrices dolor ut dui
+    gravida, quis dignissim dolor lacinia. Fusce pulvinar nisi purus. Suspendisse
+    eget orci feugiat, aliquam metus a, posuere dolor. Nulla scelerisque tortor orci,
+    vel porttitor ante placerat non. Curabitur ac leo vel metus tincidunt ultrices
+    id ut ligula. Proin eu sapien id nisi interdum auctor. Vivamus fringilla lectus
+    nisl, pharetra porta nulla hendrerit eu. Nunc sed nisi at tortor dictum dignissim
+    quis sed dui. Donec malesuada sapien vitae vestibulum euismod. Proin eu justo
+    non purus accumsan aliquam. Donec sollicitudin justo sed tempor maximus. Proin
+    et tellus posuere ligula elementum dapibus a vitae ligula.'
   revealFadeWidth: 100
   slideClipRect: 1
   italicSlantAngle: 10
@@ -251,6 +271,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 0, g: 0, b: 0, a: 0.5882353}
   m_RaycastTarget: 0
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -314,7 +335,7 @@ Canvas:
   m_GameObject: {fileID: 1539436240700442}
   m_Enabled: 1
   serializedVersion: 3
-  m_RenderMode: 0
+  m_RenderMode: 1
   m_Camera: {fileID: 0}
   m_PlaneDistance: 100
   m_PixelPerfect: 0
@@ -324,7 +345,7 @@ Canvas:
   m_SortingBucketNormalizedSize: 0
   m_AdditionalShaderChannelsFlag: 0
   m_SortingLayerID: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 1
   m_TargetDisplay: 0
 --- !u!114 &114612839004360324
 MonoBehaviour:
@@ -351,8 +372,19 @@ MonoBehaviour:
   onHide:
     m_PersistentCalls:
       m_Calls: []
+  hideOnLoad: 1
+  saveVisibilityState: 1
+  blockInputWhenVisible: 0
+  allowedSamplers: []
+  modalUI: 0
+  fontChangeConfiguration:
+  - Object: {fileID: 1164058237260852}
+    AllowFontChange: 1
+    AllowFontSizeChange: 1
+    FontSizes: 19000000ffffffff2d00000032000000
   content: {fileID: 6351956876483434793}
-  continueInputTrigger: {fileID: 1164058237260852}
+  continueInputTriggers:
+  - {fileID: 1164058237260852}
   authorNamePanel: {fileID: 0}
   authorAvatarImage: {fileID: 0}
   inputIndicator: {fileID: 114522303404012452, guid: b9b3fefeea6c9f74ca0e1a2f9e4dfb13,

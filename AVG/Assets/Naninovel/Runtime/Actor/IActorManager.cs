@@ -1,5 +1,6 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
+using System;
 using System.Collections.Generic;
 using UniRx.Async;
 
@@ -11,9 +12,18 @@ namespace Naninovel
     public interface IActorManager : IEngineService
     {
         /// <summary>
-        /// Configuration of the manager.
+        /// Invoked when an actor with the ID is added to the manager.
         /// </summary>
-        ActorManagerConfiguration Configuration { get; }
+        event Action<string> OnActorAdded;
+        /// <summary>
+        /// Invoked when an actor with the ID is removed from the manager.
+        /// </summary>
+        event Action<string> OnActorRemoved;
+        
+        /// <summary>
+        /// Base configuration of the manager.
+        /// </summary>
+        ActorManagerConfiguration ActorManagerConfiguration { get; }
 
         /// <summary>
         /// Checks whether an actor with the provided ID is managed by the service. 
@@ -26,7 +36,7 @@ namespace Naninovel
         /// <summary>
         /// Retrieves all the actors managed by the service.
         /// </summary>
-        IEnumerable<IActor> GetAllActors ();
+        IReadOnlyCollection<IActor> GetAllActors ();
         /// <summary>
         /// Adds a new managed actor with the provided ID.
         /// </summary>
@@ -59,11 +69,6 @@ namespace Naninovel
         where TConfig : ActorManagerConfiguration<TMeta>
     {
         /// <summary>
-        /// Configuration of the manager.
-        /// </summary>
-        new TConfig Configuration { get; }
-
-        /// <summary>
         /// Adds a new managed actor with the provided ID.
         /// </summary>
         new UniTask<TActor> AddActorAsync (string actorId);
@@ -78,7 +83,7 @@ namespace Naninovel
         /// <summary>
         /// Retrieves all the actors managed by the service.
         /// </summary>
-        new IEnumerable<TActor> GetAllActors ();
+        new IReadOnlyCollection<TActor> GetAllActors ();
         /// <summary>
         /// Retrieves state of a managed actor with the provided ID.
         /// </summary>

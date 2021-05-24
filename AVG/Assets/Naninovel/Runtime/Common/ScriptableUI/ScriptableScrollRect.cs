@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using UnityEngine;
@@ -26,8 +26,7 @@ namespace Naninovel
 
         private void InvokeOnPositionChanged (Vector2 value)
         {
-            if (OnPositionChanged != null)
-                OnPositionChanged.Invoke(value);
+            OnPositionChanged?.Invoke(value);
         }
     }
 }

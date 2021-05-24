@@ -1,7 +1,6 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
-using System.Threading;
 using UniRx.Async;
 using UnityEngine;
 using UnityEngine.Audio;
@@ -47,6 +46,10 @@ namespace Naninovel
         /// Stops playing the track.
         /// </summary>
         void Stop ();
+        /// <summary>
+        /// Fades <see cref="Volume"/> to the provided value over the specified time, in seconds.
+        /// </summary>
+        UniTask FadeAsync (float volume, float fadeTime, CancellationToken cancellationToken = default);
     }
 
     /// <summary>
@@ -57,19 +60,19 @@ namespace Naninovel
         public event Action OnPlay;
         public event Action OnStop;
 
-        public AudioClip Clip { get; private set; }
-        public AudioClip IntroClip { get; private set; }
-        public AudioSource Source { get; private set; }
+        public AudioClip Clip { get; }
+        public AudioClip IntroClip { get; }
+        public AudioSource Source { get; }
         public bool Valid => Clip && Source;
-        public bool Loop { get => Valid ? Source.loop : false; set { if (Valid) Source.loop = value; } }
-        public bool Playing => Valid ? Source.isPlaying : false;
-        public bool Mute { get => Valid ? Source.mute : false; set { if (Valid) Source.mute = value; } }
+        public bool Loop { get => Valid && Source.loop; set { if (Valid) Source.loop = value; } }
+        public bool Playing => Valid && Source.isPlaying;
+        public bool Mute { get => Valid && Source.mute; set { if (Valid) Source.mute = value; } }
         public float Volume { get => Valid ? Source.volume : 0f; set { if (Valid) Source.volume = value; } }
 
         private readonly Tweener<FloatTween> volumeTweener;
         private readonly Timer stopTimer;
 
-        public AudioTrack (AudioClip clip, AudioSource source, float volume = 1f, bool loop = false, 
+        public AudioTrack (AudioClip clip, AudioSource source, float volume = 1f, bool loop = false,
             AudioMixerGroup mixerGroup = null, AudioClip introClip = null)
         {
             Clip = clip;
@@ -93,12 +96,12 @@ namespace Naninovel
             {
                 Source.PlayOneShot(IntroClip);
                 Source.PlayScheduled(AudioSettings.dspTime + IntroClip.length);
-                if (!Loop) stopTimer.Run(IntroClip.length + Clip.length, Source);
+                if (!Loop) stopTimer.Run(IntroClip.length + Clip.length, target: Source);
             }
             else
             {
                 Source.Play();
-                if (!Loop) stopTimer.Run(Clip.length, Source);
+                if (!Loop) stopTimer.Run(Clip.length, target: Source);
             }
 
             OnPlay?.Invoke();
@@ -131,7 +134,7 @@ namespace Naninovel
 
             var tween = new FloatTween(Volume, 0, fadeOutTime, volume => Volume = volume, target: Source);
             await volumeTweener.RunAsync(tween, cancellationToken);
-            if (cancellationToken.IsCancellationRequested) return;
+            if (cancellationToken.CancelASAP) return;
             Stop();
         }
 

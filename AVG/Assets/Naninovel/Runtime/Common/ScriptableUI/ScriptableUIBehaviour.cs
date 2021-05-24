@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using UniRx.Async;
@@ -21,7 +21,7 @@ namespace Naninovel
         public event Action<bool> OnVisibilityChanged;
 
         /// <summary>
-        /// Fade duration (in seconds) when changing visiblity of the UI;
+        /// Fade duration (in seconds) when changing visibility of the UI;
         /// requires a <see cref="UnityEngine.CanvasGroup"/> on the same game object.
         /// </summary>
         public virtual float FadeTime { get => fadeTime; set => fadeTime = value; }
@@ -53,10 +53,10 @@ namespace Naninovel
         /// </summary>
         public virtual float Opacity => CanvasGroup ? CanvasGroup.alpha : 1f;
         /// <summary>
-        /// Whether the UI is currently interctable.
+        /// Whether the UI is currently interactable.
         /// requires a <see cref="UnityEngine.CanvasGroup"/> on the same game object.
         /// </summary>
-        public virtual bool Interactable { get => CanvasGroup ? CanvasGroup.interactable : true; set => SetInteractable(value); }
+        public virtual bool Interactable { get => !CanvasGroup || CanvasGroup.interactable; set => SetInteractable(value); }
         /// <summary>
         /// Transform used by the UI element.
         /// </summary>
@@ -64,7 +64,7 @@ namespace Naninovel
         /// <summary>
         /// Topmost parent (in the game object hierarchy) canvas component.
         /// </summary>
-        public virtual Canvas TopmostCanvas => ObjectUtils.IsValid(topmostCanvasCache) ? topmostCanvasCache : (topmostCanvasCache = FindTopmostCanvas());
+        public virtual Canvas TopmostCanvas => ObjectUtils.IsValid(topmostCanvasCache) ? topmostCanvasCache : (topmostCanvasCache = gameObject.FindTopmostComponent<Canvas>());
         /// <summary>
         /// Current sort order of the UI element, as per <see cref="TopmostCanvas"/>.
         /// </summary>
@@ -80,10 +80,10 @@ namespace Naninovel
 
         protected static GameObject FocusOnNavigation { get; set; }
 
-        protected CanvasGroup CanvasGroup { get; private set; }
-        protected bool ControlOpacity => controlOpacity;
+        protected virtual CanvasGroup CanvasGroup { get; private set; }
+        protected virtual bool ControlOpacity => controlOpacity;
 
-        [Tooltip("Whether to permamently disable interaction with the object, no matter the visibility. Requires `Canvas Group` component on the same game object.")]
+        [Tooltip("Whether to permanently disable interaction with the object, no matter the visibility. Requires `Canvas Group` component on the same game object.")]
         [SerializeField] private bool disableInteraction = false;
         [Tooltip("Whether UI element should be visible or hidden on awake.")]
         [SerializeField] private bool visibleOnAwake = true;
@@ -110,7 +110,7 @@ namespace Naninovel
         /// <summary>
         /// Gradually changes <see cref="Visible"/> with fade animation over <see cref="FadeTime"/> or specified time (in seconds).
         /// </summary>
-        public virtual async UniTask ChangeVisibilityAsync (bool visible, float? duration = null)
+        public virtual async UniTask ChangeVisibilityAsync (bool visible, float? duration = null, CancellationToken cancellationToken = default)
         {
             if (fadeTweener.Running)
                 fadeTweener.Stop();
@@ -139,7 +139,7 @@ namespace Naninovel
             }
 
             var tween = new FloatTween(CanvasGroup.alpha, targetOpacity, fadeDuration, SetOpacity, IgnoreTimeScale, target: this);
-            await fadeTweener.RunAsync(tween);
+            await fadeTweener.RunAsync(tween, cancellationToken);
         }
 
         /// <summary>
@@ -215,7 +215,7 @@ namespace Naninovel
         /// <summary>
         /// Removes input focus from the UI element.
         /// </summary>
-        public void ClearFocus ()
+        public virtual void ClearFocus ()
         {
             if (EventSystem.current &&
                 EventSystem.current.currentSelectedGameObject &&
@@ -226,58 +226,10 @@ namespace Naninovel
         /// <summary>
         /// Applies input focus to the UI element.
         /// </summary>
-        public void SetFocus ()
+        public virtual void SetFocus ()
         {
             if (EventSystem.current)
                 EventSystem.current.SetSelectedGameObject(gameObject);
-        }
-
-        /// <summary>
-        /// Applies provided font to all the <see cref="UnityEngine.UI.Text"/>
-        /// and TMPro text components inside the UI element.
-        /// </summary>
-        public void SetFont (Font font)
-        {
-            if (!ObjectUtils.IsValid(font)) return;
-
-            foreach (var text in GetComponentsInChildren<UnityEngine.UI.Text>(true))
-                text.font = font;
-
-            #if TMPRO_AVAILABLE
-            var tmroComponents = GetComponentsInChildren<TMPro.TextMeshProUGUI>(true);
-            if (tmroComponents.Length == 0) return;
-            // TMPro requires font with a full path, while Unity doesn't store it by default; trying to guess it from the font name.
-            var fontPath = default(string);
-            var localFonts = Font.GetPathsToOSFonts();
-            for (int i = 0; i < localFonts.Length; i++)
-                if (localFonts[i].Replace("-", " ").Contains(font.name)) { fontPath = localFonts[i]; break; }
-            if (string.IsNullOrEmpty(fontPath)) return;
-            var localFont = new Font(fontPath);
-            var fontAsset = TMPro.TMP_FontAsset.CreateFontAsset(localFont);
-            if (!ObjectUtils.IsValid(fontAsset)) return;
-            foreach (var text in tmroComponents)
-            {
-                var shader = text.font.material.shader;
-                text.font = fontAsset;
-                foreach (var mat in text.fontMaterials)
-                    mat.shader = shader; // Transfer custom material shaders to the new font.
-            }
-            #endif
-        }
-
-        /// <summary>
-        /// Applies provided font size to all the <see cref="UnityEngine.UI.Text"/>
-        /// and TMPro text components inside the UI element.
-        /// </summary>
-        public void SetFontSize (int size)
-        {
-            foreach (var text in GetComponentsInChildren<UnityEngine.UI.Text>(true))
-                text.fontSize = size;
-
-            #if TMPRO_AVAILABLE
-            foreach (var text in GetComponentsInChildren<TMPro.TextMeshProUGUI>(true))
-                text.fontSize = size;
-            #endif
         }
 
         protected override void Awake ()
@@ -330,6 +282,7 @@ namespace Naninovel
 
             var navDown = false;
 
+            // ReSharper disable ConditionIsAlwaysTrueOrFalse
             #if ENABLE_INPUT_SYSTEM && INPUT_SYSTEM_AVAILABLE
             var gamepad = UnityEngine.InputSystem.Gamepad.current;
             if (gamepad != null && !navDown)
@@ -343,6 +296,7 @@ namespace Naninovel
             if (!navDown)
                 navDown = Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.RightArrow);
             #endif
+            // ReSharper restore ConditionIsAlwaysTrueOrFalse
 
             if (navDown)
             {
@@ -356,14 +310,6 @@ namespace Naninovel
             if (!rectTransform)
                 rectTransform = GetComponent<RectTransform>();
             return rectTransform;
-        }
-
-        private Canvas FindTopmostCanvas ()
-        {
-            var parentCanvases = gameObject.GetComponentsInParent<Canvas>();
-            if (parentCanvases != null && parentCanvases.Length > 0)
-                return parentCanvases[parentCanvases.Length - 1];
-            return null;
         }
 
         private void SetSortingOrder (int value)

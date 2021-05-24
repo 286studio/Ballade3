@@ -1,8 +1,7 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using System.Linq;
-using System.Threading;
 using UniRx.Async;
 using UnityEngine;
 
@@ -20,12 +19,18 @@ namespace Naninovel.Commands
         /// </summary>
         public StringParameter Id;
         /// <summary>
-        /// Appearance (or pose) to set for the modified actor.
+        /// Appearance to set for the modified actor.
         /// </summary>
+        [IDEAppearance]
         public StringParameter Appearance;
+        /// <summary>
+        /// Pose to set for the modified actor.
+        /// </summary>
+        public StringParameter Pose;
         /// <summary>
         /// Type of the [transition effect](/guide/transition-effects.md) to use (crossfade is used by default).
         /// </summary>
+        [IDEConstant(IDEConstantAttribute.Transition)]
         public StringParameter Transition;
         /// <summary>
         /// Parameters of the transition effect.
@@ -73,29 +78,37 @@ namespace Naninovel.Commands
         /// <br/><br/>
         /// When not specified, will use a default easing function set in the actor's manager configuration settings.
         /// </summary>
-        [ParameterAlias("easing")]
+        [ParameterAlias("easing"), IDEConstant(IDEConstantAttribute.Easing)]
         public StringParameter EasingTypeName;
         /// <summary>
         /// Duration (in seconds) of the modification. Default value: 0.35 seconds.
         /// </summary>
-        [ParameterAlias("time")]
+        [ParameterAlias("time"), ParameterDefaultValue("0.35")]
         public DecimalParameter Duration = .35f;
 
         protected virtual string AssignedId => Id;
         protected virtual string AssignedTransition => Transition;
-        protected virtual string AssignedAppearance => Pose?.Appearance ?? Appearance;
-        protected virtual bool? AssignedVisibility => Assigned(Visible) ? Visible.Value : Pose != null ? Pose?.Visible : ActorManager.Configuration.AutoShowOnModify ? (bool?)true : null;
-        protected virtual float?[] AssignedPosition => Assigned(Position) ? Position : Pose != null ? new float?[] { Pose.Position.x, Pose.Position.y, Pose.Position.z } : null;
-        protected virtual float?[] AssignedRotation => Assigned(Rotation) ? Rotation : Pose != null ? new float?[] { Pose.Rotation.eulerAngles.x, Pose.Rotation.eulerAngles.y, Pose.Rotation.eulerAngles.z } : null;
-        protected virtual float?[] AssignedScale => Assigned(Scale) ? Scale : Pose != null ? new float?[] { Pose.Scale.x, Pose.Scale.y, Pose.Scale.z } : null;
-        protected virtual Color? AssignedTintColor => Assigned(TintColor) ? ParseColor(TintColor) : Pose?.TintColor;
-        protected virtual TState Pose => ActorManager.Configuration.GetMetadataOrDefault(Id).GetPoseOrNull<TState>(Appearance);
+        protected virtual string AssignedAppearance => Assigned(Appearance) ? Appearance.Value : PosedAppearance ?? (PoseAssigned ? null : AlternativeAppearance);
+        protected virtual bool? AssignedVisibility => Assigned(Visible) ? Visible.Value : PosedVisibility ?? ActorManager.Configuration.AutoShowOnModify ? (bool?)true : null;
+        protected virtual float?[] AssignedPosition => Assigned(Position) ? Position : PosedPosition;
+        protected virtual float?[] AssignedRotation => Assigned(Rotation) ? Rotation : PosedRotation;
+        protected virtual float?[] AssignedScale => Assigned(Scale) ? Scale : PosedScale;
+        protected virtual Color? AssignedTintColor => Assigned(TintColor) ? ParseColor(TintColor) : PosedTintColor;
         protected virtual TManager ActorManager => Engine.GetService<TManager>();
+        protected virtual string AlternativeAppearance => null;
         protected virtual bool AllowPreload => Assigned(Id) && !Id.DynamicValue && Assigned(Appearance) && !Appearance.DynamicValue;
+        protected virtual bool PoseAssigned => GetPoseOrNull() != null;
+
+        protected string PosedAppearance => GetPosed(nameof(ActorState.Appearance))?.Appearance;
+        protected bool? PosedVisibility => GetPosed(nameof(ActorState.Visible))?.Visible;
+        protected float?[] PosedPosition => GetPosed(nameof(ActorState.Position))?.Position.ToNullableArray();
+        protected float?[] PosedRotation => GetPosed(nameof(ActorState.Rotation))?.Rotation.eulerAngles.ToNullableArray();
+        protected float?[] PosedScale => GetPosed(nameof(ActorState.Scale))?.Scale.ToNullableArray();
+        protected Color? PosedTintColor => GetPosed(nameof(ActorState.TintColor))?.TintColor;
 
         private Texture2D preloadedDissolveTexture;
 
-        public virtual async UniTask HoldResourcesAsync ()
+        public virtual async UniTask PreloadResourcesAsync ()
         {
             if (Assigned(DissolveTexturePath) && !DissolveTexturePath.DynamicValue)
             {
@@ -106,16 +119,16 @@ namespace Naninovel.Commands
 
             if (!AllowPreload || string.IsNullOrEmpty(AssignedId)) return;
             var actor = await ActorManager.GetOrAddActorAsync(AssignedId);
-            await actor.HoldResourcesAsync(this, AssignedAppearance);
+            await actor.HoldResourcesAsync(AssignedAppearance, this);
         }
 
-        public virtual void ReleaseResources ()
+        public virtual void ReleasePreloadedResources ()
         {
             preloadedDissolveTexture = null;
 
             if (!AllowPreload || ActorManager is null || string.IsNullOrEmpty(AssignedId)) return;
             if (ActorManager.ActorExists(AssignedId))
-                ActorManager.GetActor(AssignedId).ReleaseResources(this, AssignedAppearance);
+                ActorManager.GetActor(AssignedId).ReleaseResources(AssignedAppearance, this);
         }
 
         public override async UniTask ExecuteAsync (CancellationToken cancellationToken = default)
@@ -143,8 +156,8 @@ namespace Naninovel.Commands
             }
             else
             {
-                var actor = await ActorManager.GetOrAddActorAsync(AssignedId) as TActor;
-                if (cancellationToken.IsCancellationRequested) return;
+                var actor = await ActorManager.GetOrAddActorAsync(AssignedId);
+                if (cancellationToken.CancelASAP) return;
                 await ApplyModificationsAsync(actor, easingType, cancellationToken);
             }
         }
@@ -234,6 +247,19 @@ namespace Naninovel.Commands
                 return null;
             }
             return result;
+        }
+
+        protected virtual ActorPose<TState> GetPoseOrNull ()
+        {
+            var poseName = Assigned(Pose) ? Pose.Value : AlternativeAppearance;
+            if (string.IsNullOrEmpty(poseName)) return null;
+            return ActorManager.Configuration.GetMetadataOrDefault(AssignedId).GetPoseOrNull<TState>(poseName);
+        }
+
+        protected virtual TState GetPosed (string propertyName)
+        {
+            var pose = GetPoseOrNull();
+            return pose != null && pose.IsPropertyOverridden(propertyName) ? pose.ActorState : null;
         }
     } 
 }

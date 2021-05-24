@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using Naninovel.Commands;
 using System.Linq;
@@ -26,7 +26,7 @@ namespace Naninovel.FX
         protected ISpawnManager SpawnManager => Engine.GetService<ISpawnManager>();
         protected Vector3 DeltaPos { get; private set; }
         protected Vector3 InitialPos { get; private set; }
-        protected Transform ShakedTransform { get; private set; }
+        protected Transform ShakenTransform { get; private set; }
         protected bool Loop { get; private set; }
 
         [SerializeField] private int defaultShakesCount = 3;
@@ -38,13 +38,14 @@ namespace Naninovel.FX
         [SerializeField] private bool defaultShakeVertically = true;
 
         private readonly Tweener<VectorTween> positionTweener = new Tweener<VectorTween>();
+        private CancellationTokenSource loopCTS;
 
         public virtual void SetSpawnParameters (string[] parameters)
         {
             if (positionTweener.Running)
                 positionTweener.CompleteInstantly();
-            if (ShakedTransform != null)
-                ShakedTransform.position = InitialPos;
+            if (ShakenTransform != null)
+                ShakenTransform.position = InitialPos;
 
             SpawnedPath = gameObject.name;
             ObjectName = parameters?.ElementAtOrDefault(0);
@@ -60,27 +61,25 @@ namespace Naninovel.FX
 
         public virtual async UniTask AwaitSpawnAsync (CancellationToken cancellationToken = default)
         {
-            ShakedTransform = GetShakedTransform();
-            if (ShakedTransform == null)
+            ShakenTransform = GetShakenTransform();
+            if (ShakenTransform == null)
             {
                 SpawnManager.DestroySpawnedObject(SpawnedPath);
                 Debug.LogWarning($"Failed to apply `{GetType().Name}` FX to `{ObjectName}`: game object not found.");
                 return;
             }
 
-            InitialPos = ShakedTransform.position;
+            InitialPos = ShakenTransform.position;
             DeltaPos = new Vector3(ShakeHorizontally ? ShakeAmplitude : 0, ShakeVertically ? ShakeAmplitude : 0, 0);
 
-            if (Loop)
-            {
-                while (Loop && Application.isPlaying && !cancellationToken.IsCancellationRequested)
-                    await ShakeSequenceAsync(cancellationToken);
-            }
+            if (Loop) LoopRoutine(cancellationToken).Forget();
             else
             {
                 for (int i = 0; i < ShakesCount; i++)
+                {
                     await ShakeSequenceAsync(cancellationToken);
-                if (cancellationToken.IsCancellationRequested) return;
+                    if (cancellationToken.CancelASAP) return;
+                }
 
                 if (SpawnManager.IsObjectSpawned(SpawnedPath))
                     SpawnManager.DestroySpawnedObject(SpawnedPath);
@@ -89,7 +88,7 @@ namespace Naninovel.FX
             await AsyncUtils.WaitEndOfFrame; // Otherwise a consequent shake won't work.
         }
 
-        protected abstract Transform GetShakedTransform ();
+        protected abstract Transform GetShakenTransform ();
 
         protected virtual async UniTask ShakeSequenceAsync (CancellationToken cancellationToken)
         {
@@ -97,25 +96,43 @@ namespace Naninovel.FX
             var duration = ShakeDuration + ShakeDuration * Random.Range(-DurationVariation, DurationVariation);
 
             await MoveAsync(InitialPos - amplitude * .5f, duration * .25f, cancellationToken);
+            if (cancellationToken.CancelASAP) return;
             await MoveAsync(InitialPos + amplitude, duration * .5f, cancellationToken);
+            if (cancellationToken.CancelASAP) return;
             await MoveAsync(InitialPos, duration * .25f, cancellationToken);
         }
 
         protected virtual async UniTask MoveAsync (Vector3 position, float duration, CancellationToken cancellationToken)
         {
-            var tween = new VectorTween(ShakedTransform.position, position, duration, pos => ShakedTransform.position = pos, false, EasingType.SmoothStep, ShakedTransform);
+            var tween = new VectorTween(ShakenTransform.position, position, duration, pos => ShakenTransform.position = pos, false, EasingType.SmoothStep, ShakenTransform);
             await positionTweener.RunAsync(tween, cancellationToken);
         }
 
         protected virtual void OnDestroy ()
         {
             Loop = false;
+            loopCTS?.Cancel();
+            loopCTS?.Dispose();
 
-            if (ShakedTransform != null)
-                ShakedTransform.position = InitialPos;
+            if (ShakenTransform != null)
+                ShakenTransform.position = InitialPos;
 
             if (Engine.Initialized && SpawnManager.IsObjectSpawned(SpawnedPath))
                 SpawnManager.DestroySpawnedObject(SpawnedPath);
+        }
+
+        private async UniTaskVoid LoopRoutine (CancellationToken cancellationToken)
+        {
+            loopCTS?.Cancel();
+            loopCTS?.Dispose();
+            loopCTS = new CancellationTokenSource();
+            var combinedCTS = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken.ASAPToken, loopCTS.Token);
+            var combinedCTSToken = combinedCTS.Token;
+            
+            while (Loop && Application.isPlaying && !combinedCTSToken.IsCancellationRequested)
+                await ShakeSequenceAsync(combinedCTSToken);
+            
+            combinedCTS.Dispose();
         }
     }
 }

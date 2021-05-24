@@ -1,11 +1,11 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 #ifndef NANINOVEL_TRANSITION_EFFECTS_INCLUDED
 #define NANINOVEL_TRANSITION_EFFECTS_INCLUDED
 
 #include "NaninovelCG.cginc"
 
-inline fixed4 Crossfade(in sampler2D mainTex, in float2 mainUV, in sampler2D transitionTex, in float2 transitionUV, in float progress)
+inline fixed4 Crossfade(sampler2D mainTex, float2 mainUV, sampler2D transitionTex, float2 transitionUV, float progress)
 {
     const fixed4 CLIP_COLOR = fixed4(0, 0, 0, 0);
     fixed4 mainColor = Tex2DClip01(mainTex, mainUV, CLIP_COLOR);
@@ -13,7 +13,7 @@ inline fixed4 Crossfade(in sampler2D mainTex, in float2 mainUV, in sampler2D tra
     return lerp(mainColor, transitionColor, progress);
 }
 
-inline fixed4 BandedSwirl(in sampler2D mainTex, in float2 mainUV, in sampler2D transitionTex, in float2 transitionUV, in float progress, in float twistAmount, in float frequency)
+inline fixed4 BandedSwirl(sampler2D mainTex, float2 mainUV, sampler2D transitionTex, float2 transitionUV, float progress, float twistAmount, float frequency)
 {
     float2 center = float2(0.5, 0.5);
     float2 toUV = mainUV - center;
@@ -32,13 +32,13 @@ inline fixed4 BandedSwirl(in sampler2D mainTex, in float2 mainUV, in sampler2D t
     return lerp(mainColor, transitionColor, progress);
 }
 
-inline fixed4 Blinds(in sampler2D mainTex, in float2 mainUV, in sampler2D transitionTex, in float2 transitionUV, in float progress, in float count)
+inline fixed4 Blinds(sampler2D mainTex, float2 mainUV, sampler2D transitionTex, float2 transitionUV, float progress, float count)
 {
     if (frac(mainUV.y * count) < progress) return tex2D(transitionTex, transitionUV);
     else return tex2D(mainTex, mainUV);
 }
 
-inline fixed4 CircleReveal(in sampler2D mainTex, in float2 mainUV, in sampler2D transitionTex, in float2 transitionUV, in float progress, in float fuzzyAmount)
+inline fixed4 CircleReveal(sampler2D mainTex, float2 mainUV, sampler2D transitionTex, float2 transitionUV, float progress, float fuzzyAmount)
 {
     float radius = -fuzzyAmount + progress * (0.70710678 + 2.0 * fuzzyAmount);
     float fromCenter = length(mainUV - float2(0.5, 0.5));
@@ -51,7 +51,7 @@ inline fixed4 CircleReveal(in sampler2D mainTex, in float2 mainUV, in sampler2D 
     return lerp(transitionColor, mainColor, p);
 }
 
-inline fixed4 CircleStretch(in sampler2D mainTex, in float2 mainUV, in sampler2D transitionTex, in float2 transitionUV, in float progress)
+inline fixed4 CircleStretch(sampler2D mainTex, float2 mainUV, sampler2D transitionTex, float2 transitionUV, float progress)
 {
     float2 center = float2(0.5, 0.5);
     float radius = progress * 0.70710678;
@@ -86,7 +86,7 @@ inline fixed4 CircleStretch(in sampler2D mainTex, in float2 mainUV, in sampler2D
     }
 }
 
-inline fixed4 CloudReveal(in sampler2D mainTex, in float2 mainUV, in sampler2D transitionTex, in float2 transitionUV, in float progress, in sampler2D cloudsTex)
+inline fixed4 CloudReveal(sampler2D mainTex, float2 mainUV, sampler2D transitionTex, float2 transitionUV, float progress, sampler2D cloudsTex)
 {
     float cloud = tex2D(cloudsTex, mainUV).r;
     float4 mainColor = tex2D(mainTex, mainUV);
@@ -100,7 +100,7 @@ inline fixed4 CloudReveal(in sampler2D mainTex, in float2 mainUV, in sampler2D t
     return (a < 0.5) ? mainColor : transitionColor;
 }
 
-inline fixed4 Crumble(in sampler2D mainTex, in float2 mainUV, in sampler2D transitionTex, in float2 transitionUV, in float progress, in float randomSeed, in sampler2D cloudsTex)
+inline fixed4 Crumble(sampler2D mainTex, float2 mainUV, sampler2D transitionTex, float2 transitionUV, float progress, float randomSeed, sampler2D cloudsTex)
 {
     float2 offset = tex2D(cloudsTex, float2(mainUV.x / 5, frac(mainUV.y / 5 + min(0.9, randomSeed)))).xy * 2.0 - 1.0;
     float p = progress * 2;
@@ -112,7 +112,7 @@ inline fixed4 Crumble(in sampler2D mainTex, in float2 mainUV, in sampler2D trans
     return lerp(mainColor, transitionColor, progress);
 }
 
-inline fixed4 Dissolve(in sampler2D mainTex, in float2 mainUV, in sampler2D transitionTex, in float2 transitionUV, in float progress, in float step)
+inline fixed4 Dissolve(sampler2D mainTex, float2 mainUV, sampler2D transitionTex, float2 transitionUV, float progress, float step)
 {
     const fixed4 CLIP_COLOR = fixed4(0, 0, 0, 0);
     float noise = (PerlinNoise(mainUV * step) + 1.0) / 2.0 ;
@@ -120,7 +120,7 @@ inline fixed4 Dissolve(in sampler2D mainTex, in float2 mainUV, in sampler2D tran
     else return Tex2DClip01(transitionTex, transitionUV, CLIP_COLOR);
 }
 
-inline fixed4 DropFade(in sampler2D mainTex, in float2 mainUV, in sampler2D transitionTex, in float2 transitionUV, in float progress, in float randomSeed, in sampler2D cloudsTex)
+inline fixed4 DropFade(sampler2D mainTex, float2 mainUV, sampler2D transitionTex, float2 transitionUV, float progress, float randomSeed, sampler2D cloudsTex)
 {
     const fixed4 CLIP_COLOR = fixed4(0, 0, 0, 0);
     float offset = tex2D(cloudsTex, float2(mainUV.x / 5, randomSeed)).x;
@@ -131,7 +131,7 @@ inline fixed4 DropFade(in sampler2D mainTex, in float2 mainUV, in sampler2D tran
     else return lerp(mainColor, transitionColor, progress);
 }
 
-inline fixed4 LineReveal(in sampler2D mainTex, in float2 mainUV, in sampler2D transitionTex, in float2 transitionUV, in float progress, in float fuzzyAmount, in float2 lineNormal)
+inline fixed4 LineReveal(sampler2D mainTex, float2 mainUV, sampler2D transitionTex, float2 transitionUV, float progress, float fuzzyAmount, float2 lineNormal)
 {
     float2 lineOrigin = float2(0.0, 0.0);
     float2 lineOffset = float2(1.0, 1.0);
@@ -146,7 +146,7 @@ inline fixed4 LineReveal(in sampler2D mainTex, in float2 mainUV, in sampler2D tr
     return lerp(transitionColor, mainColor, p);
 }
 
-inline fixed4 Pixelate(in sampler2D mainTex, in float2 mainUV, in sampler2D transitionTex, in float2 transitionUV, in float progress)
+inline fixed4 Pixelate(sampler2D mainTex, float2 mainUV, sampler2D transitionTex, float2 transitionUV, float progress)
 {
     float pixels;
     float segmentProgress;
@@ -165,7 +165,7 @@ inline fixed4 Pixelate(in sampler2D mainTex, in float2 mainUV, in sampler2D tran
     return lerp(mainColor, transitionColor, lerpProgress);	
 }
 
-inline fixed4 RadialBlur(in sampler2D mainTex, in float2 mainUV, in sampler2D transitionTex, in float2 transitionUV, in float progress)
+inline fixed4 RadialBlur(sampler2D mainTex, float2 mainUV, sampler2D transitionTex, float2 transitionUV, float progress)
 {
     float2 center = float2(0.5, 0.5);
     float2 toUV = mainUV - center;
@@ -186,7 +186,7 @@ inline fixed4 RadialBlur(in sampler2D mainTex, in float2 mainUV, in sampler2D tr
     return lerp(mainColor, transitionColor, progress);
 }
 
-inline fixed4 RadialWiggle(in sampler2D mainTex, in float2 mainUV, in sampler2D transitionTex, in float2 transitionUV, in float progress, in float randomSeed, in sampler2D cloudsTex)
+inline fixed4 RadialWiggle(sampler2D mainTex, float2 mainUV, sampler2D transitionTex, float2 transitionUV, float progress, float randomSeed, sampler2D cloudsTex)
 {
     float2 center = float2(0.5, 0.5);
     float2 toUV = mainUV - center;
@@ -203,7 +203,7 @@ inline fixed4 RadialWiggle(in sampler2D mainTex, in float2 mainUV, in sampler2D 
     return lerp(mainColor, transitionColor, progress);
 }
 
-inline fixed4 RandomCircleReveal(in sampler2D mainTex, in float2 mainUV, in sampler2D transitionTex, in float2 transitionUV, in float progress, in float randomSeed, in sampler2D cloudsTex)
+inline fixed4 RandomCircleReveal(sampler2D mainTex, float2 mainUV, sampler2D transitionTex, float2 transitionUV, float progress, float randomSeed, sampler2D cloudsTex)
 {
     float radius = progress * 0.70710678;
     float2 fromCenter = mainUV - float2(0.5, 0.5);
@@ -217,7 +217,7 @@ inline fixed4 RandomCircleReveal(in sampler2D mainTex, in float2 mainUV, in samp
     else return tex2D(mainTex, mainUV);
 }
 
-inline fixed4 Ripple(in sampler2D mainTex, in float2 mainUV, in sampler2D transitionTex, in float2 transitionUV, in float progress, in float frequency, in float speed, in float amplitude)
+inline fixed4 Ripple(sampler2D mainTex, float2 mainUV, sampler2D transitionTex, float2 transitionUV, float progress, float frequency, float speed, float amplitude)
 {
     float2 center = float2(0.5, 0.5);
     float2 toUV = mainUV - center;
@@ -237,7 +237,7 @@ inline fixed4 Ripple(in sampler2D mainTex, in float2 mainUV, in sampler2D transi
     return lerp(mainColor, transitionColor, progress);
 }
 
-inline fixed4 RotateCrumble(in sampler2D mainTex, in float2 mainUV, in sampler2D transitionTex, in float2 transitionUV, in float progress, in float randomSeed, in sampler2D cloudsTex)
+inline fixed4 RotateCrumble(sampler2D mainTex, float2 mainUV, sampler2D transitionTex, float2 transitionUV, float progress, float randomSeed, sampler2D cloudsTex)
 {
     float2 offset = (tex2D(cloudsTex, float2(mainUV.x / 10, frac(mainUV.y / 10 + min(0.9, randomSeed)))).xy * 2.0 - 1.0);
     float2 center = mainUV + offset / 10.0;
@@ -257,7 +257,7 @@ inline fixed4 RotateCrumble(in sampler2D mainTex, in float2 mainUV, in sampler2D
     return lerp(mainColor, transitionColor, progress);
 }
 
-inline fixed4 Saturate(in sampler2D mainTex, in float2 mainUV, in sampler2D transitionTex, in float2 transitionUV, in float progress)
+inline fixed4 Saturate(sampler2D mainTex, float2 mainUV, sampler2D transitionTex, float2 transitionUV, float progress)
 {
     float4 mainColor = tex2D(mainTex, mainUV); 
     mainColor = saturate(mainColor * (2 * progress + 1));
@@ -271,7 +271,7 @@ inline fixed4 Saturate(in sampler2D mainTex, in float2 mainUV, in sampler2D tran
     else return mainColor;
 }
 
-inline fixed4 Shrink(in sampler2D mainTex, in float2 mainUV, in sampler2D transitionTex, in float2 transitionUV, in float progress, in float speed)
+inline fixed4 Shrink(sampler2D mainTex, float2 mainUV, sampler2D transitionTex, float2 transitionUV, float progress, float speed)
 {
     const fixed4 CLIP_COLOR = fixed4(0, 0, 0, 0);
     float2 center = float2(0.5, 0.5);
@@ -286,7 +286,7 @@ inline fixed4 Shrink(in sampler2D mainTex, in float2 mainUV, in sampler2D transi
     return mainColor;
 }
 
-inline fixed4 SlideIn(in sampler2D mainTex, in float2 mainUV, in sampler2D transitionTex, in float2 transitionUV, in float progress, in float2 slideAmount)
+inline fixed4 SlideIn(sampler2D mainTex, float2 mainUV, sampler2D transitionTex, float2 transitionUV, float progress, float2 slideAmount)
 {
     mainUV += slideAmount * progress;
     if (any(saturate(mainUV) - mainUV))
@@ -297,7 +297,7 @@ inline fixed4 SlideIn(in sampler2D mainTex, in float2 mainUV, in sampler2D trans
     else return tex2D(mainTex, mainUV);
 }
 
-inline fixed4 SwirlGrid(in sampler2D mainTex, in float2 mainUV, in sampler2D transitionTex, in float2 transitionUV, in float progress, in float twistAmount, in float cellCount)
+inline fixed4 SwirlGrid(sampler2D mainTex, float2 mainUV, sampler2D transitionTex, float2 transitionUV, float progress, float twistAmount, float cellCount)
 {
     float cellSize = 1.0 / cellCount;
 	
@@ -330,7 +330,7 @@ inline fixed4 SwirlGrid(in sampler2D mainTex, in float2 mainUV, in sampler2D tra
     return lerp(mainColor, transitionColor, progress);
 }
 
-inline fixed4 Swirl(in sampler2D mainTex, in float2 mainUV, in sampler2D transitionTex, in float2 transitionUV, in float progress, in float twistAmount)
+inline fixed4 Swirl(sampler2D mainTex, float2 mainUV, sampler2D transitionTex, float2 transitionUV, float progress, float twistAmount)
 {
     const fixed4 CLIP_COLOR = fixed4(0, 0, 0, 0);
     float2 center = float2(0.5, 0.5);
@@ -351,7 +351,7 @@ inline fixed4 Swirl(in sampler2D mainTex, in float2 mainUV, in sampler2D transit
     return lerp(mainColor, transitionColor, progress);
 }
 
-inline fixed4 Water(in sampler2D mainTex, in float2 mainUV, in sampler2D transitionTex, in float2 transitionUV, in float progress, in float randomSeed, in sampler2D cloudsTex)
+inline fixed4 Water(sampler2D mainTex, float2 mainUV, sampler2D transitionTex, float2 transitionUV, float progress, float randomSeed, sampler2D cloudsTex)
 {
     float2 offset = tex2D(cloudsTex, float2(mainUV.x / 10, frac(mainUV.y / 10 + min(0.9, randomSeed)))).xy * 2.0 - 1.0;
     float4 mainColor = tex2D(mainTex, frac(mainUV + offset * progress));
@@ -361,7 +361,7 @@ inline fixed4 Water(in sampler2D mainTex, in float2 mainUV, in sampler2D transit
     else return lerp(mainColor, transitionColor, progress);
 }
 
-inline fixed4 Waterfall(in sampler2D mainTex, in float2 mainUV, in sampler2D transitionTex, in float2 transitionUV, in float progress, in float randomSeed, in sampler2D cloudsTex)
+inline fixed4 Waterfall(sampler2D mainTex, float2 mainUV, sampler2D transitionTex, float2 transitionUV, float progress, float randomSeed, sampler2D cloudsTex)
 {
     float offset = 1 - min(progress + progress * tex2D(cloudsTex, float2(mainUV.x, randomSeed)).r, 1.0);
     mainUV.y -= offset;
@@ -371,7 +371,7 @@ inline fixed4 Waterfall(in sampler2D mainTex, in float2 mainUV, in sampler2D tra
     else return tex2D(mainTex, frac(mainUV));
 }
 
-inline fixed4 Wave(in sampler2D mainTex, in float2 mainUV, in sampler2D transitionTex, in float2 transitionUV, in float progress, in float magnitude, in float phase, in float frequency)
+inline fixed4 Wave(sampler2D mainTex, float2 mainUV, sampler2D transitionTex, float2 transitionUV, float progress, float magnitude, float phase, float frequency)
 {
     const fixed4 CLIP_COLOR = fixed4(0, 0, 0, 0);
 	float2 newUV = mainUV + float2(magnitude * progress * sin(frequency * mainUV.y + phase * progress), 0);
@@ -384,7 +384,7 @@ inline fixed4 Wave(in sampler2D mainTex, in float2 mainUV, in sampler2D transiti
 
 // Executes transition effect based on enabled keyword.
 // Returns resulting color of the transition at the given texture coordinates.
-inline fixed4 ApplyTransitionEffect(in sampler2D mainTex, in float2 mainUV, in sampler2D transitionTex, in float2 transitionUV, in float progress, in float4 params, in float2 randomSeed, in sampler2D cloudsTex, in sampler2D customTex)
+inline fixed4 ApplyTransitionEffect(sampler2D mainTex, float2 mainUV, sampler2D transitionTex, float2 transitionUV, float progress, float4 params, float2 randomSeed, sampler2D cloudsTex, sampler2D customTex)
 {
     #ifdef NANINOVEL_TRANSITION_BANDEDSWIRL
     return BandedSwirl(mainTex, mainUV, transitionTex, transitionUV, progress, params.x, params.y);
@@ -479,7 +479,7 @@ inline fixed4 ApplyTransitionEffect(in sampler2D mainTex, in float2 mainUV, in s
     #endif
 
     #ifdef NANINOVEL_TRANSITION_CUSTOM
-    return progress >= tex2D(customTex, transitionUV).r ? tex2D(transitionTex, transitionUV) : tex2D(mainTex, mainUV);
+    return progress > tex2D(customTex, transitionUV).r ? tex2D(transitionTex, transitionUV) : tex2D(mainTex, mainUV);
     #endif
 
     // When no transition keywords enabled default to crossfade.

@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System.Collections.Generic;
 using UnityEditor;
@@ -12,23 +12,17 @@ namespace Naninovel
     [System.Serializable]
     public class ScriptGraphState : ScriptableObject
     {
-        [System.Serializable]
-        public struct NodeState 
-        {
-            public string ScriptName;
-            public Rect Position;
-        }
-
-        public List<NodeState> NodesState = new List<NodeState>();
-
-        private static string directoryPath => PathUtils.Combine(Application.dataPath, ConfigurationSettings.GeneratedDataPath);
-        private static string assetPath => PathUtils.AbsoluteToAssetPath(PathUtils.Combine(directoryPath, $"{nameof(ScriptGraphState)}.asset"));
+        public List<ScriptGraphNodeState> NodesState = new List<ScriptGraphNodeState>();
 
         /// <summary>
         /// Loads an existing asset from package data folder or creates a new default instance.
         /// </summary>
         public static ScriptGraphState LoadOrDefault ()
         {
+            var generatedDataPath = ProjectConfigurationProvider.LoadOrDefault<EngineConfiguration>().GeneratedDataPath;
+            var directoryPath = PathUtils.Combine(Application.dataPath, generatedDataPath);
+            var assetPath = PathUtils.AbsoluteToAssetPath(PathUtils.Combine(directoryPath, $"{nameof(ScriptGraphState)}.asset"));
+
             var obj = AssetDatabase.LoadAssetAtPath<ScriptGraphState>(assetPath);
 
             if (!ObjectUtils.IsValid(obj))

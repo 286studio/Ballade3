@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 
@@ -16,17 +16,11 @@ namespace Naninovel
         /// Category of the generated text document.
         /// </summary>
         public string Category { get; }
-        /// <summary>
-        /// Commentary to put before the field record in the generated managed text document.
-        /// </summary>
-        public string Comment { get; }
 
         /// <param name="category">Category of the generated text resource.</param>
-        /// <param name="comment">Commentary to put before the field record in the generated managed text document.</param>
-        public ManagedTextAttribute (string category = ManagedTextRecord.DefaultCategoryName, string comment = null)
+        public ManagedTextAttribute (string category = ManagedTextRecord.DefaultCategoryName)
         {
             Category = category;
-            Comment = comment;
         }
     }
 }

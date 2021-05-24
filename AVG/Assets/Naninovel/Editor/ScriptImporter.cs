@@ -1,13 +1,18 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
+#if UNITY_2020_2_OR_NEWER
+using UnityEditor.AssetImporters;
+#else
 using UnityEditor.Experimental.AssetImporters;
+#endif
 using UnityEngine;
 
 namespace Naninovel
 {
-    [ScriptedImporter(version: 18, ext: "nani")]
+    [ScriptedImporter(version: 29, ext: "nani")]
     public class ScriptImporter : ScriptedImporter
     {
         public override void OnImportAsset (AssetImportContext ctx)
@@ -32,7 +37,7 @@ namespace Naninovel
             }
             finally
             {
-                var assetName = Path.GetFileNameWithoutExtension(ctx.assetPath); ;
+                var assetName = Path.GetFileNameWithoutExtension(ctx.assetPath);
                 var asset = Script.FromScriptText(assetName, contents);
                 asset.hideFlags = HideFlags.NotEditable;
 

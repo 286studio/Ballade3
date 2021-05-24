@@ -1,8 +1,6 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
-using System.Threading;
 using UniRx.Async;
-using UnityEngine;
 
 namespace Naninovel.Commands
 {
@@ -11,15 +9,11 @@ namespace Naninovel.Commands
     /// when performed over an already spawned object, will update the spawn parameters instead.
     /// </summary>
     /// <remarks>
-    /// If prefab has a <see cref="MonoBehaviour"/> component attached the root object, and the component implements
-    /// a <see cref="IParameterized"/> interface, will pass the specified `params` values after the spawn;
-    /// if the component implements <see cref="IAwaitable"/> interface, command execution will wait for
+    /// If prefab has a `MonoBehaviour` component attached the root object, and the component implements
+    /// a `IParameterized` interface, will pass the specified `params` values after the spawn;
+    /// if the component implements `IAwaitable` interface, command execution will wait for
     /// the async completion task returned by the implementation.
     /// </remarks>
-    /// <example>
-    /// ; Given an `Rainbow` prefab is assigned in spawn resources, instantiate it.
-    /// @spawn Rainbow
-    /// </example>
     public class Spawn : Command, Command.IPreloadable
     {
         public interface IParameterized { void SetSpawnParameters (string[] parameters); }
@@ -28,26 +22,26 @@ namespace Naninovel.Commands
         /// <summary>
         /// Name (path) of the prefab resource to spawn.
         /// </summary>
-        [ParameterAlias(NamelessParameterAlias), RequiredParameter]
+        [ParameterAlias(NamelessParameterAlias), RequiredParameter, IDEResource(SpawnConfiguration.DefaultPathPrefix)]
         public StringParameter Path;
         /// <summary>
         /// Parameters to set when spawning the prefab.
-        /// Requires the prefab to have a <see cref="IParameterized"/> component attached the root object.
+        /// Requires the prefab to have a `IParameterized` component attached the root object.
         /// </summary>
         public StringListParameter Params;
 
         protected virtual ISpawnManager SpawnManager => Engine.GetService<ISpawnManager>();
 
-        public async UniTask HoldResourcesAsync ()
+        public async UniTask PreloadResourcesAsync ()
         {
             if (!Assigned(Path) || Path.DynamicValue || string.IsNullOrWhiteSpace(Path)) return;
-            await SpawnManager.HoldResourcesAsync(this, Path);
+            await SpawnManager.HoldResourcesAsync(Path, this);
         }
 
-        public void ReleaseResources ()
+        public void ReleasePreloadedResources ()
         {
             if (!Assigned(Path) || Path.DynamicValue || string.IsNullOrWhiteSpace(Path)) return;
-            SpawnManager.ReleaseResources(this, Path);
+            SpawnManager.ReleaseResources(Path, this);
         }
 
         public override async UniTask ExecuteAsync (CancellationToken cancellationToken = default)

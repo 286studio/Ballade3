@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using UnityEngine;
 
@@ -18,14 +18,13 @@ namespace Naninovel
         /// </summary>
         public string Build => buildDate;
 
-        private const string resourcesPath = "Naninovel/" + nameof(EngineVersion);
-
         [SerializeField, ReadOnly] private string engineVersion = string.Empty;
         [SerializeField, ReadOnly] private string buildDate = string.Empty;
 
         public static EngineVersion LoadFromResources ()
         {
-            return Resources.Load<EngineVersion>(resourcesPath);
+            const string assetPath = nameof(EngineVersion);
+            return Engine.LoadInternalResource<EngineVersion>(assetPath);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using UnityEngine;
@@ -7,7 +7,7 @@ using UnityEngine.Events;
 namespace Naninovel
 {
     /// <summary>
-    /// Hosts events routed by <see cref="GenericActor{TBehaviour}"/>.
+    /// Hosts events routed by <see cref="GenericActor{TBehaviour,TMeta}"/>.
     /// </summary>
     public abstract class GenericActorBehaviour : MonoBehaviour
     {

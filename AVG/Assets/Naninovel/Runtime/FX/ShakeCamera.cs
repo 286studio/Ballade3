@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using UnityEngine;
 
@@ -9,11 +9,11 @@ namespace Naninovel.FX
     /// </summary>
     public class ShakeCamera : ShakeTransform
     {
-        protected override Transform GetShakedTransform ()
+        protected override Transform GetShakenTransform ()
         {
-            var cameraMngr = Engine.GetService<ICameraManager>().Camera;
-            if (cameraMngr == null) return null;
-            return cameraMngr.transform;
+            var cameraManager = Engine.GetService<ICameraManager>().Camera;
+            if (cameraManager == null || !cameraManager.transform.parent) return null;
+            return cameraManager.transform.parent;
         }
     }
 }

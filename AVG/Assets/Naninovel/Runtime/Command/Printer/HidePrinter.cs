@@ -1,6 +1,5 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
-using System.Threading;
 using UniRx.Async;
 
 namespace Naninovel.Commands
@@ -8,18 +7,12 @@ namespace Naninovel.Commands
     /// <summary>
     /// Hides a text printer.
     /// </summary>
-    /// <example>
-    /// ; Hide a default printer.
-    /// @hidePrinter
-    /// ; Hide printer with ID `Wide`.
-    /// @hidePrinter Wide
-    /// </example>
     public class HidePrinter : PrinterCommand
     {
         /// <summary>
         /// ID of the printer actor to use. Will use a default one when not provided.
         /// </summary>
-        [ParameterAlias(NamelessParameterAlias)]
+        [ParameterAlias(NamelessParameterAlias), IDEActor(TextPrintersConfiguration.DefaultPathPrefix)]
         public StringParameter PrinterId;
         /// <summary>
         /// Duration (in seconds) of the hide animation.
@@ -33,12 +26,14 @@ namespace Naninovel.Commands
         public override async UniTask ExecuteAsync (CancellationToken cancellationToken = default)
         {
             var printer = await GetOrAddPrinterAsync();
-            if (cancellationToken.IsCancellationRequested) return;
+            if (cancellationToken.CancelASAP) return;
 
             var printerMeta = PrinterManager.Configuration.GetMetadataOrDefault(printer.Id);
             var hideDuration = Assigned(Duration) ? Duration.Value : printerMeta.ChangeVisibilityDuration;
 
-            await printer.ChangeVisibilityAsync(false, hideDuration, cancellationToken: cancellationToken);
+            if (cancellationToken.CancelLazy)
+                printer.Visible = false;
+            else await printer.ChangeVisibilityAsync(false, hideDuration, cancellationToken: cancellationToken);
         }
     } 
 }

@@ -1,12 +1,10 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
+using TMPro;
 using UnityEngine;
 
 namespace Naninovel.UI
 {
-    #if TMPRO_AVAILABLE
-    using TMPro;
-
     public class AuthorNameTMProPanel : AuthorNamePanel
     {
         public override string Text { get => TextComp ? TextComp.text : null; set { if (TextComp) TextComp.text = value ?? string.Empty; } }
@@ -15,7 +13,4 @@ namespace Naninovel.UI
         private TextMeshProUGUI TextComp => textCompCache ? textCompCache : (textCompCache = GetComponentInChildren<TextMeshProUGUI>());
         private TextMeshProUGUI textCompCache;
     }
-    #else
-    public class AuthorNameTMProPanel : MonoBehaviour { }
-    #endif
 }

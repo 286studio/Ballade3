@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
 using System.Collections;
@@ -33,6 +33,13 @@ namespace Naninovel
                 array?.ElementAtOrDefault(2) ?? @default.z,
                 array?.ElementAtOrDefault(3) ?? @default.w);
         }
+
+        public static float?[] ToNullableArray (this Vector2 vector) => new float?[] { vector.x, vector.y };
+        public static float?[] ToNullableArray (this Vector3 vector) => new float?[] { vector.x, vector.y, vector.z };
+        public static float?[] ToNullableArray (this Vector4 vector) => new float?[] { vector.x, vector.y, vector.z, vector.w };
+        public static float[] ToArray (this Vector2 vector) => new[] { vector.x, vector.y };
+        public static float[] ToArray (this Vector3 vector) => new[] { vector.x, vector.y, vector.z };
+        public static float[] ToArray (this Vector4 vector) => new[] { vector.x, vector.y, vector.z, vector.w };
 
         /// <summary>
         /// Appends <paramref name="item"/> to the end of <paramref name="array"/>.
@@ -111,16 +118,14 @@ namespace Naninovel
             array = newList.ToArray();
         }
 
-        public static List<T> FindAll<T> (T[] array, Predicate<T> match)
+        public static T[] FindAll<T> (T[] array, Predicate<T> match)
         {
-            var list = new List<T>(array);
-            return list.FindAll(match);
+            return Array.FindAll(array, match);
         }
 
         public static T Find<T> (T[] array, Predicate<T> match)
         {
-            var list = new List<T>(array);
-            return list.Find(match);
+            return Array.Find(array, match);
         }
 
         /// <summary>
@@ -128,8 +133,7 @@ namespace Naninovel
         /// </summary>
         public static int FindIndex<T> (T[] array, Predicate<T> match)
         {
-            var list = new List<T>(array);
-            return list.FindIndex(match);
+            return Array.FindIndex(array, match);
         }
 
         /// <summary>
@@ -137,8 +141,7 @@ namespace Naninovel
         /// </summary>
         public static int IndexOf<T> (T[] array, T value)
         {
-            var list = new List<T>(array);
-            return list.IndexOf(value);
+            return Array.IndexOf(array, value);
         }
 
         /// <summary>
@@ -146,8 +149,7 @@ namespace Naninovel
         /// </summary>
         public static int LastIndexOf<T> (T[] array, T value)
         {
-            var list = new List<T>(array);
-            return list.LastIndexOf(value);
+            return Array.LastIndexOf(array, value);
         }
 
         /// <summary>
@@ -165,8 +167,7 @@ namespace Naninovel
         /// </summary>
         public static bool Contains<T> (T[] array, T item)
         {
-            var list = new List<T>(array);
-            return list.Contains(item);
+            return Array.Exists(array, i => Equals(i, item));
         }
 
         /// <summary>

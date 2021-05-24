@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 #if ADDRESSABLES_AVAILABLE
 
@@ -24,7 +24,7 @@ namespace Naninovel
             var locatedResourcePaths = locations
                 .Select(l => l.PrimaryKey.GetAfterFirst("/")) // Remove the addressables prefix.
                 .LocateFolderPathsAtFolder(Path)
-                .Select(p => new Folder(p));
+                .Select(p => new Folder(p)).ToArray();
             SetResult(locatedResourcePaths);
 
             return UniTask.CompletedTask;

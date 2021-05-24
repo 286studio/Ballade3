@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System.Collections.Generic;
 using UnityEditor;
@@ -13,6 +13,7 @@ namespace Naninovel
         [SerializeField] private List<string> fieldValues = new List<string>();
 
         private readonly List<LineTextField> fields = new List<LineTextField>();
+        private readonly HashSet<LineTextField> fieldsHash = new HashSet<LineTextField>();
         private bool updateSerializedObjectPending;
         private SerializedObject serializedObject;
         private SerializedProperty fieldValuesProperty;
@@ -35,8 +36,9 @@ namespace Naninovel
                 fieldValuesProperty = serializedObject.FindProperty(nameof(fieldValues));
             }
 
-            if (!fields.Contains(field))
+            if (!fieldsHash.Contains(field))
             {
+                fieldsHash.Add(field);
                 fields.Add(field);
                 fieldValues.Add(field.value);
                 field.RegisterValueChangedCallback(HandleValueChanged);
@@ -67,6 +69,7 @@ namespace Naninovel
             {
                 fields.ForEach(f => f.UnregisterValueChangedCallback(HandleValueChanged));
                 fields.Clear();
+                fieldsHash.Clear();
             }
 
             if (serializedObject != null)
@@ -82,6 +85,8 @@ namespace Naninovel
             if (evt.newValue == evt.previousValue) return;
 
             var index = fields.IndexOf(evt.currentTarget as LineTextField);
+            if (index < 0 || fieldValuesProperty.arraySize <= index || fields.Count <= index) return;
+
             fieldValuesProperty.GetArrayElementAtIndex(index).stringValue = fields[index].value;
             serializedObject.ApplyModifiedProperties();
 

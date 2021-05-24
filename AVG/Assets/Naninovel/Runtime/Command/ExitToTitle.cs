@@ -1,6 +1,5 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
-using System.Threading;
 using UniRx.Async;
 
 namespace Naninovel.Commands
@@ -8,9 +7,6 @@ namespace Naninovel.Commands
     /// <summary>
     /// Resets engine state and shows `ITitleUI` UI (main menu).
     /// </summary>
-    /// <example>
-    /// @title
-    /// </example>
     [CommandAlias("title")]
     public class ExitToTitle : Command, Command.IForceWait
     {

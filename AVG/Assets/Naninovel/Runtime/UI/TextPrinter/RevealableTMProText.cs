@@ -1,32 +1,49 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
+using System;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using System.Threading;
+using Naninovel.ArabicSupport;
+using TMPro;
 using UnityEngine;
+using UnityEngine.Events;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 namespace Naninovel.UI
 {
-    #if TMPRO_AVAILABLE
-    using TMPro;
-
-    public class RevealableTMProText : TextMeshProUGUI, IRevealableText
+    public class RevealableTMProText : TextMeshProUGUI, IRevealableText, IPointerClickHandler, IInputTrigger
     {
+        [Serializable]
+        private class TipClickedEvent : UnityEvent<string> { }
+
+        private class TMProRevealBehaviour : TextRevealBehaviour
+        {
+            private readonly RevealableTMProText tmPro;
+
+            public TMProRevealBehaviour (RevealableTMProText tmPro)
+                : base(tmPro, tmPro.slideClipRect, tmPro.isRightToLeftText, tmPro.revealFadeWidth)
+            {
+                this.tmPro = tmPro;
+            }
+
+            protected override Vector2 GetTextRectSize () => new Vector2(tmPro.m_marginWidth, tmPro.m_marginHeight);
+            protected override int GetCharacterCount () => tmPro.textInfo.characterCount;
+            protected override RevealableCharacter GetCharacterAt (int index) => tmPro.GetCharacterAt(index);
+            protected override RevealableLine GetLineAt (int index) => tmPro.GetLineAt(index);
+            protected override IReadOnlyList<Material> GetMaterials () => tmPro.GetMaterials();
+        }
+
         public virtual string Text { get => assignedText; set => SetTextToReveal(value); }
         public virtual Color TextColor { get => color; set => color = value; }
         public virtual GameObject GameObject => gameObject;
-        public virtual float RevealProgress { get => GetRevealProgress(); set => SetRevealProgress(value); }
-        public virtual bool Revealing => revealState.InProgress;
+        public virtual bool Revealing => revealBehaviour.Revealing;
+        public virtual float RevealProgress { get => revealBehaviour.GetRevealProgress(); set => revealBehaviour.SetRevealProgress(value); }
 
-        protected virtual int LastRevealedCharIndex { get; private set; }
-        protected virtual int LastCharIndex => textInfo.characterCount - 1;
-        protected virtual Transform CanvasTransform => canvasTransformCache != null ? canvasTransformCache : (canvasTransformCache = canvas.GetComponent<Transform>());
-        protected virtual float SlideProgress => slideClipRect && lastRevealDuration > 0 ? Mathf.Clamp01((Time.time - lastRevealTime) / lastRevealDuration) : 1f;
-
-        protected float RevealFadeWidth => revealFadeWidth;
-        protected bool SlideClipRect => slideClipRect;
-        protected float ItalicSlantAngle => italicSlantAngle;
-        protected string RubyVerticalOffset => rubyVerticalOffset;
-        protected float RubySizeScale => rubySizeScale;
+        protected virtual string RubyVerticalOffset => rubyVerticalOffset;
+        protected virtual float RubySizeScale => rubySizeScale;
+        protected virtual bool FixArabicText => fixArabicText;
+        protected virtual Canvas TopmostCanvas => topmostCanvasCache ? topmostCanvasCache : topmostCanvasCache = gameObject.FindTopmostComponent<Canvas>();
 
         [Tooltip("Width (in pixels) of the gradient fade near the reveal border.")]
         [SerializeField] private float revealFadeWidth = 100f;
@@ -38,175 +55,127 @@ namespace Naninovel.UI
         [SerializeField] private string rubyVerticalOffset = "1em";
         [Tooltip("Font size scale (relative to the main text font size) to apply for the ruby (furigana) text.")]
         [SerializeField] private float rubySizeScale = .5f;
+        [Tooltip("Whether to automatically unlock associated tip records when text wrapped in <tip> tags is printed.")]
+        [SerializeField] private bool unlockTipsOnPrint = true;
+        [Tooltip("Template to use when processing text wrapped in <tip> tags. " + tipTemplateLiteral + " will be replaced with the actual tip content.")]
+        [SerializeField] private string tipTemplate = $"<u>{tipTemplateLiteral}</u>";
+        [Tooltip("Invoked when a text wrapped in <tip> tags is clicked; returned string argument is the ID of the clicked tip. Be aware, that the default behaviour (showing `ITipsUI` when a tip is clicked) won't be invoked when a custom handler is assigned.")]
+        [SerializeField] private TipClickedEvent onTipClicked = default;
+        [Tooltip("Whether to modify the text to support arabic languages (fix letters connectivity issues).")]
+        [SerializeField] private bool fixArabicText = false;
+        [Tooltip("When `Fix Arabic Text` is enabled, controls to whether also fix Farsi characters.")]
+        [SerializeField] private bool fixArabicFarsi = true;
+        [Tooltip("When `Fix Arabic Text` is enabled, controls to whether also fix rich text tags.")]
+        [SerializeField] private bool fixArabicTextTags = true;
+        [Tooltip("When `Fix Arabic Text` is enabled, controls to whether preserve numbers.")]
+        [SerializeField] private bool fixArabicPreserveNumbers = false;
 
-        private static readonly int lineClipRectPropertyId = Shader.PropertyToID("_LineClipRect");
-        private static readonly int charClipRectPropertyId = Shader.PropertyToID("_CharClipRect");
-        private static readonly int charFadeWidthPropertyId = Shader.PropertyToID("_CharFadeWidth");
-        private static readonly int charSlantAnglePropertyId = Shader.PropertyToID("_CharSlantAngle");
-        private static readonly TMP_CharacterInfo invalidChar = new TMP_CharacterInfo { lineNumber = -1, index = -1 };
-        private static readonly Regex captureRubyRegex = new Regex(@"<ruby=""([\s\S]*?)"">([\s\S]*?)<\/ruby>");
+        private const string tipIdPrefix = "NANINOVEL.TIP.";
+        private const string tipTemplateLiteral = "%TIP%";
+        private static readonly Regex captureRubyRegex = new Regex(@"<ruby=""([\s\S]*?)"">([\s\S]*?)<\/ruby>", RegexOptions.Compiled);
+        private static readonly Regex captureTipRegex = new Regex(@"<tip=""([\w]*?)"">([\s\S]*?)<\/tip>", RegexOptions.Compiled);
 
-        private readonly TextRevealState revealState = new TextRevealState();
-        private string assignedText;
-        private Transform canvasTransformCache;
+        private readonly FastStringBuilder arabicBuilder = new FastStringBuilder(RTLSupport.DefaultBufferSize);
+        private bool isEdited => !Application.isPlaying || ObjectUtils.IsEditedInPrefabMode(gameObject);
+        private Canvas topmostCanvasCache;
         private Material[] cachedFontMaterials;
-        private Vector3[] worldCorners = new Vector3[4];
-        private Vector3[] canvasCorners = new Vector3[4];
-        private Vector4 curLineClipRect, curCharClipRect;
-        private float curCharFadeWidth, curCharSlantAngle;
-        private TMP_CharacterInfo revealStartChar = invalidChar;
-        private float lastRevealDuration, lastRevealTime, lastCharClipRectX, lastCharFadeWidth;
-        private Vector3 positionLastFrame;
+        private TMProRevealBehaviour revealBehaviour;
+        private string assignedText;
 
         public virtual void RevealNextChars (int count, float duration, CancellationToken cancellationToken)
         {
-            revealState.Start(count, duration, cancellationToken);
+            revealBehaviour.RevealNextChars(count, duration, cancellationToken);
         }
 
         public virtual Vector2 GetLastRevealedCharPosition ()
         {
-            if (LastRevealedCharIndex < 0) return default;
-
-            UpdateClipRects();
-
-            var currentChar = textInfo.characterInfo[LastRevealedCharIndex];
-            var currentLine = textInfo.lineInfo[currentChar.lineNumber];
-            var localPos = new Vector2(curCharClipRect.x, curCharClipRect.w - currentLine.lineHeight);
-            return CanvasTransform.TransformPoint(localPos);
+            return revealBehaviour.GetLastRevealedCharPosition();
         }
 
         public virtual char GetLastRevealedChar ()
         {
-            if (Text is null || LastRevealedCharIndex < 0 || LastRevealedCharIndex >= Text.Length)
+            if (string.IsNullOrEmpty(Text) || revealBehaviour.LastRevealedCharIndex < 0 || revealBehaviour.LastRevealedCharIndex >= Text.Length)
                 return default;
-            return Text[LastRevealedCharIndex];
+            return Text[revealBehaviour.LastRevealedCharIndex];
+        }
+
+        public void OnPointerClick (PointerEventData eventData)
+        {
+            var renderCamera = TopmostCanvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : TopmostCanvas.worldCamera;
+            var linkIndex = TMP_TextUtilities.FindIntersectingLink(this, eventData.position, renderCamera);
+            if (linkIndex == -1) return;
+
+            var linkInfo = textInfo.linkInfo[linkIndex];
+            var linkId = linkInfo.GetLinkID();
+            if (!linkId.StartsWithFast(tipIdPrefix)) return;
+
+            var tipId = linkId.GetAfter(tipIdPrefix);
+            if (onTipClicked?.GetPersistentEventCount() > 0)
+            {
+                onTipClicked.Invoke(tipId);
+                return;
+            }
+
+            var tipsUI = Engine.GetService<IUIManager>()?.GetUI<ITipsUI>();
+            tipsUI?.Show();
+            tipsUI?.SelectTipRecord(tipId);
+        }
+
+        public bool CanTriggerInput ()
+        {
+            var evtSystem = EventSystem.current;
+            if (!evtSystem) return true;
+            var inputModule = evtSystem.currentInputModule;
+            if (!inputModule) return true;
+            var input = inputModule.input;
+            if (!input) return true;
+
+            var position = input.mousePosition;
+            var renderCamera = TopmostCanvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : TopmostCanvas.worldCamera;
+            var linkIndex = TMP_TextUtilities.FindIntersectingLink(this, position, renderCamera);
+            return linkIndex == -1;
+        }
+
+        public override void Rebuild (CanvasUpdate update)
+        {
+            base.Rebuild(update);
+            revealBehaviour?.Rebuild();
         }
 
         protected override void OnRectTransformDimensionsChange ()
         {
             base.OnRectTransformDimensionsChange();
-
-            if (!Application.isPlaying) return; // TextMeshProUGUI has [ExecuteInEditMode]
+            if (isEdited || !canvas || revealBehaviour is null) return;
 
             // When text layout changes (eg, content size fitter decides to increase height),
             // we need to force-update clip rect; otherwise, the update will be delayed by one frame
             // and user will see incorrectly revealed text for a moment.
-            UpdateClipRects();
-            Update();
+            revealBehaviour.UpdateClipRects();
+            revealBehaviour.Update();
         }
 
-        protected override void Start ()
+        protected override void Awake ()
         {
-            base.Start();
-
-            positionLastFrame = transform.position;
+            base.Awake();
+            revealBehaviour = new TMProRevealBehaviour(this);
         }
 
-        private void Update ()
+        protected override void OnEnable ()
         {
-            if (!Application.isPlaying) return; // TextMeshProUGUI has [ExecuteInEditMode]
-
-            UpdateRevealState();
-
-            if (slideClipRect)
-            {
-                var slidedCharClipRectX = Mathf.Lerp(lastCharClipRectX, curCharClipRect.x, SlideProgress);
-                var slidedCharClipRect = new Vector4(slidedCharClipRectX, curCharClipRect.y, curCharClipRect.z, curCharClipRect.w);
-                var slidedFadeWidth = Mathf.Lerp(lastCharFadeWidth, curCharFadeWidth, SlideProgress);
-                SetMaterialProperties(curLineClipRect, slidedCharClipRect, slidedFadeWidth, curCharSlantAngle);
-            }
-            else SetMaterialProperties(curLineClipRect, curCharClipRect, curCharFadeWidth, curCharSlantAngle);
-
-            //Debug.DrawLine(CanvasTransform.TransformPoint(new Vector3(curLineClipRect.x, curLineClipRect.y)), CanvasTransform.TransformPoint(new Vector3(curLineClipRect.z, curLineClipRect.w)), Color.blue);
-            //Debug.DrawLine(CanvasTransform.TransformPoint(new Vector3(curCharClipRect.x, curCharClipRect.y)), CanvasTransform.TransformPoint(new Vector3(curCharClipRect.z, curCharClipRect.w)), Color.red);
+            base.OnEnable();
+            RegisterDirtyLayoutCallback(revealBehaviour.WaitForRebuild);
         }
 
-        private void LateUpdate ()
+        protected override void OnDisable ()
         {
-            if (transform.position != positionLastFrame)
-            {
-                UpdateClipRects();
-                Update();
-            }
-
-            positionLastFrame = transform.position;
+            base.OnDisable();
+            UnregisterDirtyLayoutCallback(revealBehaviour.WaitForRebuild);
         }
 
-        private void UpdateRevealState ()
-        {
-            if (!revealState.InProgress) return;
-
-            if (LastRevealedCharIndex >= LastCharIndex)
-            {
-                revealState.Reset();
-                return;
-            }
-
-            // Wait while the clip rects are slided over currently revealed character.
-            if (slideClipRect && SlideProgress < 1 && !revealState.CancellationToken.IsCancellationRequested) return;
-            if (revealState.CancellationToken.IsCancellationRequested) { revealState.Reset(); return; }
-
-            if (revealState.CharactersRevealed == revealState.CharactersToReveal)
-            {
-                revealState.Reset();
-                return;
-            }
-
-            lastRevealDuration = Mathf.Max(revealState.RevealDuration, 0);
-            lastRevealTime = Time.time;
-
-            SetLastRevealedCharIndex(LastRevealedCharIndex + 1);
-
-            revealState.CharactersRevealed++;
-        }
-
-        private void RevealAll ()
-        {
-            SetLastRevealedCharIndex(LastCharIndex);
-            lastRevealDuration = 0f; // Force the slide to complete instantly.
-        }
-
-        private void HideAll ()
-        {
-            SetLastRevealedCharIndex(-1);
-            lastRevealDuration = 0f; // Force the slide to complete instantly.
-            revealStartChar = invalidChar; // Invalidate the reveal start position.
-            Update(); // Otherwise the unrevealed yet text could be visible for a moment.
-        }
-
-        private void SetMaterialProperties (Vector4 lineClipRect, Vector4 charClipRect, float charFadeWidth, float charSlantAngle)
-        {
-            if (!ObjectUtils.IsValid(cachedFontMaterials) || cachedFontMaterials.Length != textInfo.materialCount)
-                cachedFontMaterials = fontMaterials; // Material count can change when using fallback fonts.
-
-            for (int i = 0; i < cachedFontMaterials.Length; i++)
-            {
-                cachedFontMaterials[i].SetVector(lineClipRectPropertyId, lineClipRect);
-                cachedFontMaterials[i].SetVector(charClipRectPropertyId, charClipRect);
-                cachedFontMaterials[i].SetFloat(charFadeWidthPropertyId, charFadeWidth);
-                cachedFontMaterials[i].SetFloat(charSlantAnglePropertyId, charSlantAngle);
-            }
-        }
-
-        private void SetTextToReveal (string value)
-        {
-            assignedText = value;
-
-            // Pre-process the assigned text handling <ruby> tags.
-            text = HandleRubyTags(value);
-
-            if (m_layoutAlreadyDirty) // If visible text content changed...
-            {
-                // Recalculate all the TMPro properties before rendering next frame, 
-                // as the reveal clip rects rely on them. 
-                ForceMeshUpdate();
-                // Set current last revealed char as the start position for the reveal effect to 
-                // prevent it from affecting this char again when resuming the revealing without resetting the text.
-                revealStartChar = (LastRevealedCharIndex < 0 || LastRevealedCharIndex >= textInfo.characterInfo.Length) ? invalidChar : textInfo.characterInfo[LastRevealedCharIndex];
-            }
-        }
-
-        private string HandleRubyTags (string content)
+        /// <summary>
+        /// Given the input text, extracts text wrapped in ruby tags and replace it with expression natively supported by TMPro.
+        /// </summary>
+        protected virtual string ProcessRubyTags (string content)
         {
             // Replace <ruby> tags with TMPro-supported rich text tags
             // to simulate ruby (furigana) text layout.
@@ -222,110 +191,88 @@ namespace Naninovel.UI
                 var rubyTextWidth = GetPreferredValues(rubyValue).x * rubySizeScale;
                 var rubyTextOffset = baseTextWidth / 2f + rubyTextWidth / 2f;
                 var compensationOffset = (baseTextWidth - rubyTextWidth) / 2f;
-                var replace = $"{baseText}<space=-{rubyTextOffset}><voffset={rubyVerticalOffset}><size={rubySizeScale * 100f}%>{rubyValue}</size></voffset><space={compensationOffset}>";
+                var replace = $"<space={compensationOffset}><voffset={rubyVerticalOffset}><size={rubySizeScale * 100f}%>{rubyValue}</size></voffset><space=-{rubyTextOffset}>{baseText}";
                 content = content.Replace(fullMatch, replace);
             }
 
             return content;
         }
 
-        private void SetLastRevealedCharIndex (int charIndex)
+        /// <summary>
+        /// Given the input text, extracts text wrapped in tip tags and replace it with expression natively supported by TMPro.
+        /// </summary>
+        protected virtual string ProcessTipTags (string content)
         {
-            if (LastRevealedCharIndex == charIndex) return;
-
-            var curChar = textInfo.characterInfo.IsIndexValid(LastRevealedCharIndex) ? textInfo.characterInfo[LastRevealedCharIndex] : invalidChar;
-            var nextChar = textInfo.characterInfo.IsIndexValid(charIndex) ? textInfo.characterInfo[charIndex] : invalidChar;
-
-            // Skip chars when (while at the same line), the caret is moving back (eg, when using ruby text).
-            if (charIndex > 0 && nextChar.lineNumber == curChar.lineNumber && charIndex > LastRevealedCharIndex)
+            var matches = captureTipRegex.Matches(content);
+            foreach (Match match in matches)
             {
-                while (nextChar.lineNumber == curChar.lineNumber && nextChar.origin < curChar.xAdvance && charIndex < LastCharIndex)
-                {
-                    charIndex++;
-                    nextChar = textInfo.characterInfo[charIndex];
-                }
+                if (match.Groups.Count != 3) continue;
+                var fullMatch = match.Groups[0].ToString();
+                var tipID = match.Groups[1].ToString();
+                var tipContent = match.Groups[2].ToString();
 
-                // Last char is still behind the previous one; use pos. of the previous.
-                if (nextChar.origin < curChar.xAdvance)
-                    nextChar = curChar;
+                if (unlockTipsOnPrint)
+                    Engine.GetService<IUnlockableManager>()?.UnlockItem($"Tips/{tipID}");
+
+                var replace = $"<link={tipIdPrefix + tipID}>{tipTemplate.Replace(tipTemplateLiteral, tipContent)}</link>";
+                content = content.Replace(fullMatch, replace);
             }
 
-            lastCharClipRectX = curChar.lineNumber < 0 ? curLineClipRect.x : curCharClipRect.x;
-            lastCharFadeWidth = curCharFadeWidth;
+            return content;
+        }
 
-            LastRevealedCharIndex = charIndex;
-            UpdateClipRects();
+        private void Update ()
+        {
+            if (isEdited) return;
+            revealBehaviour.Update();
+        }
 
-            // Reset the slide when switching lines.
-            if (slideClipRect && curChar.lineNumber != nextChar.lineNumber)
+        private void LateUpdate ()
+        {
+            if (isEdited) return;
+            revealBehaviour.LateUpdate();
+        }
+
+        private void SetTextToReveal (string value)
+        {
+            assignedText = value;
+
+            // Pre-process the assigned text handling <ruby> and <tip> tags.
+            text = ProcessRubyTags(ProcessTipTags(value));
+
+            if (FixArabicText && !string.IsNullOrWhiteSpace(text))
             {
-                lastCharClipRectX = GetTextCornersInCanvasSpace().x;
-                lastCharFadeWidth = curCharFadeWidth;
+                arabicBuilder.Clear();
+                RTLSupport.FixRTL(text, arabicBuilder, fixArabicFarsi, fixArabicTextTags, fixArabicPreserveNumbers);
+                arabicBuilder.Reverse();
+                text = arabicBuilder.ToString();
             }
         }
 
-        private float GetRevealProgress ()
+        private RevealableLine GetLineAt (int index)
         {
-            if (LastCharIndex <= 0) return LastRevealedCharIndex >= 0 ? 1f : 0f;
-            if (LastRevealedCharIndex == LastCharIndex) return 1f;
-            return Mathf.Clamp01(LastRevealedCharIndex / (float)LastCharIndex);
+            if (index < 0 || index >= textInfo.lineInfo.Length)
+                return RevealableLine.Invalid;
+
+            var info = textInfo.lineInfo[index];
+            return new RevealableLine(index, info.lineHeight, info.ascender, info.firstCharacterIndex, info.lastCharacterIndex);
         }
 
-        private void SetRevealProgress (float revealProgress)
+        private RevealableCharacter GetCharacterAt (int index)
         {
-            if (revealProgress >= 1) { RevealAll(); return; }
-            else if (revealProgress <= 0) { HideAll(); return; }
+            if (index < 0 || index >= textInfo.characterInfo.Length)
+                return RevealableCharacter.Invalid;
 
-            var charIndex = Mathf.CeilToInt(LastCharIndex * revealProgress);
-            SetLastRevealedCharIndex(charIndex);
+            var info = textInfo.characterInfo[index];
+            var slantAngle = info.style == FontStyles.Italic ? italicSlantAngle : 0f;
+            return new RevealableCharacter(index, info.lineNumber, info.origin, info.xAdvance, slantAngle, info.vertex_BR.position.x);
         }
 
-        private void UpdateClipRects ()
+        private Material[] GetMaterials ()
         {
-            if (LastRevealedCharIndex >= textInfo.characterInfo.Length) return;
-
-            var fullClipRect = GetTextCornersInCanvasSpace();
-
-            if (LastRevealedCharIndex < 0) // Hide all.
-            {
-                curLineClipRect = fullClipRect;
-                curCharClipRect = fullClipRect;
-                return;
-            }
-
-            var currentChar = textInfo.characterInfo[LastRevealedCharIndex];
-            var currentLine = textInfo.lineInfo[currentChar.lineNumber];
-            var lineFirstChar = textInfo.characterInfo[currentLine.firstCharacterIndex];
-            var lineLastChar = textInfo.characterInfo[currentLine.lastCharacterIndex];
-
-            var clipPosY = currentLine.ascender + (rectTransform.pivot.y - 1f) * m_marginHeight;
-            var clipPosX = currentChar.xAdvance + rectTransform.pivot.x * m_marginWidth;
-
-            curLineClipRect = fullClipRect + new Vector4(0, 0, 0, clipPosY - currentLine.lineHeight);
-            curCharClipRect = fullClipRect + new Vector4(clipPosX, 0, 0, clipPosY);
-            curCharClipRect.y = curLineClipRect.w;
-
-            // We need to limit the fade width, so that it doesn't stretch before the first (startLimit) and last (endLimit) chars in the line.
-            // Additionally, we need to handle cases when appending text, so that last revealed char won't get hidden again when resuming (revealStartChar is used instead of lineFirstChar).
-            var startLimit = currentChar.lineNumber == revealStartChar.lineNumber ? currentChar.origin - revealStartChar.origin : currentChar.xAdvance - lineFirstChar.origin;
-            var endLimit = lineLastChar.xAdvance - currentChar.xAdvance;
-            var widthLimit = Mathf.Min(startLimit, endLimit);
-            curCharFadeWidth = Mathf.Clamp(revealFadeWidth, 0f, widthLimit);
-
-            curCharSlantAngle = currentChar.style == FontStyles.Italic ? italicSlantAngle : 0f;
-        }
-
-        private Vector4 GetTextCornersInCanvasSpace ()
-        {
-            rectTransform.GetWorldCorners(worldCorners);
-            for (int i = 0; i < 4; ++i)
-                canvasCorners[i] = CanvasTransform.InverseTransformPoint(worldCorners[i]);
-
-            // Positions of diagonal corners.
-            return new Vector4(canvasCorners[0].x, canvasCorners[0].y, canvasCorners[2].x, canvasCorners[2].y);
+            if (cachedFontMaterials is null || cachedFontMaterials.Length != textInfo.materialCount)
+                cachedFontMaterials = fontMaterials; // Material count change when using fallback fonts or font variants (weights).
+            return cachedFontMaterials;
         }
     }
-    #else
-    public class RevealableTMProText : MonoBehaviour { }
-    #endif
 }

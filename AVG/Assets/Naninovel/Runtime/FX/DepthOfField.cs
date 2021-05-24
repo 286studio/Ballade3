@@ -1,8 +1,7 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using Naninovel.Commands;
 using System.Linq;
-using System.Threading;
 using UniRx.Async;
 using UnityEngine;
 
@@ -19,6 +18,13 @@ namespace Naninovel.FX
         [SerializeField] private float defaultFocalLength = 3.75f;
         [SerializeField] private float defaultDuration = 1f;
 
+        private static readonly int blurTexId = Shader.PropertyToID("_BlurTex");
+        private static readonly int distanceId = Shader.PropertyToID("_Distance");
+        private static readonly int lensCoeffId = Shader.PropertyToID("_LensCoeff");
+        private static readonly int maxCoCId = Shader.PropertyToID("_MaxCoC");
+        private static readonly int rcpMaxCoCId = Shader.PropertyToID("_RcpMaxCoC");
+        private static readonly int rcpAspectId = Shader.PropertyToID("_RcpAspect");
+        
         private readonly Tweener<FloatTween> focusDistanceTweener = new Tweener<FloatTween>();
         private readonly Tweener<FloatTween> focalLengthTweener = new Tweener<FloatTween>();
         private CameraComponent cameraComponent;
@@ -27,8 +33,8 @@ namespace Naninovel.FX
         {
             if (cameraComponent is null)
             {
-                var cameraMngr = Engine.GetService<ICameraManager>().Camera;
-                cameraComponent = cameraMngr.gameObject.AddComponent<CameraComponent>();
+                var cameraManager = Engine.GetService<ICameraManager>().Camera;
+                cameraComponent = cameraManager.gameObject.AddComponent<CameraComponent>();
                 cameraComponent.UseCameraFov = false;
             }
 
@@ -63,8 +69,9 @@ namespace Naninovel.FX
             if (focalLengthTweener.Running)
                 focalLengthTweener.CompleteInstantly();
 
-            var focusDistanceTween = new FloatTween(cameraComponent.FocusDistance, FocusDistance, Duration, ApplyFocusDistance, target: cameraComponent);
-            var focalLengthTween = new FloatTween(cameraComponent.FocalLength, FocalLength, Duration, ApplyFocalLength, target: cameraComponent);
+            var duration = cancellationToken.CancelLazy ? 0 : Duration;
+            var focusDistanceTween = new FloatTween(cameraComponent.FocusDistance, FocusDistance, duration, ApplyFocusDistance, target: cameraComponent);
+            var focalLengthTween = new FloatTween(cameraComponent.FocalLength, FocalLength, duration, ApplyFocalLength, target: cameraComponent);
 
             await UniTask.WhenAll(focusDistanceTweener.RunAsync(focusDistanceTween, cancellationToken), 
                 focalLengthTweener.RunAsync(focalLengthTween, cancellationToken));
@@ -82,7 +89,8 @@ namespace Naninovel.FX
             if (focalLengthTweener.Running)
                 focalLengthTweener.CompleteInstantly();
 
-            var focalLengthTween = new FloatTween(cameraComponent.FocalLength, 0, StopDuration, ApplyFocalLength);
+            var duration = cancellationToken.CancelLazy ? 0 : StopDuration;
+            var focalLengthTween = new FloatTween(cameraComponent.FocalLength, 0, duration, ApplyFocalLength);
             await focalLengthTweener.RunAsync(focalLengthTween, cancellationToken);
         }
 
@@ -96,7 +104,7 @@ namespace Naninovel.FX
             cameraComponent.FocalLength = value;
         }
 
-        private void OnDestroy ()
+        private void OnDestroy () // Required to disable the effect on rollback.
         {
             if (cameraComponent)
                 Destroy(cameraComponent);
@@ -104,15 +112,15 @@ namespace Naninovel.FX
 
         private class CameraComponent : MonoBehaviour
         {
-            public enum KernelSizeType { Small, Medium, Large, VeryLarge }
-
-            public KernelSizeType KernelSize { get; set; } = KernelSizeType.Medium;
+            private enum KernelSizeType { Small, Medium, Large, VeryLarge }
+            
             public Transform PointOfFocus { get; set; } = null;
             public float FocusDistance { get; set; } = 0f;
-            public float FNumber { get; set; } = 1.4f;
             public bool UseCameraFov { get; set; } = true;
             public float FocalLength { get; set; } = 0f;
 
+            private const KernelSizeType kernelSize = KernelSizeType.Medium;
+            private const float fNumber = 1.4f;
             private const float filmHeight = 0.024f;
 
             private Camera targetCamera;
@@ -157,26 +165,25 @@ namespace Naninovel.FX
 
                 var width = source.width;
                 var height = source.height;
-                var format = RenderTextureFormat.ARGBHalf;
 
                 SetUpShaderParameters(source);
 
                 // Pass #1 - Downsampling, prefiltering and CoC calculation
-                var rt1 = RenderTexture.GetTemporary(width / 2, height / 2, 0, format);
+                var rt1 = RenderTexture.GetTemporary(width / 2, height / 2, 0, RenderTextureFormat.ARGBHalf);
                 source.filterMode = FilterMode.Point;
                 Graphics.Blit(source, rt1, material, 0);
 
                 // Pass #2 - Bokeh simulation
-                var rt2 = RenderTexture.GetTemporary(width / 2, height / 2, 0, format);
+                var rt2 = RenderTexture.GetTemporary(width / 2, height / 2, 0, RenderTextureFormat.ARGBHalf);
                 rt1.filterMode = FilterMode.Bilinear;
-                Graphics.Blit(rt1, rt2, material, 1 + (int)KernelSize);
+                Graphics.Blit(rt1, rt2, material, 1 + (int)kernelSize);
 
                 // Pass #3 - Additional blur
                 rt2.filterMode = FilterMode.Bilinear;
                 Graphics.Blit(rt2, rt1, material, 5);
 
                 // Pass #4 - Upsampling and composition
-                material.SetTexture("_BlurTex", rt1);
+                material.SetTexture(blurTexId, rt1);
                 Graphics.Blit(source, destination, material, 6);
 
                 RenderTexture.ReleaseTemporary(rt1);
@@ -194,7 +201,7 @@ namespace Naninovel.FX
             {
                 // Estimate the allowable maximum radius of CoC from the kernel
                 // size (the equation below was empirically derived).
-                var radiusInPixels = (float)KernelSize * 4 + 6;
+                const float radiusInPixels = (float)kernelSize * 4 + 6;
 
                 // Applying a 5% limit to the CoC radius to keep the size of
                 // TileMax/NeighborMax small enough.
@@ -206,17 +213,18 @@ namespace Naninovel.FX
                 var dist = PointOfFocus != null ? Vector3.Dot(PointOfFocus.position - targetCamera.transform.position, targetCamera.transform.forward) : FocusDistance;
                 var f = CalculateFocalLength();
                 var s1 = Mathf.Max(dist, f);
-                material.SetFloat("_Distance", s1);
+                material.SetFloat(distanceId, s1);
 
-                var coeff = f * f / (FNumber * (s1 - f) * filmHeight * 2);
-                material.SetFloat("_LensCoeff", coeff);
+                var coeff = f * f / (fNumber * (s1 - f) * filmHeight * 2);
+                coeff = Mathf.Max(.001f, coeff); // Clamp the value to prevent glitches when gradually disabling the effect.
+                material.SetFloat(lensCoeffId, coeff);
 
                 var maxCoC = CalculateMaxCoCRadius(source.height);
-                material.SetFloat("_MaxCoC", maxCoC);
-                material.SetFloat("_RcpMaxCoC", 1 / maxCoC);
+                material.SetFloat(maxCoCId, maxCoC);
+                material.SetFloat(rcpMaxCoCId, 1 / maxCoC);
 
                 var rcpAspect = (float)source.height / source.width;
-                material.SetFloat("_RcpAspect", rcpAspect);
+                material.SetFloat(rcpAspectId, rcpAspect);
             }
         }
     }

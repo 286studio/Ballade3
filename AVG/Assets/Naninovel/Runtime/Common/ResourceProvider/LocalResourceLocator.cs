@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2020 Elringus (Artyom Sovetnikov). All Rights Reserved.
+// Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System.Collections.Generic;
 using System.IO;
@@ -28,7 +28,7 @@ namespace Naninovel
             return UniTask.CompletedTask;
         }
 
-        public static List<string> LocateResources (string rootPath, string resourcesPath, IRawConverter<TResource> converter)
+        public static IReadOnlyCollection<string> LocateResources (string rootPath, string resourcesPath, IRawConverter<TResource> converter)
         {
             var locatedResources = new List<string>();
 
@@ -36,15 +36,15 @@ namespace Naninovel
             var folderPath = rootPath;
             if (!string.IsNullOrEmpty(resourcesPath))
                 folderPath += string.Concat('/', resourcesPath);
-            var parendFolder = new DirectoryInfo(folderPath);
-            if (!parendFolder.Exists) return locatedResources;
+            var parentFolder = new DirectoryInfo(folderPath);
+            if (!parentFolder.Exists) return locatedResources;
 
             // 2. Searching for the files in the folder.
             var results = new Dictionary<RawDataRepresentation, List<FileInfo>>();
             foreach (var representation in converter.Representations.DistinctBy(r => r.Extension))
             {
-                var files = parendFolder.GetFiles(string.Concat("*", representation.Extension)).ToList();
-                if (files != null && files.Count > 0) results.Add(representation, files);
+                var files = parentFolder.GetFiles(string.Concat("*", representation.Extension)).ToList();
+                if (files.Count > 0) results.Add(representation, files);
             }
 
             // 3. Create resources using located files.
