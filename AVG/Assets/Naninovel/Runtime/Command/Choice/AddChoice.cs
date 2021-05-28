@@ -1,7 +1,7 @@
 // Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System.Text;
-using UniRx.Async;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace Naninovel.Commands

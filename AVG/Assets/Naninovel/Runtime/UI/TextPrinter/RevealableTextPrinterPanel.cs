@@ -3,7 +3,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Naninovel.Lexing;
-using UniRx.Async;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Serialization;

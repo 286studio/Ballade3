@@ -3,7 +3,7 @@
 using Naninovel.UI;
 using System.Linq;
 using System.Threading;
-using UniRx.Async;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace Naninovel

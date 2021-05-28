@@ -1,7 +1,7 @@
 // Copyright 2017-2021 Elringus (Artyom Sovetnikov). All rights reserved.
 
 using System;
-using UniRx.Async;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Audio;
 

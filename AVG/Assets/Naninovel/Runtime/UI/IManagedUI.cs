@@ -2,7 +2,7 @@
 
 using System;
 using TMPro;
-using UniRx.Async;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace Naninovel.UI

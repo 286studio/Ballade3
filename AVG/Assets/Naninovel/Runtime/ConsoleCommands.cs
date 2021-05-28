@@ -6,7 +6,7 @@ using System.Linq;
 using System.Reflection;
 using Naninovel.Lexing;
 using Naninovel.UI;
-using UniRx.Async;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace Naninovel

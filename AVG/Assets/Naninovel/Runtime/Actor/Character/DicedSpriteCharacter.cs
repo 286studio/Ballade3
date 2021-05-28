@@ -3,7 +3,7 @@
 #if SPRITE_DICING_AVAILABLE
 
 using SpriteDicing;
-using UniRx.Async;
+using Cysharp.Threading.Tasks;
 
 namespace Naninovel
 {

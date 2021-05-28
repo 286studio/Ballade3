@@ -3,7 +3,7 @@
 using NLayer;
 using System;
 using System.IO;
-using UniRx.Async;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace Naninovel

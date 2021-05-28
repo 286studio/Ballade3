@@ -2,7 +2,7 @@
 
 using System.Collections.Generic;
 using Naninovel.UI;
-using UniRx.Async;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace Naninovel

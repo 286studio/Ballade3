@@ -2,7 +2,7 @@
 
 using System.Linq;
 using Naninovel.Commands;
-using UniRx.Async;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace Naninovel.FX

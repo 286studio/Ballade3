@@ -5,7 +5,7 @@ using Naninovel.Commands;
 using System.Collections.Generic;
 using System.Linq;
 using JetBrains.Annotations;
-using UniRx.Async;
+using Cysharp.Threading.Tasks;
 
 namespace Naninovel
 {

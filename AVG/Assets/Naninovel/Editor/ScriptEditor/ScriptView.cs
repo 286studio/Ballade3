@@ -7,7 +7,7 @@ using System.Text;
 using Naninovel.Lexing;
 using Naninovel.Parsing;
 using Naninovel.Searcher;
-using UniRx.Async;
+using Cysharp.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;

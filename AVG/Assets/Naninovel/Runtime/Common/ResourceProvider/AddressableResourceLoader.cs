@@ -4,7 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using UniRx.Async;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.ResourceLocations;

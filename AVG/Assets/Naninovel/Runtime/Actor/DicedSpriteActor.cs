@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Naninovel.FX;
 using SpriteDicing;
-using UniRx.Async;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace Naninovel

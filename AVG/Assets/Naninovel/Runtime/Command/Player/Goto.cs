@@ -2,7 +2,7 @@
 
 using System;
 using System.Linq;
-using UniRx.Async;
+using Cysharp.Threading.Tasks;
 
 namespace Naninovel.Commands
 {
