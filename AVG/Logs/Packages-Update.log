@@ -1,13 +1,13 @@
 
-=== Sun Jul 19 12:03:43 2020
+=== Thu May 27 21:10:11 2021
 
 Packages were changed.
 Update Mode: mergeDefaultDependencies
 
 The following packages were added:
   com.unity.collab-proxy@1.2.16
-  com.unity.ide.rider@1.1.4
-  com.unity.ide.vscode@1.2.1
+  com.unity.ide.rider@1.2.1
+  com.unity.ide.vscode@1.2.3
   com.unity.modules.ai@1.0.0
   com.unity.modules.androidjni@1.0.0
   com.unity.modules.animation@1.0.0
@@ -39,35 +39,7 @@ The following packages were added:
   com.unity.modules.vr@1.0.0
   com.unity.modules.wind@1.0.0
   com.unity.modules.xr@1.0.0
-  com.unity.test-framework@1.1.14
-  com.unity.textmeshpro@2.0.1
-  com.unity.timeline@1.2.15
+  com.unity.test-framework@1.1.24
+  com.unity.textmeshpro@2.1.4
+  com.unity.timeline@1.2.18
   com.unity.ugui@1.0.0
-The following packages were updated:
-  com.unity.2d.animation from version 3.2.2 to 3.2.3
-  com.unity.2d.spriteshape from version 3.0.11 to 3.0.12
-
-=== Sun May 23 19:56:34 2021
-
-Packages were changed.
-Update Mode: updateDependencies
-
-The following packages were updated:
-  com.unity.2d.animation from version 3.2.3 to 3.2.5
-  com.unity.2d.pixel-perfect from version 2.0.4 to 2.1.0
-  com.unity.2d.psdimporter from version 2.1.4 to 2.1.6
-  com.unity.2d.spriteshape from version 3.0.12 to 3.0.14
-  com.unity.ide.vscode from version 1.2.1 to 1.2.3
-  com.unity.test-framework from version 1.1.14 to 1.1.20
-
-=== Sun May 23 20:06:09 2021
-
-Packages were changed.
-Update Mode: updateDependencies
-
-The following packages were updated:
-  com.unity.2d.spriteshape from version 3.0.14 to 3.0.15
-  com.unity.ide.rider from version 1.1.4 to 1.2.1
-  com.unity.test-framework from version 1.1.20 to 1.1.24
-  com.unity.textmeshpro from version 2.0.1 to 2.1.4
-  com.unity.timeline from version 1.2.15 to 1.2.18

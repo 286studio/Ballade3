@@ -33,7 +33,7 @@ MonoBehaviour:
         Culture=neutral, PublicKeyToken=null
       - Naninovel.ProjectResourceProvider, Elringus.Naninovel.Runtime, Version=0.0.0.0,
         Culture=neutral, PublicKeyToken=null
-    guid: df77d7c3-ce04-41f2-b102-343ba707f820
+    guid: ca681c1d-f2b4-426b-838b-e0b7062ddf95
     customData:
       id: 0
     Pivot: {x: 0.5, y: 0.5}
@@ -74,7 +74,7 @@ MonoBehaviour:
           Culture=neutral, PublicKeyToken=null
         - Naninovel.ProjectResourceProvider, Elringus.Naninovel.Runtime, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-      guid: b547a121-61cf-4299-ba74-c5ea292fc8f1
+      guid: 330d003c-ec0c-4f32-b8fb-ed98e0c9cb75
       customData:
         id: 0
       Pivot: {x: 0.5, y: 0.5}
@@ -103,7 +103,7 @@ MonoBehaviour:
           Culture=neutral, PublicKeyToken=null
         - Naninovel.ProjectResourceProvider, Elringus.Naninovel.Runtime, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-      guid: f6e25d4f-3186-481f-821d-8ce8a88b59c1
+      guid: 1bce79c3-2de7-4fd4-b875-47a52dc774b9
       customData:
         id: 0
       Pivot: {x: 0.5, y: 0.5}
@@ -132,7 +132,7 @@ MonoBehaviour:
           Culture=neutral, PublicKeyToken=null
         - Naninovel.ProjectResourceProvider, Elringus.Naninovel.Runtime, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-      guid: 8cca767a-af9d-4468-856e-e594b8e69465
+      guid: cae10f80-80b4-447b-a4ca-f4d843c750b5
       customData:
         id: 0
       Pivot: {x: 0.5, y: 0.5}
@@ -161,7 +161,7 @@ MonoBehaviour:
           Culture=neutral, PublicKeyToken=null
         - Naninovel.ProjectResourceProvider, Elringus.Naninovel.Runtime, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-      guid: 6c2276ce-ca17-4d41-a87a-da74769dc085
+      guid: 8b277f59-3ae7-4995-9f1a-f64b3fa15723
       customData:
         id: 0
       Pivot: {x: 0.5, y: 0.5}
@@ -190,7 +190,7 @@ MonoBehaviour:
           Culture=neutral, PublicKeyToken=null
         - Naninovel.ProjectResourceProvider, Elringus.Naninovel.Runtime, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-      guid: 381a61a5-f453-4fd0-9628-59f6258b3adb
+      guid: a747e6c1-bf79-4da6-b963-2d4615085c5c
       customData:
         id: 0
       Pivot: {x: 0.5, y: 0.5}
@@ -219,7 +219,7 @@ MonoBehaviour:
           Culture=neutral, PublicKeyToken=null
         - Naninovel.ProjectResourceProvider, Elringus.Naninovel.Runtime, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-      guid: 09b2cc58-8261-4536-844a-8037679df1fb
+      guid: 6a6ea2f7-e703-4606-944b-caa2511f2804
       customData:
         id: 0
       Pivot: {x: 0.5, y: 0.5}
@@ -248,7 +248,7 @@ MonoBehaviour:
           Culture=neutral, PublicKeyToken=null
         - Naninovel.ProjectResourceProvider, Elringus.Naninovel.Runtime, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-      guid: 932aff9f-b0c0-4585-9da7-1b68bf25db43
+      guid: 8fb47d29-cc77-4571-9ef4-3778faa1724e
       customData:
         id: 0
       Pivot: {x: 0.5, y: 0.5}
@@ -277,7 +277,7 @@ MonoBehaviour:
           Culture=neutral, PublicKeyToken=null
         - Naninovel.ProjectResourceProvider, Elringus.Naninovel.Runtime, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-      guid: 6f3c459d-8360-4469-89b6-be0a89fc0825
+      guid: 0c825603-9c0b-4441-8dfa-4c80c1656f90
       customData:
         id: 0
       Pivot: {x: 0.5, y: 0.5}
@@ -306,7 +306,7 @@ MonoBehaviour:
           Culture=neutral, PublicKeyToken=null
         - Naninovel.ProjectResourceProvider, Elringus.Naninovel.Runtime, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-      guid: 59c1e911-2e5c-47f6-82e7-cbed2e440518
+      guid: 3d5ad726-ae72-48f2-9bed-4e919eeb9069
       customData:
         id: 0
       Pivot: {x: 0.5, y: 0.5}
