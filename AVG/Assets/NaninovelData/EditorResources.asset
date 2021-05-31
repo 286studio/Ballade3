@@ -174,3 +174,37 @@ MonoBehaviour:
     - name: 
       pathPrefix: Backgrounds/MainBackground
       guid: 
+  - Id: Characters/1de4ab47-71c8-4756-8adb-7b808b7326a8
+    Resources:
+    - name: MuTing
+      pathPrefix: "Characters/\u7A46\u5A77"
+      guid: 8953646bf1aa52f44b176a09ecb3e2fb
+  - Id: Backgrounds/a208bb64-3602-4425-8811-a2d260ecf138
+    Resources:
+    - name: "\u4E09\u5E74\u5761"
+      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F22\u80CC\u666F"
+      guid: 094644078205bfe4ab306e10e81f3acb
+    - name: "\u6D77\u8FB9\u8DEF"
+      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F22\u80CC\u666F"
+      guid: e5b35c2f4fa95284f99e1c213e08bbc0
+    - name: "\u6D77\u8FB9\u8DEF-\u508D\u665A"
+      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F22\u80CC\u666F"
+      guid: d056724dbac66c645afd5ba99048bdba
+    - name: "\u6D77\u8FB9\u8DEF-\u591C\u665A"
+      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F22\u80CC\u666F"
+      guid: 9ee2bf20011acb046b6ef45883917aaa
+    - name: "\u6D77\u8FB9\u8DEF-\u591A\u4E91"
+      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F22\u80CC\u666F"
+      guid: 679ee0a6a2018524c8f189319267b024
+    - name: "\u9ED1\u677F-\u7A7A\u767D"
+      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F22\u80CC\u666F"
+      guid: 55076a62c5e710d4dbb0a0325887aa83
+    - name: "\u516C\u544A\u680F\u524D-\u4EBA\u591A"
+      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F22\u80CC\u666F"
+      guid: 2cffbc7036a8c854f96ed2711dae6972
+    - name: "\u516C\u544A\u680F\u524D-\u4EBA\u5C11"
+      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F22\u80CC\u666F"
+      guid: 44f2721c60fa21942afe600bd18bcc28
+    - name: "\u5496\u5561\u5385"
+      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F22\u80CC\u666F"
+      guid: 2ff2e07b0a2a4d948bde87192ad8a517
