@@ -161,8 +161,16 @@ MonoBehaviour:
     - name: Helloworld
       pathPrefix: Scripts
       guid: 4b52e5e96d7f640afb8673e4594e7135
+    - name: Test_Script_FF
+      pathPrefix: Scripts
+      guid: 3bd1e7a9345a0c1438f8660dd54f186e
   - Id: Audio
     Resources:
     - name: CAA
       pathPrefix: Audio
       guid: 018353bd1f44c498887c7f41825f7a8c
+  - Id: Backgrounds/d936fa9b-d26a-4b2c-81e6-299591430e1b
+    Resources:
+    - name: 
+      pathPrefix: Backgrounds/MainBackground
+      guid: 
