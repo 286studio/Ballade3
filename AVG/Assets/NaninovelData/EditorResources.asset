@@ -166,9 +166,93 @@ MonoBehaviour:
       guid: 3bd1e7a9345a0c1438f8660dd54f186e
   - Id: Audio
     Resources:
-    - name: CAA
+    - name: ArtCenter
+      pathPrefix: Audio
+      guid: f4da6873a7a1a4ee2aa4bab76af7e829
+    - name: BlessedParallels
+      pathPrefix: Audio
+      guid: cabc4469be23a496fb428207449fb7d2
+    - name: BrightMoonNight
+      pathPrefix: Audio
+      guid: e4951051a3047419ca44e8c5362711c3
+    - name: ClassicalMorning
+      pathPrefix: Audio
+      guid: f643adf2f43cf4d95844fd1c7939ec22
+    - name: CourageAndAction
       pathPrefix: Audio
       guid: 018353bd1f44c498887c7f41825f7a8c
+    - name: DawnAndEveningInFoggyRain
+      pathPrefix: Audio
+      guid: 4438647ee463b42eea0badd407cb12ab
+    - name: EverForever
+      pathPrefix: Audio
+      guid: 3164663c6269c4c49a442477e9a1cd0b
+    - name: FarawayGalaxy
+      pathPrefix: Audio
+      guid: 804fd21e610104899bdd644b3d8bef1e
+    - name: FieldOfStarts
+      pathPrefix: Audio
+      guid: d6ef7a76f216b4ad8b0554a226a08a44
+    - name: FlowingLight
+      pathPrefix: Audio
+      guid: a3f19c0923d75402f9c50aeb1ccaa894
+    - name: HappyBirthday
+      pathPrefix: Audio
+      guid: 19de3dbb4c8234949bdd21b0fc3ca40f
+    - name: HappyBirthdayToYou
+      pathPrefix: Audio
+      guid: a79bc0bc3fe894f70b08d4d84af852f1
+    - name: Ky-Sact-Nu
+      pathPrefix: Audio
+      guid: 4122ef872eac9444db6dd92861336014
+    - name: Ky-Sact-Nu-Vocal
+      pathPrefix: Audio
+      guid: 6298eda52ce5b4e25a45b0e97606e56e
+    - name: LightOfEyelids
+      pathPrefix: Audio
+      guid: 553e59989c7a34938b171de2c8bda9b0
+    - name: LikeOldDays
+      pathPrefix: Audio
+      guid: ac44984ebe3cc485ba50ab7aa380a664
+    - name: LolitaChant
+      pathPrefix: Audio
+      guid: 5030655b6c3584fc5b006be6865fcad0
+    - name: LyricalOpusculum
+      pathPrefix: Audio
+      guid: 48504414eea2a47a3b0c309e20ebcc62
+    - name: Moonlight
+      pathPrefix: Audio
+      guid: 434e2399f264940bbb772f322d163e60
+    - name: Night
+      pathPrefix: Audio
+      guid: 8f8b5304fb98946e186579374f7e6e9f
+    - name: NightOfLamplight
+      pathPrefix: Audio
+      guid: 8f6bcb4e5962047fc9c24c556c15af20
+    - name: School
+      pathPrefix: Audio
+      guid: 138b095f893ea48519a8abc323ca18ee
+    - name: ScriabinPrelude
+      pathPrefix: Audio
+      guid: b904bb3dd7d1a4bafa6eab05ba425c9b
+    - name: ShoppingStreet
+      pathPrefix: Audio
+      guid: 5bb50550ce6494bb686239b130f68c4e
+    - name: StarrySky
+      pathPrefix: Audio
+      guid: 090c558f8aa294e3c9252c399291d813
+    - name: StarrySkyOp
+      pathPrefix: Audio
+      guid: 1dec2c14cd081400f8e833dd586ae2c9
+    - name: StreetInTheRain
+      pathPrefix: Audio
+      guid: be21217782b4745cea332f281cc42eb2
+    - name: TempoDance
+      pathPrefix: Audio
+      guid: 31810449f9d2742e997cee8710466735
+    - name: ThoseYears
+      pathPrefix: Audio
+      guid: 0be674c2d342946a99027493bcd401cf
   - Id: Backgrounds/d936fa9b-d26a-4b2c-81e6-299591430e1b
     Resources:
     - name: 
