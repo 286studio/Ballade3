@@ -163,6 +163,6 @@ MonoBehaviour:
       guid: 4b52e5e96d7f640afb8673e4594e7135
   - Id: Audio
     Resources:
-    - name: CourageAndAction
+    - name: CAA
       pathPrefix: Audio
       guid: 018353bd1f44c498887c7f41825f7a8c
