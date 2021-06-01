@@ -255,9 +255,9 @@ MonoBehaviour:
       guid: 0be674c2d342946a99027493bcd401cf
   - Id: Backgrounds/d936fa9b-d26a-4b2c-81e6-299591430e1b
     Resources:
-    - name: 
+    - name: sannianpo
       pathPrefix: Backgrounds/MainBackground
-      guid: 
+      guid: 094644078205bfe4ab306e10e81f3acb
   - Id: Characters/1de4ab47-71c8-4756-8adb-7b808b7326a8
     Resources:
     - name: "\u7A46\u5A77"
