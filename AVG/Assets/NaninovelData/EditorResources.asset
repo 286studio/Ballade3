@@ -753,3 +753,8 @@ MonoBehaviour:
     - name: "\u5357\u4F73\u745C"
       pathPrefix: "Characters/\u53D9\u4E8B\u66F2\u89D2\u8272\uFF08\u6CA1\u4E94\u5B98\u7684\uFF09"
       guid: f401c9163a15659459ec62feea8c4aa5
+  - Id: Characters/a331ebdd-2ac7-4020-885f-61a6f24c464d
+    Resources:
+    - name: MuTing
+      pathPrefix: Characters/MuTing
+      guid: 8953646bf1aa52f44b176a09ecb3e2fb
