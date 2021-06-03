@@ -758,3 +758,18 @@ MonoBehaviour:
     - name: MuTing
       pathPrefix: Characters/MuTing
       guid: 8953646bf1aa52f44b176a09ecb3e2fb
+  - Id: Characters/6e46bf1f-2407-4471-8417-fa82f1ed6ec8
+    Resources:
+    - name: NanJiayu
+      pathPrefix: Characters/NanJiayu
+      guid: b7afedfd654a0b84eb046dd506aef294
+  - Id: Characters/9b5a1fd4-68f9-4b05-86ba-f3b3f0ea8d08
+    Resources:
+    - name: Gongtianyi
+      pathPrefix: Characters/Gongtianyi
+      guid: 7a8f434d0e305ce4cb23c2a598c8c12d
+  - Id: Characters/47b0acd2-536b-4556-9fc9-d6f4154370c3
+    Resources:
+    - name: SanDecai
+      pathPrefix: Characters/SanDecai
+      guid: c5e13f7ff5d625d40a47a6da358011b2
