@@ -44,9 +44,9 @@ MonoBehaviour:
   Metadata:
     ids:
     - MainBackground
-    - "\u53D9\u4E8B\u66F22\u80CC\u666F"
-    - "\u53D9\u4E8B\u66F21\u80CC\u666F"
-    - "\u7F51\u7EDC\u7D20\u6750"
+    - B2
+    - B1
+    - online
     metas:
     - Implementation: Naninovel.SpriteBackground, Elringus.Naninovel.Runtime, Version=0.0.0.0,
         Culture=neutral, PublicKeyToken=null
