@@ -1,0 +1,63 @@
+%YAML 1.2
+---
+# To install: assuming your username is yinyi
+# First, install Sublime Text 3 at https://www.sublimetext.com/3
+# macOS - copy me to /Users/yinyi/Library/Application Support/Sublime Text 3/Packages/User/
+# Windows - copy me to [TODO: figure out windows' path]
+
+# Ref: http://www.sublimetext.com/docs/syntax.html
+
+name: Ballade2 Script
+
+file_extensions: [nani]
+
+scope: text.plain
+
+contexts:
+  main:
+    # comment
+    - match: ^[ \t\b]*;.*
+      scope: comment.line
+
+    # label
+    - match: ^[ \t\b]*[#].*
+      scope: entity.name.tag
+
+    # command
+    - match: ^[ \t\b]*@
+      push: command
+
+    # dialog
+    - match: ^[ \t\b]*.+[:][ ].*
+      scope: markup.underline.link
+
+  command:
+    - meta_scope: markup.italic
+    - match: $
+      pop: true
+    # string in command
+    - match: "'"
+      push: string_s
+    - match: '"'
+      push: string_d
+    # integer in command
+    - match: \b[0-9]+\b
+      scope: constant.numeric
+    # true/false in command
+    - match: "true"
+      scope: constant.numeric
+    - match: "false"
+      scope: constant.numeric
+
+  string_s:
+    - meta_scope: string.quoted.single
+    - match: \\.
+      scope: constant.character.escape
+    - match: "'"
+      pop: true
+  string_d:
+    - meta_scope: string.quoted.double
+    - match: \\.
+      scope: constant.character.escape
+    - match: '"'
+      pop: true
