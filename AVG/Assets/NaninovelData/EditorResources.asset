@@ -773,3 +773,5 @@ MonoBehaviour:
     - name: SanDecai
       pathPrefix: Characters/SanDecai
       guid: c5e13f7ff5d625d40a47a6da358011b2
+  - Id: Characters/ef3b422c-52a5-4fa9-b0b6-16bf44517d3d
+    Resources: []
