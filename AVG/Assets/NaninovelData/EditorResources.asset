@@ -164,6 +164,9 @@ MonoBehaviour:
     - name: Test_Script_FF
       pathPrefix: Scripts
       guid: 3bd1e7a9345a0c1438f8660dd54f186e
+    - name: Ep. 1
+      pathPrefix: Scripts
+      guid: 3b48f6d6734d72d45aa6439606cf1341
   - Id: Audio
     Resources:
     - name: ArtCenter
