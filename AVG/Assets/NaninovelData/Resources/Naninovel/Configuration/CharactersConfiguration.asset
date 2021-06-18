@@ -67,7 +67,7 @@ MonoBehaviour:
     - SangDecai
     - wenhao
     - NPC
-    - Gehaoyun
+    - GeHaoyun
     - AOI
     metas:
     - Implementation: Naninovel.SpriteCharacter, Elringus.Naninovel.Runtime, Version=0.0.0.0,

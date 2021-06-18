@@ -427,15 +427,15 @@ MonoBehaviour:
     - name: "\u56FE\u4E66\u9986-\u591C\u665A"
       pathPrefix: Backgrounds/B2
       guid: cdaa0cba94fd64343b3931dd279e9479
-    - name: "\u56FE\u4E66\u9986\u5458"
-      pathPrefix: Backgrounds/B2
-      guid: b210eebe237dbfa4688d42039b3aa310
     - name: "\u660E\u7F8E\u5BB6\u95E8\u524D"
       pathPrefix: Backgrounds/B2
       guid: aea2f96f7bf56a4419f4a3e3edd373c4
     - name: "\u660E\u7F8E\u5BA2\u5385"
       pathPrefix: Backgrounds/B2
       guid: f706ddad0ae078149a094baf165ea8d5
+    - name: "\u56FE\u4E66\u9986\u5458"
+      pathPrefix: Backgrounds/B2
+      guid: b210eebe237dbfa4688d42039b3aa310
     - name: "\u660E\u7F8E\u623F\u95F4"
       pathPrefix: Backgrounds/B2
       guid: 266deabb8b14e5c41a5d5029e135edba
@@ -490,7 +490,7 @@ MonoBehaviour:
     - name: "\u5929\u6587\u53F0\u5185\u90E8"
       pathPrefix: Backgrounds/B2
       guid: 3be8e3289ff4d1d40a38bc32f42052ba
-    - name: "\u5929\u6587\u53F0\u5929\u53F0\u591C\u665A"
+    - name: "\u5929\u6587\u53F0\u5929\u53F0-\u591C\u665A"
       pathPrefix: Backgrounds/B2
       guid: d6c672578435fc14bab839c11920fc58
     - name: "\u5929\u6587\u53F0\u5929\u53F0-\u591A\u4E91"
@@ -597,97 +597,97 @@ MonoBehaviour:
   - Id: Backgrounds/e852bfd4-4d4b-493f-8882-17c8de6d8ffc
     Resources:
     - name: "\u5BB4\u4F1A\u5927\u5385"
-      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F21\u80CC\u666F"
+      pathPrefix: Backgrounds/B1
       guid: 22e5463eb6ff4b540b732bde37c44540
     - name: "\u5BB4\u4F1A\u5927\u5385-\u4EBA\u591A"
-      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F21\u80CC\u666F"
+      pathPrefix: Backgrounds/B1
       guid: 872ceb367a6e0d044a20d8d09337d572
     - name: "\u5BB4\u4F1A\u5927\u5385-\u8FD1\u666F"
-      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F21\u80CC\u666F"
+      pathPrefix: Backgrounds/B1
       guid: a45aa1133e14391499ce1a778367aaf5
     - name: "\u5BB4\u4F1A\u5927\u5385-\u98DF\u7269"
-      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F21\u80CC\u666F"
+      pathPrefix: Backgrounds/B1
       guid: d07e69fe9fcb666468b294fde8d6f2d7
     - name: "\u5BB4\u4F1A\u5927\u5385-\u697C\u68AF"
-      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F21\u80CC\u666F"
+      pathPrefix: Backgrounds/B1
       guid: ff65e430bf3c86041ad6c2cac6bd3eb0
     - name: "\u5408\u5531\u793E\u5927\u697C"
-      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F21\u80CC\u666F"
+      pathPrefix: Backgrounds/B1
       guid: 6b71c0f74bc33b74d9132557e6630ecd
     - name: "\u5408\u5531\u793E\u5927\u697C-\u4EBA\u591A"
-      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F21\u80CC\u666F"
+      pathPrefix: Backgrounds/B1
       guid: 35c4c9d48d7be4048af28acd91ca2511
     - name: "\u5408\u5531\u793E\u5927\u697C-\u4EBA\u591A-\u591C\u665A"
-      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F21\u80CC\u666F"
+      pathPrefix: Backgrounds/B1
       guid: 9a7d3e31ed7358045a016bd9662e6382
     - name: "\u5408\u5531\u793E\u5927\u697C-\u591C\u665A"
-      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F21\u80CC\u666F"
+      pathPrefix: Backgrounds/B1
       guid: a962f0579a662f14abc0695fac7d3e59
     - name: "\u5408\u5531\u793E\u8D70\u9053"
-      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F21\u80CC\u666F"
+      pathPrefix: Backgrounds/B1
       guid: 32cae2076096131479e2b680c9db8080
     - name: "\u5408\u5531\u793E\u8D70\u9053-\u4EBA\u591A"
-      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F21\u80CC\u666F"
+      pathPrefix: Backgrounds/B1
       guid: 4eb9598ef424a7044b0935b31a74ae81
     - name: "\u5408\u5531\u793E\u8D70\u9053\u508D\u665A"
-      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F21\u80CC\u666F"
+      pathPrefix: Backgrounds/B1
       guid: aa3810a0d06e1ae4ab8b36af2b5520e0
     - name: "\u94A2\u7434\u6F14\u594F\u821E\u53F0"
-      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F21\u80CC\u666F"
+      pathPrefix: Backgrounds/B1
       guid: 63444d4cb5f906b4d9c28086954b115b
     - name: "\u94A2\u7434\u6F14\u594F\u821E\u53F0-\u4EBA\u591A"
-      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F21\u80CC\u666F"
+      pathPrefix: Backgrounds/B1
       guid: f4d4e53a96f2cea4b9460dd8307a7b6a
     - name: "\u5408\u5531\u793E\u9762\u8BD5\u5BA4"
-      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F21\u80CC\u666F"
+      pathPrefix: Backgrounds/B1
       guid: 61d5f9e578aaefc4899e6394ee4e72f5
     - name: "\u5408\u5531\u793E\u9762\u8BD5\u5BA42"
-      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F21\u80CC\u666F"
+      pathPrefix: Backgrounds/B1
       guid: ff3a4c06200d07e4db165e5ebc4b2465
     - name: "\u5408\u5531\u793E\u7EC3\u4E60\u5BA4"
-      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F21\u80CC\u666F"
+      pathPrefix: Backgrounds/B1
       guid: ff0e2eb6af4dc384dbf803be9c0d3fd5
     - name: "\u5408\u5531\u793E\u7EC3\u4E60\u5BA4-\u591C\u665A"
-      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F21\u80CC\u666F"
+      pathPrefix: Backgrounds/B1
       guid: 3d1270615df8b9d4ab8f00e30d348809
     - name: "\u5408\u5531\u793E\u7EC3\u4E60\u5BA4-\u94A2\u7434"
-      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F21\u80CC\u666F"
+      pathPrefix: Backgrounds/B1
       guid: 2dd309277e86db04f8d339d135c78c3b
     - name: "\u5408\u5531\u793E\u7EC3\u4E60\u5BA4-\u94A2\u7434-\u4EBA\u591A"
-      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F21\u80CC\u666F"
+      pathPrefix: Backgrounds/B1
       guid: 51598fd67fff3d441a15a41f8603e614
     - name: "\u516C\u5BD3\u5BA2\u5385"
-      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F21\u80CC\u666F"
+      pathPrefix: Backgrounds/B1
       guid: 24a8c1e756edf4e4b978baa8950cdec6
     - name: "\u516C\u5BD3\u5BA2\u5385-\u508D\u665A"
-      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F21\u80CC\u666F"
+      pathPrefix: Backgrounds/B1
       guid: 7f69f5fab1b90844d99f00648a3ed85c
     - name: "\u516C\u5BD3\u8BFE\u9898\u7A97\u5916-\u508D\u665A"
-      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F21\u80CC\u666F"
+      pathPrefix: Backgrounds/B1
       guid: f5f2fa28881828c4abc3b87f683da26a
     - name: "\u516C\u5BD3\u5BA2\u5385-\u591C\u665A"
-      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F21\u80CC\u666F"
+      pathPrefix: Backgrounds/B1
       guid: c2164c7905c8a9b4d9f3b20b086484c3
     - name: "\u516C\u5BD3\u623F\u95F4"
-      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F21\u80CC\u666F"
+      pathPrefix: Backgrounds/B1
       guid: 27d7b930fdaa9ae4f95941998aad4ae4
     - name: "\u516C\u5BD3\u623F\u95F4-\u591C\u665A"
-      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F21\u80CC\u666F"
+      pathPrefix: Backgrounds/B1
       guid: 75e267cfb1df20b41b26f5bdc77b5232
     - name: "\u516C\u5BD3\u53A8\u623F"
-      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F21\u80CC\u666F"
+      pathPrefix: Backgrounds/B1
       guid: 4d5a5943285ec2c4f839716dba69d906
     - name: "\u516C\u5BD3\u53A8\u623F-\u591C\u665A"
-      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F21\u80CC\u666F"
+      pathPrefix: Backgrounds/B1
       guid: a872de72ffab84d47ba6cd0309e3fb84
     - name: "\u94A2\u7434\u7EC3\u4E60\u5BA4"
-      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F21\u80CC\u666F"
+      pathPrefix: Backgrounds/B1
       guid: dcf162efe0992844e92be55404fd4bbf
     - name: "\u94A2\u7434\u7EC3\u4E60\u5BA4\u591C\u665A"
-      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F21\u80CC\u666F"
+      pathPrefix: Backgrounds/B1
       guid: f7b995859c2cc3245b1eb7c00585da7e
     - name: "\u5316\u5B66\u6559\u5BA4"
-      pathPrefix: "Backgrounds/\u53D9\u4E8B\u66F21\u80CC\u666F"
+      pathPrefix: Backgrounds/B1
       guid: 4eb10ca3765c7824198356a558bf4a0f
   - Id: Backgrounds/cdf09abb-a4bc-4a7d-8890-0926c4387213
     Resources:
@@ -778,7 +778,7 @@ MonoBehaviour:
   - Id: Characters/0890d3d8-6136-4e0a-8af5-3c80661f7ef2
     Resources:
     - name: stand
-      pathPrefix: Characters/Gehaoyun
+      pathPrefix: Characters/GeHaoyun
       guid: efe426cd97ca0614e96173f2a5fbd0b1
   - Id: Characters/fd6c356e-09ff-4d76-9a57-21b5fe18c07a
     Resources:
