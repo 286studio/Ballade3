@@ -807,3 +807,35 @@ MonoBehaviour:
       guid: 5860218d738d58b498b8ba8d52bc9ca7
   - Id: Backgrounds/9d7a9f2e-81f4-483f-8d67-876f1abc7e9b
     Resources: []
+  - Id: Backgrounds/c083633d-9d53-4a3e-bcf4-a78aa1c232ad
+    Resources:
+    - name: 001
+      pathPrefix: Backgrounds/P
+      guid: 4b1574e257f6fbc4495e2a0019a6d44b
+    - name: 002
+      pathPrefix: Backgrounds/P
+      guid: 5800776ff9aefe64e9a072c21f2e04b5
+    - name: 003
+      pathPrefix: Backgrounds/P
+      guid: e9c9f65f97cb00340ba4fd2b591f8ce2
+    - name: 004
+      pathPrefix: Backgrounds/P
+      guid: 13543b2d8b2dbd24c81910d3772e72dc
+    - name: 005
+      pathPrefix: Backgrounds/P
+      guid: aff78dcadb14b7646b87cf4d4188e3dc
+    - name: 006
+      pathPrefix: Backgrounds/P
+      guid: db63c19777dae664883efef090b2689f
+    - name: 007
+      pathPrefix: Backgrounds/P
+      guid: 9ca742762e8197c4bba5d1ea5411b16f
+    - name: 008
+      pathPrefix: Backgrounds/P
+      guid: 55a1c948b34f7144cb4e0d46beda2112
+    - name: 009
+      pathPrefix: Backgrounds/P
+      guid: 1b6dd5a83bf82cb4cafde4b967c8cc29
+    - name: 010
+      pathPrefix: Backgrounds/P
+      guid: 2ac7e2a16239b8f45ab46520271454ff
