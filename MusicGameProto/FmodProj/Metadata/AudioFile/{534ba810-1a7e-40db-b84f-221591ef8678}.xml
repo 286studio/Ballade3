@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.00.00">
+	<object class="AudioFile" id="{534ba810-1a7e-40db-b84f-221591ef8678}">
+		<property name="assetPath">
+			<value>周深 - Rubia - 伴奏.flac</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>44.0999985</value>
+		</property>
+		<property name="channelCount">
+			<value>2</value>
+		</property>
+		<property name="length">
+			<value>194.55882086167802</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{eb2c591e-9d8c-4d58-b77f-25a1298253e5}</destination>
+		</relationship>
+	</object>
+</objects>

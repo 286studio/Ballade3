@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.00.00">
+	<object class="ParameterPreset" id="{9cc19291-6add-4d03-9251-3df12cec7a38}">
+		<property name="name">
+			<value>SingerOn</value>
+		</property>
+		<relationship name="folder">
+			<destination>{102bacf8-e1f1-4ebc-b0c2-4ec0da3b3ac3}</destination>
+		</relationship>
+		<relationship name="parameter">
+			<destination>{b968f09e-e8db-48fb-8a05-6bc2cab5e02b}</destination>
+		</relationship>
+	</object>
+	<object class="GameParameter" id="{b968f09e-e8db-48fb-8a05-6bc2cab5e02b}">
+		<property name="initialValue">
+			<value>0</value>
+		</property>
+	</object>
+</objects>

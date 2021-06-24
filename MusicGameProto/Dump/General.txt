@@ -1,0 +1,5 @@
+[General]
+Format=1
+TracksCount=11
+TicksPerQuarterNote=480
+

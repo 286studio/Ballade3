@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.00.00">
+	<object class="AudioFile" id="{890a16aa-b3d5-4d6b-9dbf-ded6a550e801}">
+		<property name="assetPath">
+			<value>程家秘歌/伴奏 Dec 22.mp3</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>48</value>
+		</property>
+		<property name="channelCount">
+			<value>2</value>
+		</property>
+		<property name="length">
+			<value>213.36000000000001</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{eb2c591e-9d8c-4d58-b77f-25a1298253e5}</destination>
+		</relationship>
+	</object>
+</objects>

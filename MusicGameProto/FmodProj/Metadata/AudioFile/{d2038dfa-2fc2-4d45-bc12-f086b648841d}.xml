@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.00.00">
+	<object class="AudioFile" id="{d2038dfa-2fc2-4d45-bc12-f086b648841d}">
+		<property name="assetPath">
+			<value>y2mate.com - Gundam 00 2nd Ending ~Trust You~ (Subbed) [HD].mp3</value>
+		</property>
+		<property name="isStreaming">
+			<value>true</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>44.0999985</value>
+		</property>
+		<property name="channelCount">
+			<value>2</value>
+		</property>
+		<property name="length">
+			<value>94.014693877551025</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{eb2c591e-9d8c-4d58-b77f-25a1298253e5}</destination>
+		</relationship>
+	</object>
+</objects>

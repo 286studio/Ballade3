@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.00.00">
+	<object class="ParameterPreset" id="{56fc1493-3f36-4ee5-aae3-2c0958099d94}">
+		<property name="name">
+			<value>BGVolumn</value>
+		</property>
+		<relationship name="folder">
+			<destination>{102bacf8-e1f1-4ebc-b0c2-4ec0da3b3ac3}</destination>
+		</relationship>
+		<relationship name="parameter">
+			<destination>{2649bf1e-f570-4833-833d-8ffef3d4be55}</destination>
+		</relationship>
+	</object>
+	<object class="GameParameter" id="{2649bf1e-f570-4833-833d-8ffef3d4be55}">
+		<property name="initialValue">
+			<value>1</value>
+		</property>
+	</object>
+</objects>

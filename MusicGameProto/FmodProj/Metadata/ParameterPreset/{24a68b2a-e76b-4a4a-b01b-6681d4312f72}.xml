@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.00.00">
+	<object class="ParameterPreset" id="{24a68b2a-e76b-4a4a-b01b-6681d4312f72}">
+		<property name="name">
+			<value>KeyOn</value>
+		</property>
+		<relationship name="folder">
+			<destination>{102bacf8-e1f1-4ebc-b0c2-4ec0da3b3ac3}</destination>
+		</relationship>
+		<relationship name="parameter">
+			<destination>{8a38d659-5467-4aaa-b71d-cd6ab7fba565}</destination>
+		</relationship>
+	</object>
+	<object class="GameParameter" id="{8a38d659-5467-4aaa-b71d-cd6ab7fba565}">
+		<property name="parameterType">
+			<value>1</value>
+		</property>
+		<property name="maximum">
+			<value>2</value>
+		</property>
+		<property name="initialValue">
+			<value>0</value>
+		</property>
+	</object>
+</objects>

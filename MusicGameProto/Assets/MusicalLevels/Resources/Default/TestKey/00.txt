@@ -1,0 +1,10 @@
+[General]
+Exit=3
+Delay=3
+Music=none
+
+[0.3]
+Type=ShowLeftPanel
+
+[1]
+Type=ShowRightPanel

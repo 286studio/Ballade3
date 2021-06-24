@@ -1,0 +1,754 @@
+[Track10]
+MidiEventsCount=212
+TextEventsCount=1
+
+[Note0]
+Note=C3 (48)
+StartTime=124829
+Length=1878
+InitialVelocity=26
+FinalVelocity=0
+
+[Note1]
+Note=B2 (47)
+StartTime=126742
+Length=1910
+InitialVelocity=40
+FinalVelocity=0
+
+[Note2]
+Note=A2 (45)
+StartTime=128682
+Length=1791
+InitialVelocity=47
+FinalVelocity=0
+
+[Note3]
+Note=G2 (43)
+StartTime=130589
+Length=1289
+InitialVelocity=45
+FinalVelocity=0
+
+[Note4]
+Note=A2 (45)
+StartTime=132009
+Length=201
+InitialVelocity=33
+FinalVelocity=0
+
+[Note5]
+Note=G2 (43)
+StartTime=132244
+Length=233
+InitialVelocity=30
+FinalVelocity=0
+
+[Note6]
+Note=F2 (41)
+StartTime=132497
+Length=1840
+InitialVelocity=42
+FinalVelocity=0
+
+[Note7]
+Note=E2 (40)
+StartTime=134423
+Length=1008
+InitialVelocity=45
+FinalVelocity=0
+
+[Note8]
+Note=E3 (52)
+StartTime=135387
+Length=260
+InitialVelocity=45
+FinalVelocity=0
+
+[Note9]
+Note=F3 (53)
+StartTime=135627
+Length=189
+InitialVelocity=28
+FinalVelocity=0
+
+[Note10]
+Note=E3 (52)
+StartTime=135866
+Length=415
+InitialVelocity=15
+FinalVelocity=0
+
+[Note11]
+Note=D3 (50)
+StartTime=136333
+Length=1868
+InitialVelocity=41
+FinalVelocity=0
+
+[Note12]
+Note=G2 (43)
+StartTime=138267
+Length=1596
+InitialVelocity=45
+FinalVelocity=0
+
+[Note13]
+Note=C3 (48)
+StartTime=140179
+Length=1354
+InitialVelocity=41
+FinalVelocity=0
+
+[Note14]
+Note=D3 (50)
+StartTime=141626
+Length=261
+InitialVelocity=44
+FinalVelocity=0
+
+[Note15]
+Note=C3 (48)
+StartTime=141862
+Length=277
+InitialVelocity=47
+FinalVelocity=0
+
+[Note16]
+Note=B2 (47)
+StartTime=142119
+Length=1768
+InitialVelocity=44
+FinalVelocity=0
+
+[Note17]
+Note=A2 (45)
+StartTime=144023
+Length=1818
+InitialVelocity=53
+FinalVelocity=0
+
+[Note18]
+Note=G2 (43)
+StartTime=145911
+Length=1375
+InitialVelocity=50
+FinalVelocity=0
+
+[Note19]
+Note=G2 (43)
+StartTime=147383
+Length=484
+InitialVelocity=47
+FinalVelocity=0
+
+[Note20]
+Note=F2 (41)
+StartTime=147870
+Length=981
+InitialVelocity=66
+FinalVelocity=0
+
+[Note21]
+Note=F3 (53)
+StartTime=148825
+Length=262
+InitialVelocity=59
+FinalVelocity=0
+
+[Note22]
+Note=G3 (55)
+StartTime=149067
+Length=187
+InitialVelocity=42
+FinalVelocity=0
+
+[Note23]
+Note=E1 (28)
+StartTime=148622
+Length=813
+InitialVelocity=88
+FinalVelocity=0
+
+[Note24]
+Note=F3 (53)
+StartTime=149304
+Length=394
+InitialVelocity=54
+FinalVelocity=0
+
+[Note25]
+Note=E3 (52)
+StartTime=149783
+Length=1918
+InitialVelocity=55
+FinalVelocity=0
+
+[Note26]
+Note=D3 (50)
+StartTime=151707
+Length=1490
+InitialVelocity=57
+FinalVelocity=0
+
+[Note27]
+Note=C3 (48)
+StartTime=153148
+Length=434
+InitialVelocity=50
+FinalVelocity=0
+
+[Note28]
+Note=B2 (47)
+StartTime=153626
+Length=561
+InitialVelocity=50
+FinalVelocity=0
+
+[Note29]
+Note=A2 (45)
+StartTime=154108
+Length=554
+InitialVelocity=57
+FinalVelocity=0
+
+[Note30]
+Note=G2 (43)
+StartTime=154593
+Length=869
+InitialVelocity=64
+FinalVelocity=0
+
+[Note31]
+Note=A2 (45)
+StartTime=155544
+Length=1434
+InitialVelocity=68
+FinalVelocity=0
+
+[Note32]
+Note=D3 (50)
+StartTime=156974
+Length=470
+InitialVelocity=53
+FinalVelocity=0
+
+[Note33]
+Note=E3 (52)
+StartTime=157468
+Length=1887
+InitialVelocity=50
+FinalVelocity=0
+
+[Note34]
+Note=F3 (53)
+StartTime=159379
+Length=1902
+InitialVelocity=57
+FinalVelocity=0
+
+[Note35]
+Note=G3 (55)
+StartTime=161297
+Length=1152
+InitialVelocity=51
+FinalVelocity=0
+
+[Note36]
+Note=G3 (55)
+StartTime=162735
+Length=462
+InitialVelocity=45
+FinalVelocity=0
+
+[Note37]
+Note=A3 (57)
+StartTime=163227
+Length=1579
+InitialVelocity=53
+FinalVelocity=0
+
+[Note38]
+Note=A2 (45)
+StartTime=164657
+Length=448
+InitialVelocity=53
+FinalVelocity=0
+
+[Note39]
+Note=B2 (47)
+StartTime=165135
+Length=357
+InitialVelocity=40
+FinalVelocity=0
+
+[Note40]
+Note=C3 (48)
+StartTime=165623
+Length=292
+InitialVelocity=48
+FinalVelocity=0
+
+[Note41]
+Note=E1 (28)
+StartTime=165692
+Length=302
+InitialVelocity=88
+FinalVelocity=0
+
+[Note42]
+Note=D3 (50)
+StartTime=165860
+Length=248
+InitialVelocity=57
+FinalVelocity=0
+
+[Note43]
+Note=E3 (52)
+StartTime=166119
+Length=886
+InitialVelocity=51
+FinalVelocity=0
+
+[Note44]
+Note=F3 (53)
+StartTime=167065
+Length=1939
+InitialVelocity=57
+FinalVelocity=0
+
+[Note45]
+Note=G3 (55)
+StartTime=168988
+Length=1714
+InitialVelocity=40
+FinalVelocity=0
+
+[Note46]
+Note=A2 (45)
+StartTime=170905
+Length=1358
+InitialVelocity=53
+FinalVelocity=0
+
+[Note47]
+Note=A2 (45)
+StartTime=172347
+Length=498
+InitialVelocity=59
+FinalVelocity=0
+
+[Note48]
+Note=E3 (52)
+StartTime=172826
+Length=1943
+InitialVelocity=48
+FinalVelocity=0
+
+[Note49]
+Note=F3 (53)
+StartTime=174751
+Length=1826
+InitialVelocity=63
+FinalVelocity=0
+
+[Note50]
+Note=G3 (55)
+StartTime=176663
+Length=1901
+InitialVelocity=48
+FinalVelocity=0
+
+[Note51]
+Note=E1 (28)
+StartTime=179646
+Length=105
+InitialVelocity=100
+FinalVelocity=64
+
+[Note52]
+Note=E3 (52)
+StartTime=178582
+Length=1262
+InitialVelocity=42
+FinalVelocity=0
+
+[Note53]
+Note=F3 (53)
+StartTime=179787
+Length=251
+InitialVelocity=47
+FinalVelocity=0
+
+[Note54]
+Note=E3 (52)
+StartTime=180029
+Length=444
+InitialVelocity=48
+FinalVelocity=0
+
+[Note55]
+Note=A2 (45)
+StartTime=180503
+Length=1745
+InitialVelocity=59
+FinalVelocity=0
+
+[Note56]
+Note=D3 (50)
+StartTime=182425
+Length=1402
+InitialVelocity=50
+FinalVelocity=0
+
+[Note57]
+Note=A2 (45)
+StartTime=183878
+Length=458
+InitialVelocity=49
+FinalVelocity=64
+
+[Note58]
+Note=G2 (43)
+StartTime=184349
+Length=1858
+InitialVelocity=56
+FinalVelocity=0
+
+[Note59]
+Note=C3 (48)
+StartTime=186264
+Length=2064
+InitialVelocity=45
+FinalVelocity=0
+
+[Note60]
+Note=D3 (50)
+StartTime=188657
+Length=271
+InitialVelocity=40
+FinalVelocity=0
+
+[Note61]
+Note=E3 (52)
+StartTime=188897
+Length=253
+InitialVelocity=40
+FinalVelocity=0
+
+[Note62]
+Note=G3 (55)
+StartTime=189143
+Length=803
+InitialVelocity=47
+FinalVelocity=0
+
+[Note63]
+Note=A2 (45)
+StartTime=190103
+Length=1154
+InitialVelocity=61
+FinalVelocity=0
+
+[Note64]
+Note=B2 (47)
+StartTime=191307
+Length=300
+InitialVelocity=45
+FinalVelocity=0
+
+[Note65]
+Note=C3 (48)
+StartTime=191550
+Length=218
+InitialVelocity=44
+FinalVelocity=0
+
+[Note66]
+Note=D3 (50)
+StartTime=191781
+Length=357
+InitialVelocity=51
+FinalVelocity=0
+
+[Note67]
+Note=E3 (52)
+StartTime=192016
+Length=904
+InitialVelocity=52
+FinalVelocity=0
+
+[Note68]
+Note=B2 (47)
+StartTime=192989
+Length=461
+InitialVelocity=52
+FinalVelocity=64
+
+[Note69]
+Note=E3 (52)
+StartTime=193474
+Length=483
+InitialVelocity=52
+FinalVelocity=64
+
+[Note70]
+Note=F3 (53)
+StartTime=193946
+Length=1440
+InitialVelocity=54
+FinalVelocity=0
+
+[Note71]
+Note=A3 (57)
+StartTime=195389
+Length=480
+InitialVelocity=54
+FinalVelocity=64
+
+[Note72]
+Note=G3 (55)
+StartTime=195859
+Length=960
+InitialVelocity=40
+FinalVelocity=0
+
+[Note73]
+Note=G2 (43)
+StartTime=196829
+Length=940
+InitialVelocity=58
+FinalVelocity=64
+
+[Note74]
+Note=A2 (45)
+StartTime=197791
+Length=1775
+InitialVelocity=63
+FinalVelocity=0
+
+[Note75]
+Note=E2 (40)
+StartTime=199696
+Length=326
+InitialVelocity=63
+FinalVelocity=0
+
+[Note76]
+Note=F2 (41)
+StartTime=199940
+Length=281
+InitialVelocity=54
+FinalVelocity=0
+
+[Note77]
+Note=G2 (43)
+StartTime=200178
+Length=244
+InitialVelocity=58
+FinalVelocity=0
+
+[Note78]
+Note=A2 (45)
+StartTime=200411
+Length=167
+InitialVelocity=56
+FinalVelocity=0
+
+[Note79]
+Note=B2 (47)
+StartTime=200653
+Length=323
+InitialVelocity=56
+FinalVelocity=0
+
+[Note80]
+Note=C3 (48)
+StartTime=200893
+Length=291
+InitialVelocity=59
+FinalVelocity=0
+
+[Note81]
+Note=D3 (50)
+StartTime=201137
+Length=207
+InitialVelocity=65
+FinalVelocity=0
+
+[Note82]
+Note=E3 (52)
+StartTime=201378
+Length=206
+InitialVelocity=49
+FinalVelocity=0
+
+[Note83]
+Note=F3 (53)
+StartTime=201623
+Length=1331
+InitialVelocity=38
+FinalVelocity=0
+
+[Note84]
+Note=A3 (57)
+StartTime=203061
+Length=402
+InitialVelocity=54
+FinalVelocity=0
+
+[Note85]
+Note=G3 (55)
+StartTime=203547
+Length=946
+InitialVelocity=48
+FinalVelocity=0
+
+[Note86]
+Note=G2 (43)
+StartTime=204508
+Length=829
+InitialVelocity=55
+FinalVelocity=0
+
+[Note87]
+Note=A2 (45)
+StartTime=205470
+Length=1871
+InitialVelocity=59
+FinalVelocity=0
+
+[Note88]
+Note=E3 (52)
+StartTime=207401
+Length=1822
+InitialVelocity=42
+FinalVelocity=0
+
+[Note89]
+Note=F3 (53)
+StartTime=209310
+Length=1841
+InitialVelocity=40
+FinalVelocity=0
+
+[Note90]
+Note=G3 (55)
+StartTime=211233
+Length=1365
+InitialVelocity=40
+FinalVelocity=0
+
+[Note91]
+Note=D3 (50)
+StartTime=212666
+Length=450
+InitialVelocity=34
+FinalVelocity=0
+
+[Note92]
+Note=E3 (52)
+StartTime=213145
+Length=1749
+InitialVelocity=37
+FinalVelocity=0
+
+[Note93]
+Note=A2 (45)
+StartTime=215073
+Length=1822
+InitialVelocity=48
+FinalVelocity=0
+
+[Note94]
+Note=D3 (50)
+StartTime=216978
+Length=1794
+InitialVelocity=51
+FinalVelocity=0
+
+[Note95]
+Note=G2 (43)
+StartTime=218898
+Length=1758
+InitialVelocity=49
+FinalVelocity=0
+
+[Note96]
+Note=C3 (48)
+StartTime=220904
+Length=1933
+InitialVelocity=40
+FinalVelocity=0
+
+[Note97]
+Note=D3 (50)
+StartTime=223233
+Length=277
+InitialVelocity=38
+FinalVelocity=0
+
+[Note98]
+Note=E3 (52)
+StartTime=223471
+Length=238
+InitialVelocity=37
+FinalVelocity=0
+
+[Note99]
+Note=G3 (55)
+StartTime=223716
+Length=575
+InitialVelocity=37
+FinalVelocity=0
+
+[Note100]
+Note=E1 (28)
+StartTime=223177
+Length=1395
+InitialVelocity=37
+FinalVelocity=0
+
+[Note101]
+Note=C4 (60)
+StartTime=224193
+Length=593
+InitialVelocity=35
+FinalVelocity=0
+
+[Note102]
+Note=D4 (62)
+StartTime=224813
+Length=1684
+InitialVelocity=35
+FinalVelocity=0
+
+[Note103]
+Note=E1 (28)
+StartTime=226337
+Length=569
+InitialVelocity=35
+FinalVelocity=0
+
+[Note104]
+Note=G3 (55)
+StartTime=226786
+Length=1679
+InitialVelocity=35
+FinalVelocity=0
+
+[Note105]
+Note=C3 (48)
+StartTime=228647
+Length=5540
+InitialVelocity=51
+FinalVelocity=0
+
+[TextEvent0]
+Time=0
+Type=TrackName
+Value=Ample Bass J 01
+
+
+
+

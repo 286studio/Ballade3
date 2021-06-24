@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.00.00">
+	<object class="Bank" id="{2964a8ab-c1d4-43c7-8197-24950af11ff3}">
+		<property name="name">
+			<value>MidiNotes</value>
+		</property>
+		<relationship name="folder">
+			<destination>{d2a594f1-21e2-4b65-8ae4-beb771e3a4d4}</destination>
+		</relationship>
+	</object>
+</objects>

@@ -1,0 +1,10 @@
+ExternalPackages	从Unity Asset Store或其他地方下载的官方或第三方Package都放这里
+FMODPackage		FMOD创建的文件夹
+MusicalLevels		要打的歌
+Plugins			FMOD创建的文件夹
+RawAssets		存放2D、3D、字体、视频等素材
+Resources		Unity特殊文件夹详见https://docs.unity3d.com/ScriptReference/Resources.Load.html
+Scenes			存放游戏场景
+Scripts			存放C#脚本
+StreamingAssets		FMOD创建的文件夹、Unity特殊文件夹详见https://docs.unity3d.com/Manual/StreamingAssets.html
+Utils			一些通用的实用部件
