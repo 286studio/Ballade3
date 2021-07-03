@@ -21,7 +21,7 @@ MonoBehaviour:
   - Assembly-CSharp-Editor
   - Elringus.Naninovel.Runtime
   - Elringus.Naninovel.Editor
-  InitializeOnApplicationLoad: 1
+  InitializeOnApplicationLoad: 0
   SceneIndependent: 1
   ShowInitializationUI: 1
   CustomInitializationUI: {fileID: 0}

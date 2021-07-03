@@ -4,5 +4,11 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/MusicGameEngine/Scenes/Main Menu (Cross Platform).unity
+    guid: 613037e5accb90f4fbc0afe1d6584450
+  - enabled: 1
+    path: Assets/MusicGameEngine/Scenes/Game.unity
+    guid: defd4495c4e25184d924fce7a995152b
   m_configObjects: {}

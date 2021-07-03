@@ -2,7 +2,7 @@
 ; 星空背景
 @back 001 id:P
 不知道从什么时候起，夜晚的天文台变成了我寻求灵感的地方。
-@bgm DawnAndEveningInFoggyRain volume:1 loop:0 wait:false
+@bgm DawnAndEveningInFoggyRain volume:1 loop:false wait:false
 寂静夜空中闪烁的繁星，像是缪斯女神一样忽远忽近，忽暗忽明。
 ; 动画这里可以做些星星转幻成音符的效果↓
 有时候它们看起来不像是星星，而是从我的五线谱里散落的音符，像是期待秩序的拼图碎片，等待着我把它们整理成旋律。
@@ -40,7 +40,7 @@ wenhao: Somewhere, you have it hidden in your heart / A secret, so deep, you you
 @back 005 id:P
 小苍: 我在。
 蓝天: 调成吉他。
-;我把音游片段放进正文里了↓，不然测试的时候总觉得节奏怪怪的
+; 我把音游片段放进正文里了↓，不然测试的时候总觉得节奏怪怪的
 @back yinyou id:P
 音游tutorial片段
 @back 005 id:P
@@ -125,7 +125,7 @@ wenhao: 佳瑜，是你吗？
 虽然嘴上说着看天意，但是我还是忍不住期待……
 ; 闪过穆婷出场的画面。
 好想，认识这个声音啊。
-@stopBgm
+@stopBgm 
 
 # Scene4
 @bgm School
@@ -185,7 +185,7 @@ wenhao: 佳瑜，是你吗？
 ; 蓝天一边低头记录，一边听葛皓云喋喋不休。
 葛皓云: 我们莉莉毕竟是Amadeus钦定的天赋S的天才，当然不是一般人可以比肩的了。
 Amadeus。这个名字，算是我的噩梦。我摇摇头，赶跑那些不必要的思绪。
-@stopBgm
+@stopBgm 
 ; 蓝天抬手切换下一段材料。一个耳熟的声音响起，蓝天抬手捂住了葛皓云的嘴。
 @back 040 id:P
 wenhao: 呃，那个……
@@ -205,7 +205,7 @@ wenhao: 呃，那个……
 蓝天: （喃喃自语一段穆婷唱的歌词）
 葛皓云: ……蓝天，蓝天？发什么呆呀？
 （葛皓云推了蓝天一把，蓝天这才回过神来，低下头记录成绩。下一段录音开始播放了，蓝天侧过头看向成绩表格左侧穆婷的名字，笑了。）
-@stopBgm
+@stopBgm 
 
 # Scene6
 @bgm FlowingLight
@@ -236,7 +236,7 @@ wenhao: 呃，那个……
 @back yinyou id:P
 音游片段
 ; 这段打完评分界面可以插入南佳瑜的声音。
-@stopBgm
+@stopBgm 
 wenhao: 谁弹了我的琴？
 ; 所有人齐刷刷地望向门口，一片寂静。南佳瑜出场镜头，蓝天反应镜头。这里应该有起冲突的音乐但是现有的音乐里好像没有诶。
 @back 053 id:P
