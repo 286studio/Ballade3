@@ -1,0 +1,5 @@
++MusicGameEngine	音游引擎及关卡编辑器
++ExternalPackages	从Unity Asset Store或其他地方下载的官方或第三方Package都放这里
++FMODPackage		FMOD创建的文件夹
++Plugins			FMOD创建的文件夹
++StreamingAssets		FMOD创建的文件夹、Unity特殊文件夹详见https://docs.unity3d.com/Manual/StreamingAssets.html
