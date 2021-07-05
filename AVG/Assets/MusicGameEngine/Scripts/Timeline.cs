@@ -238,7 +238,7 @@ public class Timeline : MonoBehaviour
         if (blockType == "GameOver")
         {
             RhythmGameManager.HideContent();
-            DebugMode.DestroyAllDebugObjects();
+            // DebugMode.DestroyAllDebugObjects();
             Instantiate(Resources.Load<GameObject>("结算画面"), GameObject.Find("Canvas").transform);
         }
         else if (blockType == "ShowLeftPanel") Panel.ShowLeft();
