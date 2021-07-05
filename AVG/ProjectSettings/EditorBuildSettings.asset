@@ -11,4 +11,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/MusicGameEngine/Scenes/Game.unity
     guid: defd4495c4e25184d924fce7a995152b
+  - enabled: 1
+    path: Assets/Scenes/AVG.unity
+    guid: a951a97634ba98346994dae9aa22e456
   m_configObjects: {}

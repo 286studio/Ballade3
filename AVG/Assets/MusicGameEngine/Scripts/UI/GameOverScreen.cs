@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using Naninovel;
 
 public class GameOverScreen : MonoBehaviour
 {
@@ -50,7 +51,7 @@ public class GameOverScreen : MonoBehaviour
         }
         bgm = FMODUnity.RuntimeManager.CreateInstance("event:/TBC");
         bgm.start();
-        StartCoroutine(PreloadMainMenu());
+        if (!MusicGameEngine.loadedFromAVG) StartCoroutine(PreloadMainMenu());
     }
 
     // Update is called once per frame
@@ -99,6 +100,15 @@ public class GameOverScreen : MonoBehaviour
 
     public void ContinueButtonPressed()
     {
+        if (MusicGameEngine.loadedFromAVG)
+        {
+            var naniCamera = Engine.GetService<ICameraManager>().Camera;
+            naniCamera.enabled = true;
+            var inputManager = Engine.GetService<IInputManager>();
+            inputManager.ProcessInput = true;
+            SceneManager.UnloadSceneAsync(1);
+            return;
+        }
         if (async != null)
         {
             bgm.stop(FMOD.Studio.STOP_MODE.IMMEDIATE);
