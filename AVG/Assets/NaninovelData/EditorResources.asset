@@ -158,7 +158,7 @@ MonoBehaviour:
       guid: dd85ce99288c2f8488447fa511b1c0d6
   - Id: Scripts
     Resources:
-    - name: Helloworld
+    - name: Ep0
       pathPrefix: Scripts
       guid: 4b52e5e96d7f640afb8673e4594e7135
     - name: Ep1
