@@ -16,7 +16,14 @@ MonoBehaviour:
   - scriptName: Helloworld
     position:
       serializedVersion: 2
+      x: 191
+      y: 4
+      width: 276
+      height: 284
+  - scriptName: Ep1
+    position:
+      serializedVersion: 2
       x: 0
       y: 0
-      width: 109
-      height: 77
+      width: 85
+      height: 125
