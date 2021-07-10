@@ -10,6 +10,7 @@ public static class MusicGameEngine
     public static string label_ClearLevel;
     public static string scriptName_FailLevel;
     public static string label_FailLevel;
+    public static int scorePercentageConsideredFail;
     public static bool loadedFromAVG;
     public static void LoadLevel(string songName)
     {

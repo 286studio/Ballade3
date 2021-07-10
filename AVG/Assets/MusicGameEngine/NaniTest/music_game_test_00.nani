@@ -1,0 +1,16 @@
+
+This is a test.
+Loading Music Level...
+@loadMusicLevel songName:Cheng scriptName_IfClearLevel:music_game_test_00 label_IfClearLevel:clear scriptName_IfFailLevel:music_game_test_00 label_IfFailLevel:fail scorePercentageConsideredFail:60
+Right after loading music level.
+2nd line after loading music level.
+3rd line afer loading music level.
+@stop
+# clear
+You cleared the level!
+You genius!
+@stop
+# fail
+You failed the level!
+You loser!
+@stop

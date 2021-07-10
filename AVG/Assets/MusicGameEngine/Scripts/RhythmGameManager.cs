@@ -5,6 +5,8 @@ using System.IO;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using Naninovel;
+using Naninovel.Commands;
 
 public class DefRes // 开发用分辨率
 {
@@ -363,8 +365,24 @@ public class RhythmGameManager : MonoBehaviour
         }
     }
 
-    public void LoadMainMenu()
+    public async void LoadMainMenu()
     {
+        if (MusicGameEngine.loadedFromAVG)
+        {
+            // 中途退出算失败
+            var naniCamera = Engine.GetService<ICameraManager>().Camera;
+            naniCamera.enabled = true;
+            var inputManager = Engine.GetService<IInputManager>();
+            inputManager.ProcessInput = true;
+            if (MusicGameEngine.scriptName_FailLevel != null && MusicGameEngine.label_FailLevel != null)
+            {
+                Goto gtcmd = new Goto();
+                gtcmd.Path = new NamedString(MusicGameEngine.scriptName_FailLevel, MusicGameEngine.label_FailLevel);
+                await gtcmd.ExecuteAsync();
+            }
+            SceneManager.UnloadSceneAsync(1);
+            return;
+        }
         StartCoroutine(WaitForLoadMainMenuFinished());
     }
 

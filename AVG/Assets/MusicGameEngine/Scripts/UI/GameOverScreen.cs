@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using Naninovel;
+using Naninovel.Commands;
 
 public class GameOverScreen : MonoBehaviour
 {
@@ -22,6 +23,7 @@ public class GameOverScreen : MonoBehaviour
     int[] curCounts;
     int[] scores;
     int[] curScores;
+    bool fail;
 
     AsyncOperation async;
     FMOD.Studio.EventInstance bgm;
@@ -80,6 +82,8 @@ public class GameOverScreen : MonoBehaviour
                 }
             }
             int total = 0; foreach (int i in curScores) total += i;
+            int maxScore = (Scoring.perfectCount + Scoring.goodCount + Scoring.missCount) * 20;
+            fail = total < maxScore * (MusicGameEngine.scorePercentageConsideredFail / 100f);
             totalScore.text = total.ToString();
         }
         else if (state == 1)
@@ -98,7 +102,7 @@ public class GameOverScreen : MonoBehaviour
         async.allowSceneActivation = false;
     }
 
-    public void ContinueButtonPressed()
+    public async void ContinueButtonPressed()
     {
         if (MusicGameEngine.loadedFromAVG)
         {
@@ -106,6 +110,24 @@ public class GameOverScreen : MonoBehaviour
             naniCamera.enabled = true;
             var inputManager = Engine.GetService<IInputManager>();
             inputManager.ProcessInput = true;
+            if (fail)
+            {
+                if (MusicGameEngine.scriptName_FailLevel != null && MusicGameEngine.label_FailLevel != null)
+                {
+                    Goto gtcmd = new Goto();
+                    gtcmd.Path = new NamedString(MusicGameEngine.scriptName_FailLevel, MusicGameEngine.label_FailLevel);
+                    await gtcmd.ExecuteAsync();
+                }
+            }
+            else
+            {
+                if (MusicGameEngine.scriptName_ClearLevel != null && MusicGameEngine.label_ClearLevel != null)
+                {
+                    Goto gtcmd = new Goto();
+                    gtcmd.Path = new NamedString(MusicGameEngine.scriptName_ClearLevel, MusicGameEngine.label_ClearLevel);
+                    await gtcmd.ExecuteAsync();
+                }
+            }
             SceneManager.UnloadSceneAsync(1);
             return;
         }

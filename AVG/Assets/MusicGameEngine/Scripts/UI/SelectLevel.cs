@@ -24,22 +24,23 @@ public class SelectLevel : MonoBehaviour
     {
         if (ins) Destroy(gameObject); else ins = this;
         int i = 0;
-        foreach (string t in titles)
-        {
-            var btn = Instantiate(chapterPrefab, node.transform).GetComponent<ChapterButton>();
-            btn.buttonTitle = t;
-            btn.statusItem = ChapterButton.StatusItem.NONE;
-            btn.backgroundImage = tilepages[i];
-            btn.buttonDescription = desc[i];
-            int j = i;
-            btn.GetComponent<Button>().onClick.AddListener(delegate
+        if (titles != null)
+            foreach (string t in titles)
             {
-                preselectedSongName = songNames[j];
-                preenterDialog = Instantiate(Resources.Load<GameObject>("PreEnter"), GameObject.Find("Canvas").transform);
+                var btn = Instantiate(chapterPrefab, node.transform).GetComponent<ChapterButton>();
+                btn.buttonTitle = t;
+                btn.statusItem = ChapterButton.StatusItem.NONE;
+                btn.backgroundImage = tilepages[i];
+                btn.buttonDescription = desc[i];
+                int j = i;
+                btn.GetComponent<Button>().onClick.AddListener(delegate
+                {
+                    preselectedSongName = songNames[j];
+                    preenterDialog = Instantiate(Resources.Load<GameObject>("PreEnter"), GameObject.Find("Canvas").transform);
                 //SceneManager.LoadScene(1);
             });
-            ++i;
-        }
+                ++i;
+            }
         DontDestroyOnLoad(this);
     }
 }
