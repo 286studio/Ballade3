@@ -1,5 +1,6 @@
 ; 待调试场次：Ep1的Scene1
-@goto Ep1.Scene1
+@choice "Continue"
+@choice "go to Ep1" goto Ep1.Scene1
 
 #op
 前奏混剪舞台灯光、荧光棒、台下的观众（可以穿插剪进苍穹的观众和肖赛的观众）、比赛场地外进场的观众和空中的流星。
