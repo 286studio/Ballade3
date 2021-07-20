@@ -76,7 +76,10 @@ MonoBehaviour:
   - Platform: 20
     Value: 32
   Plugins: []
-  MasterBanks: []
-  Banks: []
+  MasterBanks:
+  - Master
+  Banks:
+  - MidiNotes
+  - Voices
   BanksToLoad: []
   LiveUpdatePort: 9264
