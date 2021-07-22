@@ -1,6 +1,4 @@
 ; 待调试场次：Ep1的Scene1 放上两个选项
-@choice "Continue"
-@choice "go to Ep1" goto Ep1.Scene1
 
 # op
 ; 前奏混剪舞台灯光、荧光棒、台下的观众（可以穿插剪进苍穹的观众和肖赛的观众）、比赛场地外进场的观众和空中的流星。
@@ -22,6 +20,7 @@
 
 # Scene1
 （昏暗的色调中，一只手把一张单子从机器中抽出，递到镜头前。单子上有明显字样：天赋测试结果：C。）
+; @loadMusicLevel songName:Cheng2
 不、不是的……
 （一个温柔的机械女声响起）
 wenhao: 感谢使用Amadeus，您的测试已完成，您最终的天赋评级是：C。
@@ -42,7 +41,6 @@ wenhao: Amadeus是不会错的。成功集团采用最先进的神经扫描技�
 @back 001 id:P
 @bgm DawnAndEveningInFoggyRain volume:1 loop:false wait:false
 本来是来天文台找创作灵感的，可是不知道为什么大脑一放空，竟然会想起某些本该被我遗忘的片段。
-; @loadMusicLevel songName:Cheng2
 ; 切蓝天中景
 @back 004 id:P
 蓝天: 小苍。
