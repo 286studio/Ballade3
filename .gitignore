@@ -66,15 +66,14 @@ Temporary Items
 !/[Aa}ssets/Editor Default Resources/FMOD/*
 
 # Ignore the Cache-file since it is updated locally either way
-/[Aa]ssets/**/FMODStudioCache.asset
-/[Aa]ssets/**/FMODStudioCache.asset.meta
-/[Aa]ssets/Plugins/FMOD/Cache.meta
-/[Aa]ssets/Plugins/FMOD/Cache/Editor.meta
+**/[Aa]ssets/**/FMODStudioCache.asset
+**/[Aa]ssets/**/FMODStudioCache.asset.meta
+**/[Aa]ssets/Plugins/FMOD/Cache.meta
+**/[Aa]ssets/Plugins/FMOD/Cache/
 .cache/
-FMODStudioCache.asset
-Assets/Plugins/FMOD/Cache
-Assets/Plugins/FMOD/Cache.meta
 
 # Log-files
 fmod.log
 fmod_editor.log
+
+AVG/Assets/Plugins/FMOD/Cache/Editor/FMODStudioCache.asset
