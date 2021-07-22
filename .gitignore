@@ -72,6 +72,8 @@ Temporary Items
 /[Aa]ssets/Plugins/FMOD/Cache/Editor.meta
 .cache/
 FMODStudioCache.asset
+Assets/Plugins/FMOD/Cache
+Assets/Plugins/FMOD/Cache.meta
 
 # Log-files
 fmod.log
