@@ -164,6 +164,9 @@ MonoBehaviour:
     - name: Ep1
       pathPrefix: Scripts
       guid: 302ec7b1c79b749bdbf8a23eeeb8875c
+    - name: Ep2
+      pathPrefix: Scripts
+      guid: 662d007579bd18e458842b0fb9a5e5cf
   - Id: Audio
     Resources:
     - name: ArtCenter
